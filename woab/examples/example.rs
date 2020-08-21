@@ -31,18 +31,18 @@ impl WindowActor {
 }
 
 #[allow(non_camel_case_types)]
-struct WindowActor_click_button(send_wrapper::SendWrapper<gtk::Button>);
-
-impl actix::Message for WindowActor_click_button {
-    type Result = ();
+#[derive(Debug)]
+enum WindowActorSignal {
+    click_button(gtk::Button),
 }
 
-impl actix::Handler<WindowActor_click_button> for WindowActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: WindowActor_click_button, _ctx: &mut Self::Context) -> Self::Result {
-        let WindowActor_click_button(arg0) = msg;
-        self.click_button(arg0.take());
+impl actix::StreamHandler<WindowActorSignal> for WindowActor {
+    fn handle(&mut self, signal: WindowActorSignal, _ctx: &mut Self::Context) {
+        match signal {
+            WindowActorSignal::click_button(button) => {
+                self.click_button(button);
+            }
+        }
     }
 }
 
@@ -53,20 +53,30 @@ fn main() {
     gtk::init().unwrap();
     woab::run_actix_inside_gtk_event_loop("example").unwrap();
     let builder = gtk::Builder::from_file("woab/examples/example.glade");
-    let window_addr = WindowActor {
-        widgets: WindowWidgets::new_from_builder(&builder),
-    }.start();
-    builder.connect_signals(|_, signal| {
-        let window_addr = window_addr.clone();
-        match signal {
-            "click_button" => Box::new(move |args| {
-                let msg = WindowActor_click_button(send_wrapper::SendWrapper::new(args[0].get().unwrap().unwrap()));
-                window_addr.do_send(msg);
-                None
-            }),
-            _ => Box::new(|_| {
-                None
-            }),
+    WindowActor::create(|ctx| {
+        let (tx, rx) = tokio::sync::mpsc::channel(16);
+        WindowActor::add_stream(rx, ctx);
+        builder.connect_signals(|_, signal| {
+            let tx = tx.clone();
+            match signal {
+                "click_button" => Box::new(move |args| {
+                    let mut tx = tx.clone();
+                    use tokio::sync::mpsc::error::TrySendError;
+                    match tx.try_send(WindowActorSignal::click_button(args[0].get().unwrap().unwrap())) {
+                        Ok(_) => None,
+                        Err(TrySendError::Closed(_)) => None,
+                        Err(TrySendError::Full(_)) => {
+                            panic!("Unable to send click_button signal - channel is full");
+                        },
+                    }
+                }),
+                _ => Box::new(|_| {
+                    None
+                }),
+            }
+        });
+        WindowActor {
+            widgets: WindowWidgets::new_from_builder(&builder),
         }
     });
     gtk::main();
