@@ -9,6 +9,11 @@ struct WindowActor {
     counter: usize,
 }
 
+impl woab::WoabActor for WindowActor {
+    type Widgets = WindowWidgets;
+    type Signal = WindowSingal;
+}
+
 impl actix::Actor for WindowActor {
     type Context = actix::Context<Self>;
 
@@ -36,19 +41,11 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
 }
 
 fn main() {
-    use actix::prelude::*;
+    use woab::WoabActor;
 
     gtk::init().unwrap();
     woab::run_actix_inside_gtk_event_loop("example").unwrap();
     let builder = gtk::Builder::from_file("woab/examples/example.glade");
-    WindowActor::create(|ctx| {
-        use woab::BuilderSignal;
-        WindowSingal::connect_builder_signals::<WindowActor>(ctx, &builder);
-        use std::convert::TryInto;
-        WindowActor {
-            widgets: (&builder).try_into().unwrap(),
-            counter: 0,
-        }
-    });
+    WindowActor::woab_create(&builder, |_, widgets| WindowActor { widgets, counter: 0});
     gtk::main();
 }
