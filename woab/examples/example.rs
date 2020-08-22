@@ -1,11 +1,14 @@
 // This stuff should be implemented by the user:
 
-struct WindowWidgets {
-    app_window: gtk::ApplicationWindow,
+#[derive(woab::WidgetsFromBuilder)]
+pub struct WindowWidgets {
+    pub app_window: gtk::ApplicationWindow,
+    pub text_buffer: gtk::TextBuffer,
 }
 
 struct WindowActor {
     widgets: WindowWidgets,
+    counter: usize,
 }
 
 impl actix::Actor for WindowActor {
@@ -16,21 +19,11 @@ impl actix::Actor for WindowActor {
         self.widgets.app_window.show();
     }
 }
-
 impl WindowActor {
-    fn click_button(&self, _button: gtk::Button) {
-        println!("Button clicked");
-    }
-}
-
-impl std::convert::TryFrom<&gtk::Builder> for WindowWidgets {
-    type Error = woab::errors::WidgetMissingInBuilder;
-
-    fn try_from(builder: &gtk::Builder) -> Result<Self, Self::Error> {
-        use gtk::prelude::BuilderExtManual;
-        Ok(Self {
-            app_window: builder.get_object("app_window").ok_or(woab::errors::WidgetMissingInBuilder("app_window"))?,
-        })
+    fn click_button(&mut self, _button: gtk::Button) {
+        self.counter += 1;
+        use gtk::TextBufferExt;
+        self.widgets.text_buffer.set_text(&format!("{}", self.counter));
     }
 }
 
@@ -93,6 +86,7 @@ fn main() {
         use std::convert::TryInto;
         WindowActor {
             widgets: (&builder).try_into().unwrap(),
+            counter: 0,
         }
     });
     gtk::main();

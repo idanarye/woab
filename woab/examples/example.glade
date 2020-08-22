@@ -2,6 +2,7 @@
 <!-- Generated with glade 3.36.0 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
+  <object class="GtkTextBuffer" id="text_buffer"/>
   <object class="GtkApplicationWindow" id="app_window">
     <property name="can_focus">False</property>
     <child>
@@ -19,6 +20,17 @@
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkTextView" id="text_box">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="buffer">text_buffer</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
       </object>
