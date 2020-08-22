@@ -39,7 +39,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         })
     }).collect::<Result<Vec<_>, Error>>()?;
     Ok(quote! {
-        impl #enum_ident {
+        impl woab::BuilderSignal for #enum_ident {
             fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
