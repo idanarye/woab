@@ -2,8 +2,14 @@
 <!-- Generated with glade 3.36.0 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
-  <object class="GtkTextBuffer" id="text_buffer"/>
-  <object class="GtkApplicationWindow" id="app_window">
+  <object class="GtkTextBuffer" id="buf_addend">
+    <property name="text" translatable="yes">0</property>
+    <signal name="changed" handler="AddendChanged" swapped="no"/>
+  </object>
+  <object class="GtkTextBuffer" id="buf_sum">
+    <property name="text" translatable="yes">0</property>
+  </object>
+  <object class="GtkApplicationWindow" id="win_app">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid">
@@ -11,7 +17,7 @@
         <property name="can_focus">False</property>
         <child>
           <object class="GtkButton">
-            <property name="label" translatable="yes">Click Me</property>
+            <property name="label" translatable="yes">Add Addend</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
@@ -20,18 +26,88 @@
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">0</property>
+            <property name="width">2</property>
           </packing>
         </child>
         <child>
-          <object class="GtkTextView" id="text_box">
+          <object class="GtkListBox" id="lst_addition">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="selection_mode">none</property>
+            <child>
+              <object class="GtkListBoxRow" id="row_addend">
+                <property name="width_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="activatable">False</property>
+                <property name="selectable">False</property>
+                <child>
+                  <object class="GtkGrid">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">+</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkTextView">
+                        <property name="width_request">50</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="buffer">buf_addend</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">0</property>
+            <property name="height">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkTextView">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="buffer">text_buffer</property>
+            <property name="editable">False</property>
+            <property name="buffer">buf_sum</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Sum:</property>
+            <property name="justify">right</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">2</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
     </child>

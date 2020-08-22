@@ -12,3 +12,7 @@ actix = "^0.9"
 tokio = "^0.2"
 glib = "0.10.1"
 woab-macros = { path = "../woab-macros" }
+quick-xml = "0.18.1"
+
+[dev-dependencies]
+futures-util = "0.3.5"
