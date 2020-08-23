@@ -10,28 +10,33 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     };
     let enum_ident = &ast.ident;
     let match_arms = data_enum.variants.iter().map(|variant| {
-        let fields = if let syn::Fields::Unnamed(fields) = &variant.fields {
-            fields
-        } else {
-            return Err(Error::new_spanned(variant, "BuilderSignal only supports tuple variants (even if they are empty)"));
-        };
         let variant_ident = &variant.ident;
         let ident_as_str = syn::LitStr::new(&variant_ident.to_string(), variant_ident.span());
-        let field_from_arg_mappers = fields.unnamed.iter().enumerate().map(|(i, field)| {
-            let type_error = syn::LitStr::new(&format!("Wrong type for paramter {} of {}", i, variant_ident), field.ty.span());
-            let none_error = syn::LitStr::new(&format!("Paramter {} of {} is None", i, variant_ident), field.ty.span());
-            Ok(quote! {
-                args[#i].get().expect(#type_error).expect(#none_error)
-            })
-        }).collect::<Result<Vec<_>, Error>>()?;
-        let num_fields = field_from_arg_mappers.len();
+        let msg_construction = match &variant.fields {
+            syn::Fields::Unnamed(fields) => {
+                let field_from_arg_mappers = fields.unnamed.iter().enumerate().map(|(i, field)| {
+                    let type_error = syn::LitStr::new(&format!("Wrong type for paramter {} of {}", i, variant_ident), field.ty.span());
+                    let none_error = syn::LitStr::new(&format!("Paramter {} of {} is None", i, variant_ident), field.ty.span());
+                    Ok(quote! {
+                        args[#i].get().expect(#type_error).expect(#none_error)
+                    })
+                }).collect::<Result<Vec<_>, Error>>()?;
+                let num_fields = field_from_arg_mappers.len();
+                quote! {
+                    {
+                        if args.len() != #num_fields {
+                            panic!("Expected {} to have {} parameters - got {}", #ident_as_str, #num_fields, args.len());
+                        }
+                        #enum_ident::#variant_ident(#(#field_from_arg_mappers),*)
+                    }
+                }
+            }
+            syn::Fields::Unit => quote!(#enum_ident::#variant_ident),
+            syn::Fields::Named(_) => return Err(Error::new_spanned(variant, "BuilderSignal only supports unit or tuple variants (even if they are empty)")),
+        };
         Ok(quote! {
             #ident_as_str => Box::new(move |args| {
-                if args.len() != #num_fields {
-                    panic!("Expected {} to have {} parameters - got {}", #ident_as_str, #num_fields, args.len());
-                }
-                let msg = #enum_ident::#variant_ident(#(#field_from_arg_mappers),*);
-                match tx.clone().try_send(msg) {
+                match tx.clone().try_send(#msg_construction) {
                     Ok(_) => None,
                     Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => None,
                     Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {

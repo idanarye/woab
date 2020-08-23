@@ -37,7 +37,7 @@ impl actix::Actor for WindowActor {
 
 #[derive(woab::BuilderSignal)]
 enum WindowSingal {
-    ClickButton(gtk::Button),
+    ClickButton,
 }
 
 impl actix::StreamHandler<WindowSingal> for WindowActor {
@@ -45,7 +45,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
         use actix::prelude::*;
         use gtk::prelude::*;;
         match signal {
-            WindowSingal::ClickButton(_button) => {
+            WindowSingal::ClickButton => {
                 let addend = self.factories.row_addend.create(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
