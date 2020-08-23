@@ -7,7 +7,7 @@ pub struct WindowWidgets {
 
 struct WindowActor {
     widgets: WindowWidgets,
-    addend_builder_xml: String,
+    addend_factory: woab::ActorFactory<AddendActor>,
     addends: Vec<actix::Addr<AddendActor>>,
 }
 
@@ -38,9 +38,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
         use gtk::prelude::*;;
         match signal {
             WindowSingal::ClickButton(_button) => {
-                let addend_builder = gtk::Builder::from_string(&self.addend_builder_xml);
-                use woab::WoabActor;
-                let addend = AddendActor::woab_create(&addend_builder, |_, widgets| {
+                let addend = self.addend_factory.create(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
                         window: ctx.address(),
@@ -143,8 +141,6 @@ impl actix::Handler<GetNumber> for AddendActor {
 }
 
 fn main() {
-    use woab::WoabActor;
-
     let f = std::fs::File::open("woab/examples/example.glade").unwrap();
     let b = std::io::BufReader::new(f);
     let mut builders_bytes = [
@@ -160,12 +156,12 @@ fn main() {
     gtk::init().unwrap();
     woab::run_actix_inside_gtk_event_loop("example").unwrap();
 
-    let app_builder = gtk::Builder::from_string(std::str::from_utf8(&builders_bytes[0]).unwrap());
-    let addend_builder_xml = std::str::from_utf8(&builders_bytes[1]).unwrap().to_owned();
+    let app_factory: woab::ActorFactory<WindowActor> = std::str::from_utf8(&builders_bytes[0]).unwrap().to_owned().into();
+    let addend_factory: woab::ActorFactory<AddendActor> = std::str::from_utf8(&builders_bytes[1]).unwrap().to_owned().into();
 
-    WindowActor::woab_create(&app_builder, |_, widgets| WindowActor {
+    app_factory.create(|_, widgets| WindowActor {
         widgets,
-        addend_builder_xml,
+        addend_factory,
         addends: Vec::new(),
     });
     gtk::main();
