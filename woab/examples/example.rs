@@ -1,3 +1,11 @@
+#[derive(woab::Factories)]
+pub struct Factories {
+    #[factory(extra(buf_sum))]
+    win_app: woab::ActorFactory<WindowActor>,
+    #[factory(extra(buf_addend))]
+    row_addend: woab::ActorFactory<AddendActor>,
+}
+
 #[derive(woab::WidgetsFromBuilder)]
 pub struct WindowWidgets {
     win_app: gtk::ApplicationWindow,
@@ -6,8 +14,8 @@ pub struct WindowWidgets {
 }
 
 struct WindowActor {
+    factories: std::rc::Rc<Factories>,
     widgets: WindowWidgets,
-    addend_factory: woab::ActorFactory<AddendActor>,
     addends: Vec<actix::Addr<AddendActor>>,
 }
 
@@ -38,7 +46,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
         use gtk::prelude::*;;
         match signal {
             WindowSingal::ClickButton(_button) => {
-                let addend = self.addend_factory.create(|_, widgets| {
+                let addend = self.factories.row_addend.create(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
                         window: ctx.address(),
@@ -141,28 +149,16 @@ impl actix::Handler<GetNumber> for AddendActor {
 }
 
 fn main() {
-    let f = std::fs::File::open("woab/examples/example.glade").unwrap();
-    let b = std::io::BufReader::new(f);
-    let mut builders_bytes = [
-        Vec::new(),
-        Vec::new(),
-    ];
-    woab::dissect_builder_xml(b, &mut builders_bytes, |id| match id {
-        "win_app" | "buf_sum" => Some(0),
-        "row_addend" | "buf_addend" => Some(1),
-        _ => None,
-    });
+    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("woab/examples/example.glade").unwrap())));
 
     gtk::init().unwrap();
     woab::run_actix_inside_gtk_event_loop("example").unwrap();
 
-    let app_factory: woab::ActorFactory<WindowActor> = std::str::from_utf8(&builders_bytes[0]).unwrap().to_owned().into();
-    let addend_factory: woab::ActorFactory<AddendActor> = std::str::from_utf8(&builders_bytes[1]).unwrap().to_owned().into();
-
-    app_factory.create(|_, widgets| WindowActor {
+    factories.win_app.create(|_, widgets| WindowActor {
         widgets,
-        addend_factory,
+        factories: factories.clone(),
         addends: Vec::new(),
     });
+
     gtk::main();
 }
