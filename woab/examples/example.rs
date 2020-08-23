@@ -37,7 +37,7 @@ impl actix::Actor for WindowActor {
 
 #[derive(woab::BuilderSignal)]
 enum WindowSingal {
-    ClickButton(gtk::Button),
+    ClickButton(gtk::ListBox),
 }
 
 impl actix::StreamHandler<WindowSingal> for WindowActor {
@@ -52,7 +52,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
                         window: ctx.address(),
                         number: Some(0),
                     }
-                });
+                }).unwrap();
                 self.addends.push(addend);
                 ctx.address().do_send(Recalculate);
             }
@@ -148,17 +148,18 @@ impl actix::Handler<GetNumber> for AddendActor {
     }
 }
 
-fn main() {
-    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("woab/examples/example.glade").unwrap())));
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("woab/examples/example.glade")?))?);
 
-    gtk::init().unwrap();
-    woab::run_actix_inside_gtk_event_loop("example").unwrap();
+    gtk::init()?;
+    woab::run_actix_inside_gtk_event_loop("example")?;
 
     factories.win_app.create(|_, widgets| WindowActor {
         widgets,
         factories: factories.clone(),
         addends: Vec::new(),
-    });
+    })?;
 
     gtk::main();
+    Ok(())
 }

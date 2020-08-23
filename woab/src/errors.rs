@@ -1,13 +1,18 @@
-use std::fmt::{Display, Formatter};
-use std::error::Error;
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
 
-#[derive(Debug)]
-pub struct WidgetMissingInBuilder(pub &'static str);
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
 
-impl Display for WidgetMissingInBuilder {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Builder is missing widget with ID {:?}", self.0)
-    }
+    #[error(transparent)]
+    XmlError(#[from] quick_xml::Error),
+
+    #[error(transparent)]
+    WidgetMissingInBuilder(#[from] WidgetMissingInBuilder),
 }
 
-impl Error for WidgetMissingInBuilder {}
+#[derive(thiserror::Error, Debug)]
+#[error("Builder is missing widget with ID {0:?}")]
+pub struct WidgetMissingInBuilder(pub &'static str);

@@ -1,6 +1,6 @@
 use quick_xml::Reader;
 
-pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u8>], id_to_idx: impl Fn(&str) -> Option<usize>) {
+pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u8>], id_to_idx: impl Fn(&str) -> Option<usize>) -> Result<(), crate::Error> {
     let mut reader = Reader::from_reader(buf_read);
     let mut buf = Vec::new();
 
@@ -21,18 +21,19 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
     let mut context_idx = None;
     let mut current_nesting = 0;
 
-    fn write_event(contexts: &mut [WriteContext], idx: Option<usize>, event: quick_xml::events::Event) {
+    fn write_event(contexts: &mut [WriteContext], idx: Option<usize>, event: quick_xml::events::Event) -> Result<(), crate::Error> {
         if let Some(idx) = idx {
-            contexts[idx].writer.write_event(event).unwrap();
+            contexts[idx].writer.write_event(event)?;
         } else {
             for context in contexts.iter_mut() {
-                context.writer.write_event(event.clone()).unwrap();
+                context.writer.write_event(event.clone())?;
             }
         }
+        Ok(())
     }
 
     loop {
-        match reader.read_event(&mut buf).unwrap() {
+        match reader.read_event(&mut buf)? {
             quick_xml::events::Event::Start(e) => {
                 current_nesting += 1;
                 match e.name() {
@@ -54,10 +55,10 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
                     }
                     _ => {}
                 }
-                write_event(&mut contexts, context_idx, quick_xml::events::Event::Start(e));
+                write_event(&mut contexts, context_idx, quick_xml::events::Event::Start(e))?;
             },
             e @ quick_xml::events::Event::End(_) => {
-                write_event(&mut contexts, context_idx, e);
+                write_event(&mut contexts, context_idx, e)?;
                 if let Some(idx) = context_idx {
                     if current_nesting == contexts[idx].nesting {
                         context_idx = contexts[idx].prev_idx;
@@ -68,7 +69,8 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
                 current_nesting -= 1;
             },
             quick_xml::events::Event::Eof => break,
-            e => write_event(&mut contexts, context_idx, e),
+            e => write_event(&mut contexts, context_idx, e)?,
         }
     }
+    Ok(())
 }

@@ -31,7 +31,7 @@ impl<A: WoabActor> From<String> for ActorFactory<A> {
 }
 
 impl<A: WoabActor + actix::StreamHandler<<A as WoabActor>::Signal>> ActorFactory<A> {
-    pub fn create(&self, make_actor: impl FnOnce(&mut A::Context, A::Widgets) -> A) -> actix::Addr<A> {
+    pub fn create(&self, make_actor: impl FnOnce(&mut A::Context, A::Widgets) -> A) -> Result<actix::Addr<A>, crate::errors::WidgetMissingInBuilder> {
         A::woab_create(&self.builder_factory.build(), make_actor)
     }
 }

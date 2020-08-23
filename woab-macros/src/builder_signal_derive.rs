@@ -1,4 +1,5 @@
 use syn::parse::Error;
+use syn::spanned::Spanned;
 use quote::quote;
 
 pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
@@ -16,9 +17,11 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         };
         let variant_ident = &variant.ident;
         let ident_as_str = syn::LitStr::new(&variant_ident.to_string(), variant_ident.span());
-        let field_from_arg_mappers = fields.unnamed.iter().enumerate().map(|(i, _field)| {
+        let field_from_arg_mappers = fields.unnamed.iter().enumerate().map(|(i, field)| {
+            let type_error = syn::LitStr::new(&format!("Wrong type for paramter {} of {}", i, variant_ident), field.ty.span());
+            let none_error = syn::LitStr::new(&format!("Paramter {} of {} is None", i, variant_ident), field.ty.span());
             Ok(quote! {
-                args[#i].get().unwrap().unwrap()
+                args[#i].get().expect(#type_error).expect(#none_error)
             })
         }).collect::<Result<Vec<_>, Error>>()?;
         let num_fields = field_from_arg_mappers.len();

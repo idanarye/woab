@@ -70,22 +70,22 @@ pub fn impl_factories_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
         });
         deconstruct_buffers_array.push(field_ident);
         ctor_arms.push(quote!{
-            #field_ident: String::from_utf8(#field_ident).unwrap().into(),
+            #field_ident: String::from_utf8(#field_ident)?.into(),
         });
     }
 
     Ok(quote!{
         impl #struct_ident {
-            pub fn read(buf_read: impl std::io::BufRead) -> Self {
+            pub fn read(buf_read: impl std::io::BufRead) -> Result<Self, woab::Error> {
                 let mut buffers = [#(#buffers),*];
                 woab::dissect_builder_xml(buf_read, &mut buffers, |id| match id {
                     #(#match_arms)*
                     _ => None,
-                });
+                })?;
                 let [#(#deconstruct_buffers_array),*] = buffers;
-                Self {
+                Ok(Self {
                     #(#ctor_arms)*
-                }
+                })
             }
         }
     })
