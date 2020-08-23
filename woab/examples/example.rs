@@ -37,7 +37,7 @@ impl actix::Actor for WindowActor {
 
 #[derive(woab::BuilderSignal)]
 enum WindowSingal {
-    ClickButton(gtk::ListBox),
+    ClickButton(gtk::Button),
 }
 
 impl actix::StreamHandler<WindowSingal> for WindowActor {
