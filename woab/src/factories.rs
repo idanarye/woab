@@ -2,6 +2,23 @@ use gtk::Builder;
 
 use crate::WoabActor;
 
+/// Holds instructions for generating a GTK builder.
+///
+/// ```no_run
+/// # use gtk::prelude::*;
+/// # use woab::BuilderFactory;
+/// let builder_xml = r#"
+///     <interface>
+///       <requires lib="gtk+" version="3.22"/>
+///       <object class="GtkButton" id="my_button">
+///         ...
+///       </object>
+///     </interface>
+/// "#;
+/// let builder_factory: BuilderFactory = builder_xml.to_owned().into();
+/// let builder = builder_factory.build();
+/// let my_button: gtk::Button = builder.get_object("my_button").unwrap();
+/// ```
 pub struct BuilderFactory(String);
 
 impl From<String> for BuilderFactory {
@@ -16,6 +33,7 @@ impl BuilderFactory {
     }
 }
 
+/// Factory for creating `WoabActor` and connecting it to GTK builder signals.
 pub struct ActorFactory<A: WoabActor> {
     builder_factory: BuilderFactory,
     _phantom: std::marker::PhantomData<A>,
