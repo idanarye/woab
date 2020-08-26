@@ -9,10 +9,13 @@ pub enum Error {
     #[error(transparent)]
     XmlError(#[from] quick_xml::Error),
 
-    #[error(transparent)]
-    WidgetMissingInBuilder(#[from] WidgetMissingInBuilder),
-}
+    #[error("Builder is missing widget with ID {0:?}")]
+    WidgetMissingInBuilder(&'static str),
 
-#[derive(thiserror::Error, Debug)]
-#[error("Builder is missing widget with ID {0:?}")]
-pub struct WidgetMissingInBuilder(pub &'static str);
+    #[error("Expected widget {widget_id:?} to be {expected_type} - not {actual_type}")]
+    IncorrectWidgetTypeInBuilder {
+        widget_id: &'static str,
+        expected_type: glib::types::Type,
+        actual_type: glib::types::Type,
+    },
+}
