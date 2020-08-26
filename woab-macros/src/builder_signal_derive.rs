@@ -35,7 +35,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
             syn::Fields::Named(_) => return Err(Error::new_spanned(variant, "BuilderSignal only supports unit or tuple variants (even if they are empty)")),
         };
         Ok(quote! {
-            #ident_as_str => Box::new(move |args| {
+            #ident_as_str => Some(Box::new(move |args| {
                 match tx.clone().try_send(#msg_construction) {
                     Ok(_) => None,
                     Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => None,
@@ -43,18 +43,16 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                         panic!("Unable to send {} signal - channel is full", #ident_as_str);
                     },
                 }
-            }),
+            })),
         })
     }).collect::<Result<Vec<_>, Error>>()?;
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>> {
+            fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
-                    _ => Box::new(|_| {
-                        None
-                    }),
+                    _ => None,
                 }
             }
         }
