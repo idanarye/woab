@@ -10,7 +10,7 @@ edition = "2018"
 gtk = "^0.9"
 actix = "^0.9"
 tokio = "^0.2"
-glib = "0.10.1"
+glib = "^0.10"
 woab-macros = { path = "../woab-macros" }
 quick-xml = "0.18.1"
 thiserror = "1.0.20"
