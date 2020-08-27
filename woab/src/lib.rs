@@ -23,6 +23,8 @@
 //! create multiple instances of while the program runs, but it's more convenient to have a single
 //! instance inside their parent when editing them in the Glade designer.
 //!
+//! If you want to remove widget-bound actors at runtime, see [`Remove`](struct.Remove.html).
+//!
 //! After initializing GTK and before starting the main loop, you **must** call
 //! `run_actix_inside_gtk_event_loop`. Do not run the Actix system manually!
 //!
@@ -103,7 +105,7 @@ mod woab_actor;
 mod builder_dissect;
 mod factories;
 
-pub use woab_macros::{WidgetsFromBuilder, BuilderSignal, Factories};
+pub use woab_macros::{WidgetsFromBuilder, BuilderSignal, Factories, Removable};
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
 pub use builder_signal::BuilderSignal;
@@ -131,4 +133,31 @@ pub enum Error {
         expected_type: glib::types::Type,
         actual_type: glib::types::Type,
     },
+}
+
+/// A message for removing actors along with their GUI
+///
+/// Refer to `#[derive(woab::Removable)]` docs for usage instructions.
+/// ```no_run
+/// #[derive(woab::Removable)]
+/// #[removable(self.widgets.main_window)]
+/// struct MyActor {
+///     widgets: MyWidgets,
+/// }
+///
+/// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
+///
+/// #[derive(woab::WidgetsFromBuilder)]
+/// struct MyWidgets {
+///     main_window: gtk::ApplicationWindow,
+/// }
+///
+/// let my_actor: actix::Addr<MyActor>;
+/// # let mut my_actor: actix::Addr<MyActor> = panic!();
+/// my_actor.do_send(woab::Remove);
+/// ```
+pub struct Remove;
+
+impl actix::Message for Remove {
+    type Result = ();
 }

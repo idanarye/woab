@@ -38,6 +38,7 @@ impl actix::Actor for WindowActor {
 #[derive(woab::BuilderSignal)]
 enum WindowSingal {
     ClickButton,
+    AddendRemoved,
 }
 
 impl actix::StreamHandler<WindowSingal> for WindowActor {
@@ -49,6 +50,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
                 let addend = self.factories.row_addend.create(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
+                        widgets,
                         window: ctx.address(),
                         number: Some(0),
                     }
@@ -56,11 +58,18 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
                 self.addends.push(addend);
                 ctx.address().do_send(Recalculate);
             }
+            WindowSingal::AddendRemoved => {
+                self.addends.retain(|a| a.connected());
+                ctx.address().do_send(Recalculate);
+            }
         }
     }
 }
 
+#[derive(woab::Removable)]
+#[removable(self.widgets.row_addend)]
 struct AddendActor {
+    widgets: AddendWidgets,
     window: actix::Addr<WindowActor>,
     number: Option<isize>,
 }
@@ -82,10 +91,11 @@ struct AddendWidgets {
 #[derive(woab::BuilderSignal)]
 enum AddendSingal {
     AddendChanged(gtk::TextBuffer),
+    RemoveAddend,
 }
 
 impl actix::StreamHandler<AddendSingal> for AddendActor {
-    fn handle(&mut self, signal: AddendSingal, _ctx: &mut Self::Context) {
+    fn handle(&mut self, signal: AddendSingal, ctx: &mut Self::Context) {
         match signal {
             AddendSingal::AddendChanged(buffer) => {
                 use gtk::TextBufferExt;
@@ -96,7 +106,11 @@ impl actix::StreamHandler<AddendSingal> for AddendActor {
                     self.number = new_number;
                     self.window.do_send(Recalculate);
                 }
-            }
+            },
+            AddendSingal::RemoveAddend => {
+                use actix::prelude::*;
+                ctx.address().do_send(woab::Remove);
+            },
         }
     }
 }

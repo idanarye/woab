@@ -1,6 +1,7 @@
 mod widgets_from_builder_derive;
 mod builder_signal_derive;
 mod factories_derive;
+mod removable_derive;
 
 #[proc_macro_derive(WidgetsFromBuilder)]
 pub fn derive_widgets_from_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -24,6 +25,15 @@ pub fn derive_builder_signal(input: proc_macro::TokenStream) -> proc_macro::Toke
 pub fn derive_factories(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match factories_derive::impl_factories_derive(&input) {
+        Ok(output) => output.into(),
+        Err(error) => error.to_compile_error().into(),
+    }
+}
+
+#[proc_macro_derive(Removable, attributes(removable))]
+pub fn derive_removable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    match removable_derive::impl_removable_derive(&input) {
         Ok(output) => output.into(),
         Err(error) => error.to_compile_error().into(),
     }
