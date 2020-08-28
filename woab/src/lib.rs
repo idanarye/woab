@@ -33,7 +33,8 @@
 //!
 //! #[derive(woab::Factories)]
 //! struct Factories {
-//!     main_window: woab::ActorFactory<AppActor>, // the field name must be the ID from the builder XML file.
+//!     // The field name must be the ID from the builder XML file:
+//!     main_window: woab::Factory<AppActor, AppWidgets, AppSignal>,
 //!     // Possibly other things from the builder XML file you want to create during the program.
 //! }
 //!
@@ -45,11 +46,6 @@
 //!
 //! impl actix::Actor for AppActor {
 //!     type Context = actix::Context<Self>;
-//! }
-//!
-//! impl woab::WoabActor for AppActor {
-//!     type Widgets = AppWidgets;
-//!     type Signal = AppSignal;
 //! }
 //!
 //! #[derive(woab::WidgetsFromBuilder)]
@@ -86,11 +82,11 @@
 //!     gtk::init()?;
 //!     woab::run_actix_inside_gtk_event_loop("my-WoAB-app")?; // <===== IMPORTANT!!!
 //!
-//!     factories.main_window.create(|_ctx, widgets| {
+//!     factories.main_window.build().actor(|_ctx, widgets| {
 //!         widgets.main_window.show_all(); // Or you could do that inside the actor
 //!         AppActor {
 //!             widgets,
-//!             factories: factories.clone(),
+//!             factories: factories,
 //!         }
 //!     })?;
 //!
@@ -101,7 +97,6 @@
 
 mod event_loops_bridge;
 mod builder_signal;
-mod woab_actor;
 mod builder_dissect;
 mod factories;
 
@@ -109,9 +104,8 @@ pub use woab_macros::{WidgetsFromBuilder, BuilderSignal, Factories, Removable};
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
 pub use builder_signal::BuilderSignal;
-pub use woab_actor::WoabActor;
 pub use builder_dissect::dissect_builder_xml;
-pub use factories::{BuilderFactory, ActorFactory};
+pub use factories::{BuilderFactory, Factory, BuilderUtilizer};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

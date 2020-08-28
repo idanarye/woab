@@ -1,9 +1,9 @@
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_sum))]
-    win_app: woab::ActorFactory<WindowActor>,
+    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSingal>,
     #[factory(extra(buf_addend))]
-    row_addend: woab::ActorFactory<AddendActor>,
+    row_addend: woab::Factory<AddendActor, AddendWidgets, AddendSingal>,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -17,11 +17,6 @@ struct WindowActor {
     factories: std::rc::Rc<Factories>,
     widgets: WindowWidgets,
     addends: Vec<actix::Addr<AddendActor>>,
-}
-
-impl woab::WoabActor for WindowActor {
-    type Widgets = WindowWidgets;
-    type Signal = WindowSingal;
 }
 
 impl actix::Actor for WindowActor {
@@ -47,7 +42,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
         use gtk::prelude::*;;
         match signal {
             WindowSingal::ClickButton => {
-                let addend = self.factories.row_addend.create(|_, widgets| {
+                let addend = self.factories.row_addend.build().actor(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
                         widgets,
@@ -76,11 +71,6 @@ struct AddendActor {
 
 impl actix::Actor for AddendActor {
     type Context = actix::Context<Self>;
-}
-
-impl woab::WoabActor for AddendActor {
-    type Widgets = AddendWidgets;
-    type Signal = AddendSingal;
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -168,9 +158,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.create(|_, widgets| WindowActor {
+    factories.win_app.build().actor(|_, widgets| WindowActor {
         widgets,
-        factories: factories.clone(),
+        factories,
         addends: Vec::new(),
     })?;
 

@@ -7,7 +7,7 @@ mod util;
 #[derive(woab::Factories)]
 struct Factories {
     #[factory(extra(buf_left, buf_right))]
-    win_test: woab::ActorFactory<TestActor>,
+    win_test: woab::Factory<TestActor, TestWidgets, TestSignal>,
 }
 
 struct TestActor {
@@ -16,11 +16,6 @@ struct TestActor {
 
 impl actix::Actor for TestActor {
     type Context = actix::Context<Self>;
-}
-
-impl woab::WoabActor for TestActor {
-    type Widgets = TestWidgets;
-    type Signal = TestSignal;
 }
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
@@ -65,7 +60,7 @@ fn test_basic() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let mut put_widgets_in = None;
-    factories.win_test.create(|_, widgets| {
+    factories.win_test.build().actor(|_, widgets| {
         put_widgets_in = Some(widgets.clone());
         TestActor { widgets }
     })?;
