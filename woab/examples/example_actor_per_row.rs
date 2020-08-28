@@ -34,6 +34,7 @@ impl actix::Actor for WindowActor {
 enum WindowSignal {
     ClickButton,
     AddendRemoved,
+    WindowClosed,
 }
 
 impl actix::StreamHandler<WindowSignal> for WindowActor {
@@ -56,6 +57,9 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
             WindowSignal::AddendRemoved => {
                 self.addends.retain(|a| a.connected());
                 ctx.address().do_send(Recalculate);
+            }
+            WindowSignal::WindowClosed => {
+                gtk::main_quit();
             }
         }
     }
