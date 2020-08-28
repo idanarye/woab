@@ -1,9 +1,9 @@
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_sum))]
-    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSingal>,
+    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSignal>,
     #[factory(extra(buf_addend))]
-    row_addend: woab::Factory<AddendActor, AddendWidgets, AddendSingal>,
+    row_addend: woab::Factory<AddendActor, AddendWidgets, AddendSignal>,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -31,17 +31,17 @@ impl actix::Actor for WindowActor {
 }
 
 #[derive(woab::BuilderSignal)]
-enum WindowSingal {
+enum WindowSignal {
     ClickButton,
     AddendRemoved,
 }
 
-impl actix::StreamHandler<WindowSingal> for WindowActor {
-    fn handle(&mut self, signal: WindowSingal, ctx: &mut Self::Context) {
+impl actix::StreamHandler<WindowSignal> for WindowActor {
+    fn handle(&mut self, signal: WindowSignal, ctx: &mut Self::Context) {
         use actix::prelude::*;
         use gtk::prelude::*;;
         match signal {
-            WindowSingal::ClickButton => {
+            WindowSignal::ClickButton => {
                 let addend = self.factories.row_addend.build().actor(|_, widgets| {
                     self.widgets.lst_addition.add(&widgets.row_addend);
                     AddendActor {
@@ -53,7 +53,7 @@ impl actix::StreamHandler<WindowSingal> for WindowActor {
                 self.addends.push(addend);
                 ctx.address().do_send(Recalculate);
             }
-            WindowSingal::AddendRemoved => {
+            WindowSignal::AddendRemoved => {
                 self.addends.retain(|a| a.connected());
                 ctx.address().do_send(Recalculate);
             }
@@ -79,15 +79,15 @@ struct AddendWidgets {
 }
 
 #[derive(woab::BuilderSignal)]
-enum AddendSingal {
+enum AddendSignal {
     AddendChanged(gtk::TextBuffer),
     RemoveAddend,
 }
 
-impl actix::StreamHandler<AddendSingal> for AddendActor {
-    fn handle(&mut self, signal: AddendSingal, ctx: &mut Self::Context) {
+impl actix::StreamHandler<AddendSignal> for AddendActor {
+    fn handle(&mut self, signal: AddendSignal, ctx: &mut Self::Context) {
         match signal {
-            AddendSingal::AddendChanged(buffer) => {
+            AddendSignal::AddendChanged(buffer) => {
                 use gtk::TextBufferExt;
                 let new_number = buffer
                     .get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true)
@@ -97,7 +97,7 @@ impl actix::StreamHandler<AddendSingal> for AddendActor {
                     self.window.do_send(Recalculate);
                 }
             },
-            AddendSingal::RemoveAddend => {
+            AddendSignal::RemoveAddend => {
                 use actix::prelude::*;
                 ctx.address().do_send(woab::Remove);
             },

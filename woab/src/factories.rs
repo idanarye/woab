@@ -1,6 +1,8 @@
 use core::convert::TryInto;
 
 use gtk::Builder;
+use tokio::sync::mpsc;
+use tokio::stream::StreamExt;
 
 use crate::BuilderSignal;
 
@@ -91,5 +93,28 @@ where
             S::connect_builder_signals::<A>(ctx, &self.builder);
             make_actor(ctx, widgets)
         }))
+    }
+}
+
+impl<A, W, S> BuilderUtilizer<A, W, S>
+where
+    S: BuilderSignal,
+{
+    pub fn stream_builder_signals(&self) -> Option<mpsc::Receiver<S>> {
+        S::stream_builder_signals(&self.builder)
+    }
+
+    pub fn connect_tagged_builder_signals<T, C, AA>(&self, ctx: &mut C, tag: T) -> &Self
+    where
+        T: Clone + 'static,
+        AA: actix::Actor<Context = C>,
+        C: actix::AsyncContext<AA>,
+        AA: actix::StreamHandler<(T, S)>
+    {
+        if let Some(rx) = self.stream_builder_signals() {
+            let stream = rx.map(move |s| (tag.clone(), s));
+            ctx.add_stream(stream);
+        }
+        self
     }
 }
