@@ -29,12 +29,15 @@ impl actix::Actor for WindowActor {
         self.widgets.win_app.show();
         self.recalculate();
     }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        gtk::main_quit();
+    }
 }
 
 #[derive(woab::BuilderSignal)]
 enum WindowSignal {
     ClickButton,
-    WindowClosed,
 }
 
 impl actix::StreamHandler<WindowSignal> for WindowActor {
@@ -49,9 +52,6 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
                 self.widgets.lst_addition.add(&widgets.row_addend);
                 self.addends.insert(addend_id, (widgets, Some(0)));
                 self.recalculate();
-            }
-            WindowSignal::WindowClosed => {
-                gtk::main_quit();
             }
         }
     }

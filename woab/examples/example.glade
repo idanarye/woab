@@ -11,7 +11,6 @@
   </object>
   <object class="GtkApplicationWindow" id="win_app">
     <property name="can_focus">False</property>
-    <signal name="destroy" handler="WindowClosed" swapped="no"/>
     <child>
       <object class="GtkGrid">
         <property name="visible">True</property>
