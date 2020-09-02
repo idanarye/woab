@@ -7,26 +7,28 @@
 //!   proceed naturally to interact with the actors.
 //! * Mapping widgets and signals from [Glade](https://glade.gnome.org/) XML files to user types.
 //!
-//! To use WoAB you need to implement `WoabActor` on types that will be in charge of parts of the
-//! GUI. A `WoabActor` needs:
+//! To use WoAB one would typically create a factories struct using
+//! [`woab::Factories`](derive.Factories.html) and use it dissect the Glade XML file(s). Each field
+//! of the factories struct will be a [`woab::Factory`](struct.Factory.html) that can create:
+
+//! * An Actor (optional)
+//! * A widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html)
+//! * A signal enum (optional) using [`woab::BuilderSignal`](derive.BuilderSignal.html)
 //!
-//! * To be an Actix `Actor`.
-//! * `Widgets` - a `struct` that contains the widgets of that actor and derives `WidgetsFromBuilder`.
-//! * `Signal` - an `enum` that represents the signals defined in the `.glade` file and derives
-//!   `BuilderSignal`.
-//! * To be a `StreamHandler` of its `Signal`. This is where it handles the signals GTK emits.
+//! The factories can then be used to generate the GTK widgets and either connect them to a new
+//! actor which will receive the signals defined in the Glade GTK or connect them to an existing
+//! actor and tag the signals (so that multiple instances can be added - e.g. with `GtkListBox` -
+//! and the signal handler can know from which one the event came). The actors receive the signals
+//! as Actix streams, and use `StreamHandler` to handle them.
 //!
-//! To create an instance of your `WoabActor` instance you can use an `ActorFactory`, which helps
-//! in creating the widgets and connecting the signals to the actor. You can create one directly
-//! from the XML string, or you can derive `Factories` to dissect the XML into multiple factories.
-//! This is useful if you have some internal container widgets (e.g. `ListBoxRow`) that you want to
-//! create multiple instances of while the program runs, but it's more convenient to have a single
-//! instance inside their parent when editing them in the Glade designer.
+//! **If you stream multiple tagged signals to the same actor, override the `StreamHandler`'s
+//! `finished` method to avoid stopping the actor when you remove one instance of the widgets!!!**
 //!
-//! If you want to remove widget-bound actors at runtime, see [`Remove`](struct.Remove.html).
+//! If you want to remove widget-bound actors at runtime, see [`woab::Remove`](struct.Remove.html).
 //!
 //! After initializing GTK and before starting the main loop, you **must** call
-//! `run_actix_inside_gtk_event_loop`. Do not run the Actix system manually!
+//! [`woab::run_actix_inside_gtk_event_loop`](fn.run_actix_inside_gtk_event_loop.html). **Do not
+//! run the Actix system manually!**
 //!
 //! ```no_run
 //! use gtk::prelude::*;
@@ -100,7 +102,125 @@ mod builder_signal;
 mod builder_dissect;
 mod factories;
 
-pub use woab_macros::{WidgetsFromBuilder, BuilderSignal, Factories, Removable};
+/// Represent a set of GTK widgets created by a GTK builder.
+///
+/// This needs to be a struct, where each field is a GTK type and its name must match the id of the
+/// widgets in the Glade XML file. This derive implements a `From<&gtk::Builder>` for the struct.
+///
+/// ```no_run
+/// #[derive(woab::WidgetsFromBuilder)]
+/// struct MyAppWidgets {
+///     main_window: gtk::ApplicationWindow,
+///     some_button: gtk::Button,
+///     some_label: gtk::Label,
+/// }
+/// ```
+pub use woab_macros::WidgetsFromBuilder;
+
+/// Represent a GTK signal that originates from a GTK builder. See [the corresponding trait](trait.BuilderSignal.html).
+///
+/// Must be used to decorate an enum. Each signal one wants to handle should be a variant of the
+/// enum. Unit variants ignore the signal parameters, and tuple variants convert each parameter to
+/// its proper GTK type.
+///
+/// ```no_run
+/// #[derive(woab::BuilderSignal)]
+/// enum MyAppSignal {
+///     SomeButtonClicked, // We don't need the parameter because it's just the button.
+///     OtherButtonClicked(gtk::Button), // Still just the button but we want it for some reason.
+/// }
+/// ```
+pub use woab_macros::BuilderSignal;
+
+/// Dissect a single Glade XML file to multiple builder factories.
+///
+/// The motivation is to design nested repeated hierarchies (like `GtkListBoxRow`s inside
+/// `GtkListBox`) and see how they look together inside Glade, and then split the XML to multiple
+/// factories that create them separately during runtime.
+///
+/// Typically the fields of the struct will be of type [`woab::Factory`](struct.Factory.html), but
+/// anything `From<String>` is allowed so [`woab::BuilderFactory`](struct.BuilderFactory.html) or
+/// even just `String`s are also okay, if they are needed.
+///
+/// If a widget needs to be accompanied by some root level resource (like `GtkTextBuffer` or
+/// `GtkListStore`) these resources should be listed inside a `#[factory(extra(...))]` attribute.
+///
+/// ```no_run
+/// # type MainWindowActor = ();
+/// # type MainWindowWidgets = ();
+/// # type MainWindowSignal = ();
+/// # type SubWindowActor = ();
+/// # type SubWindowWidgets = ();
+/// # type SubWindowSignal = ();
+/// # type SomeListBoxRowWidgets = ();
+/// # type SomeListBoxRowSignal = ();
+/// #[derive(woab::Factories)]
+/// struct Factories {
+///     main_window: woab::Factory<MainWindowActor, MainWindowWidgets, MainWindowSignal>,
+///     #[factory(extra(some_text_buffer_used_by_a_text_box_in_sub_window))]
+///     sub_window: woab::Factory<SubWindowActor, SubWindowWidgets, SubWindowSignal>,
+///     some_list_box_row: woab::Factory<(), SomeListBoxRowWidgets, SomeListBoxRowSignal>, // doesn't have its own actor
+/// }
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     # fn read_builder_xml() -> std::io::BufReader<std::fs::File> {
+///     #     unreachable!()
+///     # }
+///     let factories = Factories::read(read_builder_xml())?;
+///     # Ok(())
+/// }
+/// ```
+pub use woab_macros::Factories;
+
+/// Make the actor remove itself and its widgets when it gets the [`woab::Remove`](struct.Remove.html) message.
+///
+/// The mandatory attribute `removable` must be an expression that resolves to a GTK widget that
+/// has a parent. When the `woab::Remove` message is received, this actor will remove that widget
+/// from its parent and close itself.
+///
+/// ```no_run
+/// # use gtk::prelude::*;
+/// #
+/// # #[derive(woab::Factories)]
+/// # struct Factories {
+/// #     list_box_row: woab::Factory<RowActor, RowWidgets, RowSignal>,
+/// # }
+/// #
+/// # #[derive(woab::WidgetsFromBuilder)]
+/// # struct RowWidgets {
+/// #     list_box_row: gtk::ListBoxRow,
+/// # }
+/// #
+/// # #[derive(woab::BuilderSignal)]
+/// # enum RowSignal {}
+/// #
+/// #[derive(woab::Removable)]
+/// #[removable(self.widgets.list_box_row)]
+/// struct RowActor {
+///     widgets: RowWidgets,
+/// }
+/// #
+/// # impl actix::Actor for RowActor {
+/// #     type Context = actix::Context<Self>;
+/// # }
+/// #
+/// # impl actix::StreamHandler<RowSignal> for RowActor {
+/// #     fn handle(&mut self, _: RowSignal, _: &mut <Self as actix::Actor>::Context) {}
+/// # }
+///
+/// fn create_the_row(factories: &Factories, list_box: &gtk::ListBox) -> actix::Addr<RowActor> {
+///     factories.list_box_row.build().actor(|_, widgets| {
+///         list_box.add(&widgets.list_box_row);
+///         RowActor {
+///             widgets,
+///         }
+///     }).unwrap()
+/// }
+///
+/// fn remove_the_row(row: &actix::Addr<RowActor>) {
+///     row.do_send(woab::Remove);
+/// }
+/// ```
+pub use woab_macros::Removable;
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
 pub use builder_signal::BuilderSignal;
