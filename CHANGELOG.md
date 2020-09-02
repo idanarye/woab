@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## 0.1.0 - 2020-09-02
 ### Added
 - `woab::run_actix_inside_gtk_event_loop()` for allowing running Actix and GTK in the same thread.
 - Glade XML dissection facilities.
