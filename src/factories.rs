@@ -52,10 +52,10 @@ impl BuilderFactory {
 /// 3. The third generic parameter, `S`, is the signal type. Typically created with
 ///    [`#[derive(woab::BuilderSignal)]`](derive.BuilderSignal.html) on an enum that lists the
 ///    signals from the Glade XML file that the code wants to handle.
-
+///
 /// `A` can be `()` if the widgets are to be handled by an existing actor - usually the one that
-/// handles their parent widget. `S` can also be `()` if you just want to generate widgets without
-/// connecting a signal.
+/// handles their parent widget. `S` can also be `()` if it is desired to just generate widgets
+/// without connecting a signal.
 ///
 /// Refer to [`#[derive(woab::Factories)]`](derive.Factories.html) for how to create instances of
 /// this struct.
@@ -225,9 +225,9 @@ where
     /// multiple `GtkListBoxRow`s) the tag can be used to determine which copy generated the
     /// signal.
     ///
-    /// **If you stream multiple tagged signals to the same actor - which is usually the case when
-    /// you use tagged signals - override the `StreamHandler`'s `finished` method to avoid stopping
-    /// the actor when you remove one instance of the widgets!!!**
+    /// **If multiple tagged signals are streamed to the same actor - which is the typical use case
+    /// for tagged signals - `StreamHandler::finished` should be overridden to avoid stopping the
+    /// actor when one instance of the widgets is removed!!!**
     pub fn connect_tagged_builder_signals<T, C, AA>(&self, ctx: &mut C, tag: T) -> &Self
     where
         T: Clone + 'static,

@@ -21,14 +21,15 @@
 //! and the signal handler can know from which one the event came). The actors receive the signals
 //! as Actix streams, and use `StreamHandler` to handle them.
 //!
-//! **If you stream multiple tagged signals to the same actor, override the `StreamHandler`'s
-//! `finished` method to avoid stopping the actor when you remove one instance of the widgets!!!**
+//! **If multiple tagged signals are streamed to the same actor - which is the typical use case for
+//! tagged signals - `StreamHandler::finished` should be overridden to avoid stopping the actor
+//! when one instance of the widgets is removed!!!**
 //!
-//! If you want to remove widget-bound actors at runtime, see [`woab::Remove`](struct.Remove.html).
+//! To remove widget-bound actors at runtime, see [`woab::Remove`](struct.Remove.html).
 //!
-//! After initializing GTK and before starting the main loop, you **must** call
-//! [`woab::run_actix_inside_gtk_event_loop`](fn.run_actix_inside_gtk_event_loop.html). **Do not
-//! run the Actix system manually!**
+//! After initializing GTK and before starting the main loop,
+//! [`woab::run_actix_inside_gtk_event_loop`](fn.run_actix_inside_gtk_event_loop.html) **must** be
+//! called. **Do not run the Actix system manually!**
 //!
 //! ```no_run
 //! use gtk::prelude::*;
@@ -37,12 +38,12 @@
 //! struct Factories {
 //!     // The field name must be the ID from the builder XML file:
 //!     main_window: woab::Factory<AppActor, AppWidgets, AppSignal>,
-//!     // Possibly other things from the builder XML file you want to create during the program.
+//!     // Possibly other things from the builder XML file that need to be created during the program.
 //! }
 //!
 //! struct AppActor {
 //!     widgets: AppWidgets,
-//!     factories: std::rc::Rc<Factories>, // in case you want to create more things from inside the actor.
+//!     factories: std::rc::Rc<Factories>, // for creating more things from inside the actor.
 //!     // More actor data
 //! }
 //!
@@ -52,15 +53,15 @@
 //!
 //! #[derive(woab::WidgetsFromBuilder)]
 //! struct AppWidgets {
-//!     main_window: gtk::ApplicationWindow, // this one is a must - you need it to show the window.
-//!     // Other widgets inside the window that you want to interact with.
+//!     main_window: gtk::ApplicationWindow, // needed for making the window visible
+//!     // Other widgets inside the window to interact with.
 //! }
 //!
 //! #[derive(woab::BuilderSignal)]
 //! enum AppSignal {
-//!     // These are custom signals you define in Glade's "Signals" tab.
-//!     Sig1, // Use unit variants when you don't care about the signal parameters.
-//!     Sig2(gtk::TextBuffer), // Use tuple variants when you need the signal parameters.
+//!     // These are custom signals defined in Glade's "Signals" tab.
+//!     Sig1, // Use unit variants when the signal parameters can be ignored.
+//!     Sig2(gtk::TextBuffer), // Use tuple variants when the signal parameters are needed.
 //! }
 //!
 //! impl actix::StreamHandler<AppSignal> for AppActor {
@@ -85,7 +86,7 @@
 //!     woab::run_actix_inside_gtk_event_loop("my-WoAB-app")?; // <===== IMPORTANT!!!
 //!
 //!     factories.main_window.build().actor(|_ctx, widgets| {
-//!         widgets.main_window.show_all(); // Or you could do that inside the actor
+//!         widgets.main_window.show_all(); // Could also be done inside the actor
 //!         AppActor {
 //!             widgets,
 //!             factories: factories,
