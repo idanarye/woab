@@ -1,5 +1,5 @@
-[![Build Status](https://api.travis-ci.org/idanarye/woab.svg?branch=master)](https://travis-ci.org/idanarye/woab)
-<!-- [![Latest Version](https://img.shields.io/crates/v/typed-builder.svg)](https://crates.io/crates/typed-builder) -->
+[![Build Status](https://github.com/idanarye/woab/workflows/WoAB-CI/badge.svg)](https://github.com/idanarye/woab/actions)
+<!-- [![Latest Version](https://img.shields.io/crates/v/woab.svg)](https://crates.io/crates/woab) -->
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://idanarye.github.io/woab/)
 
 # WoAB
