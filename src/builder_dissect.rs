@@ -1,5 +1,6 @@
 use quick_xml::Reader;
 
+#[doc(hidden)] // for internal use by #[derive(Factories)]
 pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u8>], id_to_idx: impl Fn(&str) -> Option<usize>) -> Result<(), crate::Error> {
     let mut reader = Reader::from_reader(buf_read);
     let mut buf = Vec::new();
