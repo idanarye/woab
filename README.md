@@ -10,7 +10,7 @@ WoAB (Widgets on Actors Bridge) is a library for combining the widgets toolkit [
 * Routing GTK signals through the asynchronous runtime, so that the code handling them can proceed naturally to interact with the actors.
 * Mapping widgets and signals from [Glade](https://glade.gnome.org/) XML files to user types.
 
-Refer to [the docs](https://idanarye.github.io/woab/) for more explanation on how to use WoAB, and to [the examples](https://github.com/idanarye/woab/tree/master/woab/examples) for a short demonstration.
+Refer to [the docs](https://idanarye.github.io/woab/) for more explanation on how to use WoAB, and to [the examples](https://github.com/idanarye/woab/tree/master/examples) for a short demonstration.
 
 ## License
 

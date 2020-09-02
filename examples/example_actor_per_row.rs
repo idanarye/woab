@@ -157,7 +157,7 @@ impl actix::Handler<GetNumber> for AddendActor {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("woab/examples/example.glade")?))?);
+    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.glade")?))?);
 
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
