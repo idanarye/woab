@@ -2,6 +2,7 @@ mod widgets_from_builder_derive;
 mod builder_signal_derive;
 mod factories_derive;
 mod removable_derive;
+mod util;
 
 #[proc_macro_derive(WidgetsFromBuilder)]
 pub fn derive_widgets_from_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -12,7 +13,7 @@ pub fn derive_widgets_from_builder(input: proc_macro::TokenStream) -> proc_macro
     }
 }
 
-#[proc_macro_derive(BuilderSignal)]
+#[proc_macro_derive(BuilderSignal, attributes(signal))]
 pub fn derive_builder_signal(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match builder_signal_derive::impl_builder_signal_derive(&input) {
