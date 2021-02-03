@@ -4,7 +4,7 @@ mod factories_derive;
 mod removable_derive;
 mod util;
 
-#[proc_macro_derive(WidgetsFromBuilder)]
+#[proc_macro_derive(WidgetsFromBuilder, attributes(widget))]
 pub fn derive_widgets_from_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match widgets_from_builder_derive::impl_widgets_from_builder_derive(&input) {
