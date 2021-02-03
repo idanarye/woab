@@ -1,5 +1,7 @@
 use std::time::{Instant, Duration};
 
+use gtk::prelude::*;
+
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_count_pressed_time))]
@@ -10,6 +12,7 @@ pub struct Factories {
 pub struct WindowWidgets {
     win_app: gtk::ApplicationWindow,
     buf_count_pressed_time: gtk::TextBuffer,
+    only_digits: gtk::Entry,
 }
 
 struct WindowActor {
@@ -22,7 +25,6 @@ impl actix::Actor for WindowActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        use gtk::WidgetExt;
         self.update_pressed_time_display();
         self.widgets.win_app.show();
     }
@@ -34,7 +36,6 @@ impl actix::Actor for WindowActor {
 
 impl WindowActor {
     fn update_pressed_time_display(&self) {
-        use gtk::prelude::*;
         self.widgets.buf_count_pressed_time.set_text(&format!(
             "L: {:?}, R: {:?}",
             self.total_durations[0],
@@ -43,12 +44,13 @@ impl WindowActor {
     }
 }
 
-#[derive(woab::BuilderSignal)]
+#[derive(Debug, woab::BuilderSignal)]
 enum WindowSignal {
-    #[signal(ret = false)]
+    #[signal(inhibit = false)]
     Press(gtk::Button, #[signal(event)] gdk::EventButton),
-    #[signal(ret = false)]
+    #[signal(inhibit = false)]
     Release(gtk::Button, #[signal(event)] gdk::EventButton),
+    AllCharactersEntryKeyPressed(gtk::Entry, #[signal(event)] gdk::EventKey),
 }
 
 impl actix::StreamHandler<WindowSignal> for WindowActor {
@@ -78,6 +80,15 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
                     self.update_pressed_time_display();
                 }
             }
+            WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
+                if let Some(character) = event.get_keyval().to_unicode() {
+                    if character.is_digit(10) {
+                        let mut text = self.widgets.only_digits.get_text().as_str().to_owned();
+                        text.push(character);
+                        self.widgets.only_digits.set_text(&text);
+                    }
+                }
+            }
         }
     }
 }
@@ -88,7 +99,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.build().actor(|_, widgets| WindowActor {
+    factories.win_app.build().signals_inhibit(|signal| {
+        match signal {
+            WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
+                let character = event.get_keyval().to_unicode();
+                let is_digit = character.map(|c| c.is_digit(10)).unwrap_or(false);
+                Some(gtk::Inhibit(is_digit))
+            }
+            _ => None,
+        }
+    }).actor(|_, widgets| WindowActor {
         widgets,
         press_times: Default::default(),
         total_durations: Default::default(),
