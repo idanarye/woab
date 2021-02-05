@@ -9,7 +9,7 @@ mod util;
 
 #[derive(woab::Factories)]
 struct Factories {
-    win_test: woab::Factory<TestActor, TestWidgets, TestSignal>,
+    win_test: woab::BuilderFactory,
 }
 
 struct TestActor {
@@ -49,9 +49,10 @@ fn test_no_signals() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let output = Rc::new(RefCell::new(Vec::new()));
-    factories.win_test.build().actor(|_, _| {
-        TestActor { output: output.clone() }
-    })?;
+    factories.win_test.instantiate()
+        .new_actor(|_ctx| {
+            TestActor { output: output.clone() }
+        });
     wait_for!(*output.borrow() == [
         "before spawned future",
         "inside spawned future",

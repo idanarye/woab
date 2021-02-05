@@ -141,11 +141,10 @@ where
     A: actix::Actor<Context = actix::Context<A>>
 {
 
-    pub fn connect_widgets<W>(&mut self) -> W
-    where
-        gtk::Builder: TryInto<W>
+    pub fn connect_widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
+        where gtk::Builder: TryInto<W>
     {
-        self.builder.connect_widgets().map_err(|_| ()).expect("TODO error handling")
+        self.builder.connect_widgets()
     }
 
     pub fn connect_signals<S>(&mut self)
@@ -262,9 +261,10 @@ impl BuilderConnector {
     /// responsible for constructing the actor struct with the widgets inside it. It can also be
     /// used for configuring and or showing the widgets GTK-wise (though this can also be handled
     /// by the actor afterwards)
-    pub fn new_actor<A>(&mut self, make_actor: impl FnOnce(&mut ActorBuilderContext<A>) -> A) -> actix::Addr<A>
+    pub fn new_actor<A, F>(&mut self, make_actor: F) -> actix::Addr<A>
     where
         A: actix::Actor<Context = actix::Context<A>>,
+        F: FnOnce(&mut ActorBuilderContext<A>) -> A,
     {
         <A as actix::Actor>::create(move |ctx| {
             let mut ctx = ActorBuilderContext {

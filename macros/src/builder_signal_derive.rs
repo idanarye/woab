@@ -117,7 +117,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     let (match_arms, signal_names) = vec_of_tuples.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<RawSignalCallback> {
+            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<woab::RawSignalCallback> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
