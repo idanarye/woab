@@ -37,8 +37,8 @@ impl BuilderFactory {
     /// Create a `gtk::Builder` from the instructions inside this factory.
     ///
     /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
-    pub fn build(&self) -> Builder {
-        Builder::from_string(&self.0)
+    pub fn instantiate(&self) -> BuilderConnector {
+        Builder::from_string(&self.0).into()
     }
 }
 
@@ -126,33 +126,6 @@ impl BuilderFactory {
 ///     }).unwrap();
 /// }
 /// ```
-pub struct Factory<A, W, S> {
-    xml: String,
-    _phantom: std::marker::PhantomData<(A, W, S)>,
-}
-
-impl<A, W, S> From<String> for Factory<A, W, S> {
-    fn from(xml: String) -> Self {
-        Self {
-            xml,
-            _phantom: Default::default(),
-        }
-    }
-}
-
-impl<A, W, S> Factory<A, W, S> {
-    #[deprecated]
-    pub fn build(&self) -> BuilderConnector {
-        self.instantiate()
-    }
-    /// Create the `gtk::Builder` (inside a [`woab::BuilderUtilizer`](struct.BuilderUtilizer.html))
-    ///
-    /// Note that this causes the GTK widgets to be created (but not to be shown or be connected to
-    /// anything)
-    pub fn instantiate(&self) -> BuilderConnector {
-        Builder::from_string(&self.xml).into()
-    }
-}
 
 pub struct ActorBuilderContext <'a, A>
 where
