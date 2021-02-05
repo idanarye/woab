@@ -224,9 +224,10 @@ pub use woab_macros::Factories;
 pub use woab_macros::Removable;
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
-pub use builder_signal::BuilderSignal;
+pub use builder_signal::{BuilderSignal, RawSignalCallback, make_signal_handler, connect_signal_handler};
 pub use builder_dissect::dissect_builder_xml;
-pub use factories::{BuilderFactory, Factory, BuilderUtilizer};
+// pub use factories::{BuilderFactory, Factory, BuilderUtilizer, BuilderConnector, ActorBuilder, ActorWidgetsBuilder};
+pub use factories::*;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

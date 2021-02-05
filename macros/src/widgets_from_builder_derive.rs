@@ -65,5 +65,13 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
                 })
             }
         }
+
+        impl std::convert::TryFrom<gtk::Builder> for #struct_ident {
+            type Error = woab::Error;
+
+            fn try_from(builder: gtk::Builder) -> Result<Self, Self::Error> {
+                <Self as std::convert::TryFrom<&gtk::Builder>>::try_from(&builder)
+            }
+        }
     })
 }
