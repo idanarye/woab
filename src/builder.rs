@@ -195,7 +195,7 @@ where
 /// See [`woab::Factory`](struct.Factory.html) for usage example.
 pub struct BuilderConnector {
     builder: gtk::Builder,
-    callbacks: HashMap<String, RawSignalCallback>,
+    callbacks: HashMap<&'static str, RawSignalCallback>,
 }
 
 impl From<gtk::Builder> for BuilderConnector {
@@ -224,7 +224,7 @@ impl BuilderConnector {
     {
         let (tx, rx) = mpsc::channel(16);
         for signal in S::list_signals() {
-            S::bridge_signal(signal, tx.clone());
+            self.callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
         }
         A::add_stream(rx, ctx);
     }
@@ -249,7 +249,7 @@ impl BuilderConnector {
         let (tx, rx) = mpsc::channel(16);
         let rx = rx.map(move |s| (tag.clone(), s));
         for signal in S::list_signals() {
-            S::bridge_signal(signal, tx.clone());
+            self.callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
         }
         use actix::AsyncContext;
         ctx.add_stream(rx);
