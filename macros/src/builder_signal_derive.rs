@@ -15,15 +15,15 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     };
     let enum_ident = &ast.ident;
     let match_arms = data_enum.variants.iter().map(|variant| {
-        let mut inhibit = None;
+        let mut ret = None;
         iter_attrs_parameters(&variant.attrs, "signal", |name, value| {
             match path_to_single_string(&name)?.as_str() {
-                "inhibit" => {
-                    let value = value.ok_or_else(|| Error::new_spanned(name, "`inhibit` must have a value"))?;
-                    if inhibit.is_some() {
-                        return Err(Error::new_spanned(value, "`inhibit` already set"));
+                "ret" => {
+                    let value = value.ok_or_else(|| Error::new_spanned(name, "`ret` must have a value"))?;
+                    if ret.is_some() {
+                        return Err(Error::new_spanned(value, "`ret` already set"));
                     }
-                    inhibit = Some(value);
+                    ret = Some(value);
                 }
                 _ => {
                     return Err(Error::new_spanned(name, "unknown argument"));
@@ -31,22 +31,12 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
             }
             Ok(())
         })?;
-        let signal_return_value = if let Some(inhibit) = inhibit {
+        let signal_return_value = if let Some(ret) = ret {
             quote! {
-                Some(glib::value::ToValue::to_value(&#inhibit))
+                Some(glib::value::ToValue::to_value(&#ret))
             }
         } else {
-            quote! {
-                if let Some(inhibit_dlg) = &inhibit_dlg {
-                    if let Some(gtk::Inhibit(inhibit)) = inhibit_dlg(&signal) {
-                        Some(glib::value::ToValue::to_value(&inhibit))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
+            quote!(None)
         };
 
         let variant_ident = &variant.ident;
@@ -104,10 +94,8 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         };
         Ok(quote! {
             #ident_as_str => Some(Box::new(move |args| {
-                let signal = #msg_construction;
-                let return_value = #signal_return_value;
-                match tx.clone().try_send(signal) {
-                    Ok(_) => return_value,
+                match tx.clone().try_send(#msg_construction) {
+                    Ok(_) => #signal_return_value,
                     Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
                         panic!("Unable to send {} signal - channel is closed", #ident_as_str);
                     },
@@ -120,7 +108,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     }).collect::<Result<Vec<_>, Error>>()?;
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>, inhibit_dlg: Option<std::rc::Rc<dyn Fn(&Self) -> Option<gtk::Inhibit>>>) -> Option<Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>> {
+            fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
