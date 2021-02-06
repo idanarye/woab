@@ -46,9 +46,10 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
         use gtk::prelude::*;;
         match signal {
             WindowSignal::ClickButton => {
-                let addend = self.factories.row_addend.instantiate()
-                    .new_actor(|builder_ctx| {
-                        let widgets: AddendWidgets = builder_ctx.connect_widgets().unwrap();
+                let addend = self.factories.row_addend.instantiate().actor()
+                    .connect_signals::<AddendSignal>()
+                    .create(|builder_ctx| {
+                        let widgets: AddendWidgets = builder_ctx.widgets().unwrap();
                         self.widgets.lst_addition.add(&widgets.row_addend);
                         AddendActor {
                             widgets,
@@ -164,11 +165,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.instantiate()
-        .new_actor(|ctx| {
-            ctx.connect_signals::<WindowSignal>();
+    factories.win_app.instantiate().actor()
+        .connect_signals::<WindowSignal>()
+        .create(|ctx| {
             WindowActor {
-                widgets: ctx.connect_widgets().unwrap(),
+                widgets: ctx.widgets().unwrap(),
                 factories,
                 addends: Vec::new(),
             }

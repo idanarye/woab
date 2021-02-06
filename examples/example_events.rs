@@ -88,14 +88,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.instantiate()
-        .new_actor(|ctx| {
-            ctx.connect_signals::<WindowSignal>();
-            WindowActor {
-                widgets: ctx.connect_widgets().unwrap(),
-                press_times: Default::default(),
-                total_durations: Default::default(),
-            }
+    factories.win_app.instantiate().actor()
+        .connect_signals::<WindowSignal>()
+        .create(|ctx| WindowActor {
+            widgets: ctx.widgets().unwrap(),
+            press_times: Default::default(),
+            total_durations: Default::default(),
         });
 
     gtk::main();

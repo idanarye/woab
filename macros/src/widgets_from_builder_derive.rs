@@ -44,12 +44,12 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
                 if let Some(object) = builder.get_object::<glib::Object>(#ident_as_str) {
                     use glib::object::ObjectExt;
                     woab::Error::IncorrectWidgetTypeInBuilder {
-                        widget_id: #ident_as_str,
+                        widget_id: #ident_as_str.to_owned(),
                         expected_type: <#field_type as glib::types::StaticType>::static_type(),
                         actual_type: object.get_type(),
                     }
                 } else {
-                    woab::Error::WidgetMissingInBuilder(#ident_as_str)
+                    woab::Error::WidgetMissingInBuilder(#ident_as_str.to_owned())
                 }
             })?,
         })

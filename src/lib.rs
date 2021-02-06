@@ -239,11 +239,11 @@ pub enum Error {
     XmlError(#[from] quick_xml::Error),
 
     #[error("Builder is missing widget with ID {0:?}")]
-    WidgetMissingInBuilder(&'static str),
+    WidgetMissingInBuilder(String),
 
     #[error("Expected widget {widget_id:?} to be {expected_type} - not {actual_type}")]
     IncorrectWidgetTypeInBuilder {
-        widget_id: &'static str,
+        widget_id: String,
         expected_type: glib::types::Type,
         actual_type: glib::types::Type,
     },

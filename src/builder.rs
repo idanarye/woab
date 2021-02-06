@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use core::convert::TryInto;
+use std::cell::RefCell;
 
 use gtk::Builder;
 use tokio::sync::mpsc;
@@ -19,7 +20,7 @@ use tokio::stream::StreamExt;
 ///     </interface>
 /// "#;
 /// let builder_factory: BuilderFactory = builder_xml.to_owned().into();
-/// let builder = builder_factory.build();
+/// let builder = builder_factory.instantiate();
 /// let my_button: gtk::Button = builder.get_object("my_button").unwrap();
 /// ```
 ///
@@ -63,8 +64,8 @@ impl BuilderFactory {
 /// # use gtk::prelude::*;
 /// #[derive(woab::Factories)]
 /// struct Factories {
-///     window: woab::Factory<WindowActor, WindowWidgets, WindowSignal>,
-///     row: woab::Factory<(), RowWidgets, RowSignal>,
+///     window: woab::Factory,
+///     row: woab::Factory,
 /// }
 ///
 /// struct WindowActor {
@@ -127,66 +128,6 @@ impl BuilderFactory {
 /// }
 /// ```
 
-pub struct ActorBuilderContext <'a, A>
-where
-    A: actix::Actor<Context = actix::Context<A>>
-{
-    builder: &'a mut BuilderConnector,
-    actor: std::marker::PhantomData<A>,
-    ctx: &'a mut actix::Context<A>,
-}
-
-impl <'a, A> ActorBuilderContext<'a, A>
-where
-    A: actix::Actor<Context = actix::Context<A>>
-{
-
-    pub fn connect_widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
-        where gtk::Builder: TryInto<W>
-    {
-        self.builder.connect_widgets()
-    }
-
-    pub fn connect_signals<S>(&mut self)
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<S>,
-        S: BuilderSignal,
-    {
-        self.builder.connect_signals(self.ctx);
-    }
-
-    pub fn connect_signals_tagged<S, T>(&mut self, tag: T)
-    where
-        T: Clone + 'static,
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<(T, S)>,
-        S: BuilderSignal,
-    {
-        self.builder.connect_signals_tagged(tag, self.ctx);
-    }
-}
-
-impl <'a, A> std::ops::Deref for ActorBuilderContext<'a, A>
-where
-    A: actix::Actor<Context = actix::Context<A>>
-{
-    type Target = actix::Context<A>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.ctx
-    }
-}
-
-impl <'a, A> std::ops::DerefMut for ActorBuilderContext<'a, A>
-where
-    A: actix::Actor<Context = actix::Context<A>>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.ctx
-    }
-}
-
 /// Context for utilizing a `gtk::Builder` and connecting it to he Actix world.
 /// 
 /// It wraps a `gtk::Builder` instance and provides methods to create actors that are
@@ -195,36 +136,56 @@ where
 /// See [`woab::Factory`](struct.Factory.html) for usage example.
 pub struct BuilderConnector {
     builder: gtk::Builder,
-    callbacks: HashMap<&'static str, RawSignalCallback>,
+    callbacks: RefCell<HashMap<&'static str, RawSignalCallback>>,
 }
 
 impl From<gtk::Builder> for BuilderConnector {
     fn from(builder: gtk::Builder) -> Self {
         Self {
             builder,
-            callbacks: HashMap::new(),
+            callbacks: RefCell::new(HashMap::new()),
         }
     }
 }
 
 impl BuilderConnector {
+    pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
+    where
+        W: glib::IsA<glib::Object>,
+    {
+        use gtk::prelude::BuilderExtManual;
+        self.builder.get_object::<W>(id).ok_or_else(|| {
+            if let Some(object) = self.builder.get_object::<glib::Object>(id) {
+                use glib::object::ObjectExt;
+                crate::Error::IncorrectWidgetTypeInBuilder {
+                    widget_id: id.to_owned(),
+                    expected_type: <W as glib::types::StaticType>::static_type(),
+                    actual_type: object.get_type(),
+                }
+            } else {
+                crate::Error::WidgetMissingInBuilder(id.to_owned())
+            }
+        })
+    }
+
     /// Create a widgets struct (as defined by the `W` generic parameter of
     /// [`woab::Factory`](struct.Factory.html)) and map the builder's widgets to its fields.
-    pub fn connect_widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
+    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
         where gtk::Builder: TryInto<W>
     {
         self.builder.clone().try_into()
     }
 
-    pub fn connect_signals<A, S>(&mut self, ctx: &mut actix::Context<A>)
+    pub fn connect_signals<A, S>(&self, ctx: &mut actix::Context<A>)
     where
         A: actix::Actor<Context = actix::Context<A>>,
         A: actix::StreamHandler<S>,
         S: BuilderSignal,
     {
         let (tx, rx) = mpsc::channel(16);
+        let mut callbacks = self.callbacks.borrow_mut();
         for signal in S::list_signals() {
-            self.callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
+            callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
         }
         A::add_stream(rx, ctx);
     }
@@ -239,7 +200,7 @@ impl BuilderConnector {
     /// **If multiple tagged signals are streamed to the same actor - which is the typical use case
     /// for tagged signals - `StreamHandler::finished` should be overridden to avoid stopping the
     /// actor when one instance of the widgets is removed!!!**
-    pub fn connect_signals_tagged<A, S, T>(&mut self, tag: T, ctx: &mut actix::Context<A>)
+    pub fn connect_signals_tagged<A, S, T>(&self, tag: T, ctx: &mut actix::Context<A>)
     where
         T: Clone + 'static,
         A: actix::Actor<Context = actix::Context<A>>,
@@ -248,32 +209,22 @@ impl BuilderConnector {
     {
         let (tx, rx) = mpsc::channel(16);
         let rx = rx.map(move |s| (tag.clone(), s));
+        let mut callbacks = self.callbacks.borrow_mut();
         for signal in S::list_signals() {
-            self.callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
+            callbacks.insert(signal, S::bridge_signal(signal, tx.clone()).unwrap());
         }
         use actix::AsyncContext;
         ctx.add_stream(rx);
     }
 
-    /// Create an Actix actor and connect it to the builder's widgets and signals.
-    ///
-    /// `make_actor` is a function that receives the actor context and the widgets, and is
-    /// responsible for constructing the actor struct with the widgets inside it. It can also be
-    /// used for configuring and or showing the widgets GTK-wise (though this can also be handled
-    /// by the actor afterwards)
-    pub fn new_actor<A, F>(&mut self, make_actor: F) -> actix::Addr<A>
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        F: FnOnce(&mut ActorBuilderContext<A>) -> A,
-    {
-        <A as actix::Actor>::create(move |ctx| {
-            let mut ctx = ActorBuilderContext {
-                builder: self,
-                actor: std::marker::PhantomData,
-                ctx,
-            };
-            make_actor(&mut ctx)
-        })
+    pub fn actor<A: actix::Actor<Context = actix::Context<A>>>(&self) -> ActorBuilder<A> {
+
+        let (_, rx) = actix::dev::channel::channel(16);
+        let ctx = actix::Context::with_receiver(rx);
+        ActorBuilder {
+            builder_connector: &self,
+            actor_context: ctx,
+        }
     }
 
     /// Create a stream of all the signals.
@@ -288,7 +239,7 @@ impl Drop for BuilderConnector {
     fn drop(&mut self) {
         use gtk::prelude::BuilderExtManual;
 
-        let callbacks = &mut self.callbacks;
+        let mut callbacks = self.callbacks.borrow_mut();
         self.builder.connect_signals(move |_, signal| {
             callbacks.remove(signal).unwrap_or_else(|| Box::new(|_| None))
         });
@@ -340,4 +291,76 @@ pub trait BuilderSignal: Sized + 'static {
     fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>) -> Option<RawSignalCallback>;
 
     fn list_signals() -> &'static [&'static str];
+}
+
+pub struct ActorBuilder<'a, A: actix::Actor<Context = actix::Context<A>>> {
+    builder_connector: &'a BuilderConnector,
+    actor_context: A::Context,
+}
+
+impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
+    pub fn run(self, actor: A) -> actix::Addr<A> {
+        self.actor_context.run(actor)
+    }
+
+    pub fn create<'b>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> A) -> actix::Addr<A> where 'a: 'b {
+        let mut actor_builder_context = ActorBuilderContext {
+            builder_connector: self.builder_connector,
+            actor_context: self.actor_context,
+        };
+        let actor = dlg(&mut actor_builder_context);
+        actor_builder_context.actor_context.run(actor)
+    }
+
+    pub fn connect_signals<S>(mut self) -> Self
+    where
+        A: actix::StreamHandler<S>,
+        S: BuilderSignal,
+    {
+        self.builder_connector.connect_signals(&mut self.actor_context);
+        self
+    }
+
+    pub fn connect_signals_tagged<S, T>(mut self, tag: T) -> Self
+    where
+        T: Clone + 'static,
+        A: actix::StreamHandler<(T, S)>,
+        S: BuilderSignal,
+    {
+        self.builder_connector.connect_signals_tagged(tag, &mut self.actor_context);
+        self
+    }
+}
+
+pub struct ActorBuilderContext<'a, A: actix::Actor<Context = actix::Context<A>>> {
+    builder_connector: &'a BuilderConnector,
+    actor_context: A::Context,
+}
+
+impl<A: actix::Actor<Context = actix::Context<A>>> ActorBuilderContext<'_, A> {
+    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
+        where gtk::Builder: TryInto<W>
+    {
+        self.builder_connector.widgets()
+    }
+}
+
+impl <'a, A> std::ops::Deref for ActorBuilderContext<'a, A>
+where
+    A: actix::Actor<Context = actix::Context<A>>
+{
+    type Target = actix::Context<A>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.actor_context
+    }
+}
+
+impl <'a, A> std::ops::DerefMut for ActorBuilderContext<'a, A>
+where
+    A: actix::Actor<Context = actix::Context<A>>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.actor_context
+    }
 }
