@@ -14,7 +14,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         return Err(Error::new_spanned(ast, "BuilderSignal only supports enums"));
     };
     let enum_ident = &ast.ident;
-    let match_arms = data_enum.variants.iter().map(|variant| {
+    let vec_of_tuples = data_enum.variants.iter().map(|variant| {
         let mut ret = None;
         iter_attrs_parameters(&variant.attrs, "signal", |name, value| {
             match path_to_single_string(&name)?.as_str() {
@@ -92,28 +92,43 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
             syn::Fields::Unit => quote!(#enum_ident::#variant_ident),
             syn::Fields::Named(_) => return Err(Error::new_spanned(variant, "BuilderSignal only supports unit or tuple variants (even if they are empty)")),
         };
-        Ok(quote! {
-            #ident_as_str => Some(Box::new(move |args| {
-                match tx.clone().try_send(#msg_construction) {
-                    Ok(_) => #signal_return_value,
-                    Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
-                        panic!("Unable to send {} signal - channel is closed", #ident_as_str);
-                    },
-                    Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
-                        panic!("Unable to send {} signal - channel is full", #ident_as_str);
-                    },
-                }
-            })),
-        })
+        Ok((
+            /* Match arms */
+            quote! {
+                #ident_as_str => Some(Box::new(move |args| {
+                    match tx.clone().try_send(#msg_construction) {
+                        Ok(_) => #signal_return_value,
+                        Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
+                            panic!("Unable to send {} signal - channel is closed", #ident_as_str);
+                        },
+                        Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
+                            panic!("Unable to send {} signal - channel is full", #ident_as_str);
+                        },
+                    }
+                })),
+            },
+            /* Signal names */
+            quote! {
+                #ident_as_str,
+            },
+        ))
     }).collect::<Result<Vec<_>, Error>>()?;
+    /* We cannot use unzip with error handling, so here's a workaround */
+    let (match_arms, signal_names) = vec_of_tuples.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn transmit_signal_in_stream_function(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>> {
+            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<woab::RawSignalCallback> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
                     _ => None,
                 }
+            }
+
+            fn list_signals() -> &'static [&'static str] {
+                &[
+                    #(#signal_names)*
+                ]
             }
         }
     })

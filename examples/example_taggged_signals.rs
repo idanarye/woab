@@ -3,9 +3,9 @@ use gtk::prelude::*;
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_sum))]
-    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSignal>,
+    win_app: woab::BuilderFactory,
     #[factory(extra(buf_addend))]
-    row_addend: woab::Factory<(), AddendWidgets, AddendSignal>,
+    row_addend: woab::BuilderFactory,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -46,9 +46,9 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
             WindowSignal::ClickButton => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                let widgets = self.factories.row_addend.build()
-                    .connect_tagged_builder_signals(ctx, addend_id)
-                    .widgets().unwrap();
+                let mut builder = self.factories.row_addend.instantiate();
+                builder.connect_signals_tagged(addend_id, ctx);
+                let widgets = builder.connect_widgets::<AddendWidgets>().unwrap();
                 self.widgets.lst_addition.add(&widgets.row_addend);
                 self.addends.insert(addend_id, (widgets, Some(0)));
                 self.recalculate();
@@ -111,12 +111,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.build().actor(|_, widgets| WindowActor {
-        widgets,
-        factories,
-        next_addend_id: 0,
-        addends: Default::default(),
-    })?;
+    factories.win_app.instantiate()
+        .new_actor(|ctx| {
+            ctx.connect_signals::<WindowSignal>();
+            WindowActor {
+                widgets: ctx.connect_widgets().unwrap(),
+                factories,
+                next_addend_id: 0,
+                addends: Default::default(),
+            }
+        });
 
     gtk::main();
     Ok(())

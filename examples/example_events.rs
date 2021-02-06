@@ -3,7 +3,7 @@ use std::time::{Instant, Duration};
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_count_pressed_time))]
-    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSignal>,
+    win_app: woab::BuilderFactory,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -88,11 +88,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.build().actor(|_, widgets| WindowActor {
-        widgets,
-        press_times: Default::default(),
-        total_durations: Default::default(),
-    })?;
+    factories.win_app.instantiate()
+        .new_actor(|ctx| {
+            ctx.connect_signals::<WindowSignal>();
+            WindowActor {
+                widgets: ctx.connect_widgets().unwrap(),
+                press_times: Default::default(),
+                total_durations: Default::default(),
+            }
+        });
 
     gtk::main();
     Ok(())

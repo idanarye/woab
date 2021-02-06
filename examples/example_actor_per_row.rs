@@ -1,9 +1,9 @@
 #[derive(woab::Factories)]
 pub struct Factories {
     #[factory(extra(buf_sum))]
-    win_app: woab::Factory<WindowActor, WindowWidgets, WindowSignal>,
+    win_app: woab::BuilderFactory,
     #[factory(extra(buf_addend))]
-    row_addend: woab::Factory<AddendActor, AddendWidgets, AddendSignal>,
+    row_addend: woab::BuilderFactory,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -46,14 +46,16 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
         use gtk::prelude::*;;
         match signal {
             WindowSignal::ClickButton => {
-                let addend = self.factories.row_addend.build().actor(|_, widgets| {
-                    self.widgets.lst_addition.add(&widgets.row_addend);
-                    AddendActor {
-                        widgets,
-                        window: ctx.address(),
-                        number: Some(0),
-                    }
-                }).unwrap();
+                let addend = self.factories.row_addend.instantiate()
+                    .new_actor(|builder_ctx| {
+                        let widgets: AddendWidgets = builder_ctx.connect_widgets().unwrap();
+                        self.widgets.lst_addition.add(&widgets.row_addend);
+                        AddendActor {
+                            widgets,
+                            window: ctx.address(),
+                            number: Some(0),
+                        }
+                    });
                 self.addends.push(addend);
                 ctx.address().do_send(Recalculate);
             }
@@ -162,11 +164,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.build().actor(|_, widgets| WindowActor {
-        widgets,
-        factories,
-        addends: Vec::new(),
-    })?;
+    factories.win_app.instantiate()
+        .new_actor(|ctx| {
+            ctx.connect_signals::<WindowSignal>();
+            WindowActor {
+                widgets: ctx.connect_widgets().unwrap(),
+                factories,
+                addends: Vec::new(),
+            }
+        });
 
     gtk::main();
     Ok(())

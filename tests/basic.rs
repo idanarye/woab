@@ -7,7 +7,7 @@ mod util;
 #[derive(woab::Factories)]
 struct Factories {
     #[factory(extra(buf_left, buf_right))]
-    win_test: woab::Factory<TestActor, TestWidgets, TestSignal>,
+    win_test: woab::BuilderFactory,
 }
 
 struct TestActor {
@@ -60,10 +60,12 @@ fn test_basic() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let mut put_widgets_in = None;
-    factories.win_test.build().actor(|_, widgets| {
-        put_widgets_in = Some(widgets.clone());
-        TestActor { widgets }
-    })?;
+    factories.win_test.instantiate()
+        .new_actor(|ctx| {
+            let widgets = ctx.connect_widgets::<TestWidgets>().unwrap();
+            put_widgets_in = Some(widgets.clone());
+            TestActor { widgets }
+        });
     let widgets = put_widgets_in.unwrap();
     widgets.buf_left.set_text("test left");
     wait_for!(get_text(&widgets.buf_right) == "")?;
