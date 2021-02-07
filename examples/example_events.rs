@@ -45,9 +45,9 @@ impl WindowActor {
 
 #[derive(woab::BuilderSignal)]
 enum WindowSignal {
-    #[signal(ret = false)]
+    #[signal(inhibit = false)]
     Press(gtk::Button, #[signal(event)] gdk::EventButton),
-    #[signal(ret = false)]
+    #[signal(inhibit = false)]
     Release(gtk::Button, #[signal(event)] gdk::EventButton),
 }
 

@@ -15,15 +15,15 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     };
     let enum_ident = &ast.ident;
     let vec_of_tuples = data_enum.variants.iter().map(|variant| {
-        let mut ret = None;
+        let mut inhibit = None;
         iter_attrs_parameters(&variant.attrs, "signal", |name, value| {
             match path_to_single_string(&name)?.as_str() {
-                "ret" => {
-                    let value = value.ok_or_else(|| Error::new_spanned(name, "`ret` must have a value"))?;
-                    if ret.is_some() {
-                        return Err(Error::new_spanned(value, "`ret` already set"));
+                "inhibit" => {
+                    let value = value.ok_or_else(|| Error::new_spanned(name, "`inhibit` must have a value"))?;
+                    if inhibit.is_some() {
+                        return Err(Error::new_spanned(value, "`inhibit` already set"));
                     }
-                    ret = Some(value);
+                    inhibit = Some(value);
                 }
                 _ => {
                     return Err(Error::new_spanned(name, "unknown argument"));
@@ -31,9 +31,9 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
             }
             Ok(())
         })?;
-        let signal_return_value = if let Some(ret) = ret {
+        let signal_return_value = if let Some(inhibit) = inhibit {
             quote! {
-                Some(glib::value::ToValue::to_value(&#ret))
+                Some(glib::value::ToValue::to_value(&#inhibit))
             }
         } else {
             quote!(None)
