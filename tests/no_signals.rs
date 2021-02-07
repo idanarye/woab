@@ -49,7 +49,7 @@ fn test_no_signals() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let output = Rc::new(RefCell::new(Vec::new()));
-    factories.win_test.instantiate().actor().run(TestActor { output: output.clone() });
+    factories.win_test.instantiate().actor().start(TestActor { output: output.clone() });
     wait_for!(*output.borrow() == [
         "before spawned future",
         "inside spawned future",

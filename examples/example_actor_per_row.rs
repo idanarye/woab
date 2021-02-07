@@ -47,7 +47,7 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
         match signal {
             WindowSignal::ClickButton => {
                 let addend = self.factories.row_addend.instantiate().actor()
-                    .connect_signals::<AddendSignal>()
+                    .connect_signals(AddendSignal::connector())
                     .create(|builder_ctx| {
                         let widgets: AddendWidgets = builder_ctx.widgets().unwrap();
                         self.widgets.lst_addition.add(&widgets.row_addend);
@@ -166,7 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop("example")?;
 
     factories.win_app.instantiate().actor()
-        .connect_signals::<WindowSignal>()
+        .connect_signals(WindowSignal::connector())
         .create(|ctx| {
             WindowActor {
                 widgets: ctx.widgets().unwrap(),

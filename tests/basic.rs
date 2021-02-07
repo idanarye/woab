@@ -61,7 +61,7 @@ fn test_basic() -> anyhow::Result<()> {
     woab::run_actix_inside_gtk_event_loop("test")?;
     let mut put_widgets_in = None;
     factories.win_test.instantiate().actor()
-        .connect_signals::<TestSignal>()
+        .connect_signals(TestSignal::connector())
         .create(|ctx| {
             let widgets = ctx.widgets::<TestWidgets>().unwrap();
             put_widgets_in = Some(widgets.clone());

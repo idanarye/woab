@@ -9,7 +9,7 @@
 //!
 //! To use WoAB one would typically create a factories struct using
 //! [`woab::Factories`](derive.Factories.html) and use it dissect the Glade XML file(s). Each field
-//! of the factories struct will be a [`woab::Factory`](struct.Factory.html) that can create:
+//! of the factories struct will be a [`woab::BuilderFactory`](struct.BuilderFactory.html) that can create:
 
 //! * An Actor (optional)
 //! * A widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html)
@@ -37,7 +37,7 @@
 //! #[derive(woab::Factories)]
 //! struct Factories {
 //!     // The field name must be the ID from the builder XML file:
-//!     main_window: woab::Factory<AppActor, AppWidgets, AppSignal>,
+//!     main_window: woab::BuilderFactory,
 //!     // Possibly other things from the builder XML file that need to be created during the program.
 //! }
 //!
@@ -85,13 +85,15 @@
 //!     gtk::init()?;
 //!     woab::run_actix_inside_gtk_event_loop("my-WoAB-app")?; // <===== IMPORTANT!!!
 //!
-//!     factories.main_window.build().actor(|_ctx, widgets| {
-//!         widgets.main_window.show_all(); // Could also be done inside the actor
-//!         AppActor {
-//!             widgets,
-//!             factories: factories,
-//!         }
-//!     })?;
+//!     factories.main_window.instantiate().actor()
+//!         .create(|ctx| {
+//!             let widgets: AppWidgets = ctx.widgets().unwrap();
+//!             widgets.main_window.show_all(); // Could also be done inside the actor
+//!             AppActor {
+//!                 widgets,
+//!                 factories: factories,
+//!             }
+//!         });
 //!
 //!     gtk::main();
 //!     Ok(())
@@ -139,7 +141,8 @@ pub use woab_macros::BuilderSignal;
 /// `GtkListBox`) and see how they look together inside Glade, and then split the XML to multiple
 /// factories that create them separately during runtime.
 ///
-/// Typically the fields of the struct will be of type [`woab::Factory`](struct.Factory.html), but
+/// Typically the fields of the struct will be of type
+/// [`woab::BuilderFactory`](struct.BuilderFactory.html), but
 /// anything `From<String>` is allowed so [`woab::BuilderFactory`](struct.BuilderFactory.html) or
 /// even just `String`s are also okay, if they are needed.
 ///
@@ -157,10 +160,10 @@ pub use woab_macros::BuilderSignal;
 /// # type SomeListBoxRowSignal = ();
 /// #[derive(woab::Factories)]
 /// struct Factories {
-///     main_window: woab::Factory<MainWindowActor, MainWindowWidgets, MainWindowSignal>,
+///     main_window: woab::BuilderFactory,
 ///     #[factory(extra(some_text_buffer_used_by_a_text_box_in_sub_window))]
-///     sub_window: woab::Factory<SubWindowActor, SubWindowWidgets, SubWindowSignal>,
-///     some_list_box_row: woab::Factory<(), SomeListBoxRowWidgets, SomeListBoxRowSignal>, // doesn't have its own actor
+///     sub_window: woab::BuilderFactory,
+///     some_list_box_row: woab::BuilderFactory, // doesn't have its own actor
 /// }
 /// fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     # fn read_builder_xml() -> std::io::BufReader<std::fs::File> {
@@ -183,7 +186,7 @@ pub use woab_macros::Factories;
 /// #
 /// # #[derive(woab::Factories)]
 /// # struct Factories {
-/// #     list_box_row: woab::Factory<RowActor, RowWidgets, RowSignal>,
+/// #     list_box_row: woab::BuilderFactory,
 /// # }
 /// #
 /// # #[derive(woab::WidgetsFromBuilder)]
@@ -209,12 +212,15 @@ pub use woab_macros::Factories;
 /// # }
 ///
 /// fn create_the_row(factories: &Factories, list_box: &gtk::ListBox) -> actix::Addr<RowActor> {
-///     factories.list_box_row.build().actor(|_, widgets| {
-///         list_box.add(&widgets.list_box_row);
-///         RowActor {
-///             widgets,
-///         }
-///     }).unwrap()
+///     factories.list_box_row.instantiate().actor()
+///         .connect_signals(RowSignal::connector())
+///         .create(|ctx| {
+///             let widgets: RowWidgets = ctx.widgets().unwrap();
+///             list_box.add(&widgets.list_box_row);
+///             RowActor {
+///                 widgets,
+///             }
+///         })
 /// }
 ///
 /// fn remove_the_row(row: &actix::Addr<RowActor>) {
@@ -225,7 +231,7 @@ pub use woab_macros::Removable;
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
 pub use builder_dissect::dissect_builder_xml;
-pub use builder_signal::{RawSignalCallback, BuilderSignal};
+pub use builder_signal::{RawSignalCallback, BuilderSignal, RegisterSignalHandlers, BuilderSingalConnector};
 // pub use factories::{BuilderFactory, Factory, BuilderUtilizer, BuilderConnector, ActorBuilder, ActorWidgetsBuilder};
 pub use builder::*;
 

@@ -46,9 +46,9 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
             WindowSignal::ClickButton => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                let builder = self.factories.row_addend.instantiate();
-                builder.connect_signals_tagged(addend_id, ctx);
-                let widgets = builder.widgets::<AddendWidgets>().unwrap();
+                let widgets: AddendWidgets = self.factories.row_addend.instantiate()
+                    .connect_signals(ctx, AddendSignal::connector().tag(addend_id))
+                    .widgets().unwrap();
                 self.widgets.lst_addition.add(&widgets.row_addend);
                 self.addends.insert(addend_id, (widgets, Some(0)));
                 self.recalculate();
@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop("example")?;
 
     factories.win_app.instantiate().actor()
-        .connect_signals::<WindowSignal>()
+        .connect_signals(WindowSignal::connector())
         .create(|ctx| {
             WindowActor {
                 widgets: ctx.widgets().unwrap(),

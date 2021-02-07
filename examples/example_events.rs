@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop("example")?;
 
     factories.win_app.instantiate().actor()
-        .connect_signals::<WindowSignal>()
+        .connect_signals(WindowSignal::connector())
         .create(|ctx| WindowActor {
             widgets: ctx.widgets().unwrap(),
             press_times: Default::default(),
