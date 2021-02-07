@@ -136,7 +136,7 @@ impl BuilderFactory {
 /// See [`woab::Factory`](struct.Factory.html) for usage example.
 pub struct BuilderConnector {
     builder: gtk::Builder,
-    callbacks: RefCell<HashMap<&'static str, RawSignalCallback>>,
+    callbacks: RefCell<HashMap<&'static str, crate::RawSignalCallback>>,
 }
 
 impl From<gtk::Builder> for BuilderConnector {
@@ -180,7 +180,7 @@ impl BuilderConnector {
     where
         A: actix::Actor<Context = actix::Context<A>>,
         A: actix::StreamHandler<S>,
-        S: BuilderSignal,
+        S: crate::BuilderSignal,
     {
         let (tx, rx) = mpsc::channel(16);
         let mut callbacks = self.callbacks.borrow_mut();
@@ -205,7 +205,7 @@ impl BuilderConnector {
         T: Clone + 'static,
         A: actix::Actor<Context = actix::Context<A>>,
         A: actix::StreamHandler<(T, S)>,
-        S: BuilderSignal,
+        S: crate::BuilderSignal,
     {
         let (tx, rx) = mpsc::channel(16);
         let rx = rx.map(move |s| (tag.clone(), s));
@@ -246,17 +246,14 @@ impl Drop for BuilderConnector {
     }
 }
 
-/// Type of a gtk signal callback function that operates on uncast glib values
-pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
-
 pub fn make_signal_handler<A, S>(
     handler_name: &str,
     ctx: &mut A::Context,
-) -> RawSignalCallback 
+) -> crate::RawSignalCallback 
 where
     A: actix::Actor<Context = actix::Context<A>>,
     A: actix::StreamHandler<S>,
-    S: BuilderSignal,
+    S: crate::BuilderSignal,
 {
     let (tx, rx) = mpsc::channel(16);
     A::add_stream(rx, ctx);
@@ -274,23 +271,11 @@ pub fn connect_signal_handler<A, S, O>(
 where
     A: actix::Actor<Context = actix::Context<A>>,
     A: actix::StreamHandler<S>,
-    S: BuilderSignal,
+    S: crate::BuilderSignal,
     O: glib::object::ObjectExt,
 {
     let callback = make_signal_handler::<A, S>(handler_name, ctx);
     object.connect_local(gtk_signal_name.as_ref(), false, callback).unwrap();
-}
-
-/// Represent a GTK signal that originates from a GTK builder. Refer to [the corresponding derive](derive.BuilderSignal.html).
-pub trait BuilderSignal: Sized + 'static {
-
-    /// Generate a signal handler function for GTK.
-    ///
-    /// The returned function should convert the signals it revceives to the signal type, and
-    /// transmit them over `tx`.
-    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>) -> Option<RawSignalCallback>;
-
-    fn list_signals() -> &'static [&'static str];
 }
 
 pub struct ActorBuilder<'a, A: actix::Actor<Context = actix::Context<A>>> {
@@ -315,7 +300,7 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
     pub fn connect_signals<S>(mut self) -> Self
     where
         A: actix::StreamHandler<S>,
-        S: BuilderSignal,
+        S: crate::BuilderSignal,
     {
         self.builder_connector.connect_signals(&mut self.actor_context);
         self
@@ -325,7 +310,7 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
     where
         T: Clone + 'static,
         A: actix::StreamHandler<(T, S)>,
-        S: BuilderSignal,
+        S: crate::BuilderSignal,
     {
         self.builder_connector.connect_signals_tagged(tag, &mut self.actor_context);
         self

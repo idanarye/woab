@@ -101,6 +101,7 @@
 mod event_loops_bridge;
 mod builder;
 mod builder_dissect;
+mod builder_signal;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -224,6 +225,7 @@ pub use woab_macros::Removable;
 
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
 pub use builder_dissect::dissect_builder_xml;
+pub use builder_signal::{RawSignalCallback, BuilderSignal};
 // pub use factories::{BuilderFactory, Factory, BuilderUtilizer, BuilderConnector, ActorBuilder, ActorWidgetsBuilder};
 pub use builder::*;
 
