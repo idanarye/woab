@@ -230,7 +230,7 @@ where
 {
     let (tx, rx) = mpsc::channel(16);
     A::add_stream(rx, ctx);
-    S::bridge_signal(handler_name, tx)
+    S::bridge_signal(handler_name, tx, |_| None)
         .ok_or_else(|| format!("Handler '{}' was requested, but only {:?} exist", handler_name, S::list_signals()))
         .unwrap()
 }

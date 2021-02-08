@@ -36,7 +36,13 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                 Some(glib::value::ToValue::to_value(&#inhibit))
             }
         } else {
-            quote!(None)
+            quote! {
+                if let Some(gtk::Inhibit(inhibit)) = inhibit_dlg(&signal) {
+                    Some(glib::value::ToValue::to_value(&inhibit))
+                } else {
+                    None
+                }
+            }
         };
 
         let variant_ident = &variant.ident;
@@ -96,8 +102,10 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
             /* Match arms */
             quote! {
                 #ident_as_str => Some(Box::new(move |args| {
-                    match tx.clone().try_send(#msg_construction) {
-                        Ok(_) => #signal_return_value,
+                    let signal = #msg_construction;
+                    let return_value = #signal_return_value;
+                    match tx.clone().try_send(signal) {
+                        Ok(_) => return_value,
                         Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
                             panic!("Unable to send {} signal - channel is closed", #ident_as_str);
                         },
@@ -117,7 +125,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     let (match_arms, signal_names) = vec_of_tuples.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>) -> Option<woab::RawSignalCallback> {
+            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Option<woab::RawSignalCallback> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
@@ -133,7 +141,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         }
 
         impl #enum_ident {
-            fn connector() -> woab::BuilderSingalConnector<Self, ()> {
+            fn connector() -> woab::BuilderSingalConnector<Self, (), ()> {
                 <Self as woab::BuilderSignal>::connector()
             }
         }
