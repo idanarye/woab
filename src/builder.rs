@@ -240,7 +240,7 @@ pub fn connect_signal_handler<A, S, O>(
     gtk_signal_name: &str,
     handler_name: &str,
     ctx: &mut A::Context,
-)
+) -> Result<glib::signal::SignalHandlerId, glib::error::BoolError>
 where
     A: actix::Actor<Context = actix::Context<A>>,
     A: actix::StreamHandler<S>,
@@ -248,7 +248,7 @@ where
     O: glib::object::ObjectExt,
 {
     let callback = make_signal_handler::<A, S>(handler_name, ctx);
-    object.connect_local(gtk_signal_name.as_ref(), false, callback).unwrap();
+    object.connect_local(gtk_signal_name.as_ref(), false, callback)
 }
 
 pub struct ActorBuilder<'a, A: actix::Actor<Context = actix::Context<A>>> {
