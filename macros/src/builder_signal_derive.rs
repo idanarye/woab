@@ -50,17 +50,40 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         let msg_construction = match &variant.fields {
             syn::Fields::Unnamed(fields) => {
                 let field_from_arg_mappers = fields.unnamed.iter().enumerate().map(|(i, field)| {
-                    let mut is_event = false;
+                    enum ConversionType {
+                        NoConversion,
+                        Event,
+                        Variant,
+                    }
+
+                    impl ConversionType {
+                        fn name(&self) -> &'static str {
+                            match self {
+                                ConversionType::NoConversion => "",
+                                ConversionType::Event => "event",
+                                ConversionType::Variant => "variant",
+                            }
+                        }
+                    }
+
+                    let mut conversion = ConversionType::NoConversion;
                     iter_attrs_parameters(&field.attrs, "signal", |name, value| {
-                        match path_to_single_string(&name)?.as_str() {
-                            "event" => {
+                        let setting = path_to_single_string(&name)?;
+                        let setting = setting.as_str();
+                        match setting {
+                            "event" | "variant" => {
                                 if value.is_some() {
-                                    return Err(Error::new_spanned(value, "`event` cannot have a value"))?;
+                                    return Err(Error::new_spanned(value, format!("{:?} cannot have a value", setting)))?;
                                 }
-                                if is_event {
-                                    return Err(Error::new_spanned(value, "`event` already set"));
+                                if let ConversionType::NoConversion = conversion {
+                                    conversion = match setting {
+                                        "event" => ConversionType::Event,
+                                        "variant" => ConversionType::Variant,
+                                        _ => panic!("already ruled that out in the outer `match`"),
+                                    };
+                                } else {
+                                    return Err(Error::new_spanned(value, format!("already converting to {}", conversion.name())));
                                 }
-                                is_event = true;
                             }
                             _ => {
                                 return Err(Error::new_spanned(name, "unknown argument"));
@@ -72,17 +95,24 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                     let type_error = syn::LitStr::new(&format!("Wrong type for paramter {} of {}", i, variant_ident), field.ty.span());
                     let none_error = syn::LitStr::new(&format!("Paramter {} of {} is None", i, variant_ident), field.ty.span());
 
-                    let mut result = quote! {
+                    let result = quote! {
                         args[#i].get().expect(#type_error).expect(#none_error)
                     };
-                    if is_event {
-                        result = quote! {
+                    let result = match conversion {
+                        ConversionType::NoConversion => result,
+                        ConversionType::Event => quote! {
                             {
                                 let event: gdk::Event = #result;
                                 event.downcast().expect(#type_error)
                             }
-                        }
-                    }
+                        },
+                        ConversionType::Variant => quote! {
+                            {
+                                let variant: glib::Variant = #result;
+                                variant.get().expect(#type_error)
+                            }
+                        },
+                    };
                     Ok(result)
                 }).collect::<Result<Vec<_>, Error>>()?;
                 let num_fields = field_from_arg_mappers.len();
