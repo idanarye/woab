@@ -246,6 +246,9 @@ pub enum Error {
     #[error(transparent)]
     XmlError(#[from] quick_xml::Error),
 
+    #[error(transparent)]
+    GtkBoolError(#[from] glib::BoolError),
+
     #[error("Builder is missing widget with ID {0:?}")]
     WidgetMissingInBuilder(String),
 
@@ -255,6 +258,9 @@ pub enum Error {
         expected_type: glib::types::Type,
         actual_type: glib::types::Type,
     },
+
+    #[error("{} does not have a signal named {0:?}")]
+    NoSuchSignalError(&'static str, String),
 }
 
 /// A message for removing actors along with their GUI

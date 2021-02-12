@@ -131,7 +131,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         Ok((
             /* Match arms */
             quote! {
-                #ident_as_str => Some(Box::new(move |args| {
+                #ident_as_str => Ok(Box::new(move |args| {
                     let signal = #msg_construction;
                     let return_value = #signal_return_value;
                     match tx.clone().try_send(signal) {
@@ -155,11 +155,11 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     let (match_arms, signal_names) = vec_of_tuples.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Option<woab::RawSignalCallback> {
+            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<woab::RawSignalCallback, woab::Error> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*
-                    _ => None,
+                    _ => Err(woab::Error::NoSuchSignalError(core::any::type_name::<Self>(), signal.to_owned())),
                 }
             }
 

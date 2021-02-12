@@ -48,7 +48,7 @@ impl actix::Actor for TestActor {
         ] {
             let action = gio::SimpleAction::new(action_name, Some(&*String::static_variant_type()));
             self.action_group.add_action(&action);
-            action.connect_local("activate", false, router.handler(signal_name).unwrap()).unwrap();
+            router.connect(&action, "activate", signal_name).unwrap();
         }
 
         self.output.borrow_mut().push("init");

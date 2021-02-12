@@ -3,7 +3,6 @@ use core::convert::TryInto;
 use std::cell::RefCell;
 
 use gtk::Builder;
-use tokio::sync::mpsc;
 
 /// Holds instructions for generating a GTK builder.
 ///

@@ -11,7 +11,7 @@ pub trait BuilderSignal: Sized + 'static {
     ///
     /// The returned function should convert the signals it revceives to the signal type, and
     /// transmit them over `tx`.
-    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Option<RawSignalCallback>;
+    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<RawSignalCallback, crate::Error>;
 
     fn list_signals() -> &'static [&'static str];
 
@@ -156,14 +156,7 @@ where
         let router = self.route_to::<A>(ctx);
 
         for signal in S::list_signals() {
-            if let Some(handler) = router.handler(signal) {
-                callbacks.insert(signal, handler);
-            } else {
-                panic!(
-                    "Got empty signal handler for {:?} even though it is listed in {:?}",
-                    signal, core::any::type_name::<S>(),
-                );
-            }
+            callbacks.insert(signal, router.handler(signal).expect("No signal handler even though its from the list"));
         }
     }
 }
@@ -204,8 +197,13 @@ where
     I: 'static,
     I: SignalsInhibit<S>,
 {
-    pub fn handler(&self, signal: &str) -> Option<crate::RawSignalCallback> {
+    pub fn handler(&self, signal: &str) -> Result<crate::RawSignalCallback, crate::Error> {
         let inhibit_dlg = self.inhibit_dlg.clone();
         S::bridge_signal(signal, self.tx.clone(), move |signal| inhibit_dlg.inhibit(signal))
+    }
+
+    pub fn connect<O: glib::ObjectExt>(&self, obj: &O, gtk_signal: &str, actix_signal: &str) -> Result<&Self, crate::Error> {
+        obj.connect_local(gtk_signal, false, self.handler(actix_signal)?)?;
+        Ok(self)
     }
 }
