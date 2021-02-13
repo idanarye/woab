@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
+use hashbrown::HashMap;
 use actix::prelude::*;
 use gtk::prelude::*;
 use gio::prelude::*;

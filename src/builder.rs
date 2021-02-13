@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use core::convert::TryInto;
 use std::cell::RefCell;
 
+use hashbrown::HashMap;
 use gtk::Builder;
 use tokio::sync::mpsc;
 

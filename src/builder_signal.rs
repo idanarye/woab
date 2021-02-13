@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use hashbrown::HashMap;
 use tokio::sync::mpsc;
 
 /// Type of a gtk signal callback function that operates on uncast glib values
