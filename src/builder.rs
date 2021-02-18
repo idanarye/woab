@@ -3,7 +3,6 @@ use std::cell::RefCell;
 
 use hashbrown::HashMap;
 use gtk::Builder;
-use tokio::sync::mpsc;
 
 /// Holds instructions for generating a GTK builder.
 ///
@@ -217,38 +216,6 @@ impl Drop for BuilderConnector {
             callbacks.remove(signal).unwrap_or_else(|| Box::new(|_| None))
         });
     }
-}
-
-pub fn make_signal_handler<A, S>(
-    handler_name: &str,
-    ctx: &mut A::Context,
-) -> crate::RawSignalCallback 
-where
-    A: actix::Actor<Context = actix::Context<A>>,
-    A: actix::StreamHandler<S>,
-    S: crate::BuilderSignal,
-{
-    let (tx, rx) = mpsc::channel(16);
-    A::add_stream(rx, ctx);
-    S::bridge_signal(handler_name, tx, |_| None)
-        .ok_or_else(|| format!("Handler '{}' was requested, but only {:?} exist", handler_name, S::list_signals()))
-        .unwrap()
-}
-
-pub fn connect_signal_handler<A, S, O>(
-    object: &O,
-    gtk_signal_name: &str,
-    handler_name: &str,
-    ctx: &mut A::Context,
-) -> Result<glib::signal::SignalHandlerId, glib::error::BoolError>
-where
-    A: actix::Actor<Context = actix::Context<A>>,
-    A: actix::StreamHandler<S>,
-    S: crate::BuilderSignal,
-    O: glib::object::ObjectExt,
-{
-    let callback = make_signal_handler::<A, S>(handler_name, ctx);
-    object.connect_local(gtk_signal_name.as_ref(), false, callback)
 }
 
 pub struct ActorBuilder<'a, A: actix::Actor<Context = actix::Context<A>>> {

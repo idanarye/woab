@@ -10,7 +10,7 @@ pub trait BuilderSignal: Sized + 'static {
     ///
     /// The returned function should convert the signals it revceives to the signal type, and
     /// transmit them over `tx`.
-    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Option<RawSignalCallback>;
+    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<RawSignalCallback, crate::Error>;
 
     fn list_signals() -> &'static [&'static str];
 
@@ -25,6 +25,12 @@ pub trait BuilderSignal: Sized + 'static {
 
 pub trait RegisterSignalHandlers {
     type MessageType;
+    type RouteSignals;
+
+    fn route_to<A>(self, ctx: &mut A::Context) -> Self::RouteSignals
+    where
+        A: actix::Actor<Context = actix::Context<A>>,
+        A: actix::StreamHandler<Self::MessageType>;
 
     fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
     where
@@ -123,19 +129,80 @@ where
     I: SignalsInhibit<S>,
 {
     type MessageType = T::Output;
+    type RouteSignals = SignalRouter<S, I>;
+
+    fn route_to<A>(self, ctx: &mut A::Context) -> Self::RouteSignals
+    where
+        A: actix::Actor<Context = actix::Context<A>>,
+        A: actix::StreamHandler<Self::MessageType>
+    {
+        let Self { inhibit_dlg, transformer, .. } = self;
+
+        let (tx, rx) = mpsc::channel(16);
+
+        use tokio::stream::StreamExt;
+        let rx = rx.map(move|s| transformer.transform(s));
+        A::add_stream(rx, ctx);
+
+        SignalRouter { tx, inhibit_dlg }
+    }
 
     fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
     where
         A: actix::Actor<Context = actix::Context<A>>,
         A: actix::StreamHandler<Self::MessageType>,
     {
-        let (tx, rx) = mpsc::channel(16);
+        let router = self.route_to::<A>(ctx);
+
         for signal in S::list_signals() {
-            let inhibit_dlg = self.inhibit_dlg.clone();
-            callbacks.insert(signal, S::bridge_signal(signal, tx.clone(), move |signal| inhibit_dlg.inhibit(signal)).unwrap());
+            callbacks.insert(signal, router.handler(signal).expect("No signal handler even though its from the list"));
         }
-        use tokio::stream::StreamExt;
-        let rx = rx.map(move|s| self.transformer.transform(s));
-        A::add_stream(rx, ctx);
+    }
+}
+
+impl<S, T, I> BuilderSingalConnector<S, T, I>
+where
+    S: 'static,
+    S: BuilderSignal,
+    T: 'static,
+    T: SignalTransformer<S>,
+    I: 'static,
+    I: SignalsInhibit<S>,
+{
+    pub fn route_to<A>(self, ctx: &mut A::Context) -> <Self as RegisterSignalHandlers>::RouteSignals
+    where
+        A: actix::Actor<Context = actix::Context<A>>,
+        A: actix::StreamHandler<<Self as RegisterSignalHandlers>::MessageType>
+    {
+        <Self as RegisterSignalHandlers>::route_to::<A>(self, ctx)
+    }
+}
+
+pub struct SignalRouter<S, I>
+where
+    S: 'static,
+    S: BuilderSignal,
+    I: 'static,
+    I: SignalsInhibit<S>,
+{
+    tx: mpsc::Sender<S>,
+    inhibit_dlg: I,
+}
+
+impl<S, I> SignalRouter<S, I>
+where
+    S: 'static,
+    S: BuilderSignal,
+    I: 'static,
+    I: SignalsInhibit<S>,
+{
+    pub fn handler(&self, signal: &str) -> Result<crate::RawSignalCallback, crate::Error> {
+        let inhibit_dlg = self.inhibit_dlg.clone();
+        S::bridge_signal(signal, self.tx.clone(), move |signal| inhibit_dlg.inhibit(signal))
+    }
+
+    pub fn connect<O: glib::ObjectExt>(&self, obj: &O, gtk_signal: &str, actix_signal: &str) -> Result<&Self, crate::Error> {
+        obj.connect_local(gtk_signal, false, self.handler(actix_signal)?)?;
+        Ok(self)
     }
 }
