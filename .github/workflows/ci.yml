@@ -71,7 +71,7 @@ jobs:
           toolchain: nightly
           override: true
           components: clippy
-      - name: Install packages for gtk-test
+      - name: Install packages for testing GTK
         run: |-
           sudo apt-get update
           sudo apt-get install libgtk-3-dev
@@ -96,6 +96,10 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+      - name: Install packages for testing GTK
+        run: |-
+          sudo apt-get update
+          sudo apt-get install libgtk-3-dev
       - name: Cache cargo
         uses: actions/cache@v1
         id: cache
@@ -117,14 +121,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
-    - uses: actions/checkout@v2
-    - name: Build docs
-      env:
-        GITHUB_REPO: ${{ github.repository }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |-
-        cargo doc --verbose &&
-        echo "<meta http-equiv=refresh content=0;url=woab/index.html>" > target/doc/index.html &&
-        pip install ghp-import --user && export PATH=$HOME/.local/bin:$PATH &&
-        ghp-import -n target/doc &&
-        git push -fq https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git gh-pages
+      - uses: actions/checkout@v2
+      - name: Install packages for testing GTK
+        run: |-
+          sudo apt-get update
+          sudo apt-get install libgtk-3-dev
+      - name: Build docs
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          cargo doc --verbose &&
+          echo "<meta http-equiv=refresh content=0;url=woab/index.html>" > target/doc/index.html &&
+          pip install ghp-import --user && export PATH=$HOME/.local/bin:$PATH &&
+          ghp-import -n target/doc &&
+          git push -fq https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git gh-pages
