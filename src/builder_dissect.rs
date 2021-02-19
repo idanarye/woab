@@ -1,7 +1,11 @@
 use quick_xml::Reader;
 
 #[doc(hidden)] // for internal use by #[derive(Factories)]
-pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u8>], id_to_idx: impl Fn(&str) -> Option<usize>) -> Result<(), crate::Error> {
+pub fn dissect_builder_xml(
+    buf_read: impl std::io::BufRead,
+    targets: &mut [Vec<u8>],
+    id_to_idx: impl Fn(&str) -> Option<usize>,
+) -> Result<(), crate::Error> {
     let mut reader = Reader::from_reader(buf_read);
     let mut buf = Vec::new();
 
@@ -11,18 +15,23 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
         nesting: usize,
     }
 
-    let mut contexts = targets.into_iter().map(|target| {
-        WriteContext {
+    let mut contexts = targets
+        .into_iter()
+        .map(|target| WriteContext {
             writer: quick_xml::Writer::new(std::io::Cursor::new(target)),
             prev_idx: None,
             nesting: 0,
-        }
-    }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     let mut context_idx = None;
     let mut current_nesting = 0;
 
-    fn write_event(contexts: &mut [WriteContext], idx: Option<usize>, event: quick_xml::events::Event) -> Result<(), crate::Error> {
+    fn write_event(
+        contexts: &mut [WriteContext],
+        idx: Option<usize>,
+        event: quick_xml::events::Event,
+    ) -> Result<(), crate::Error> {
         if let Some(idx) = idx {
             contexts[idx].writer.write_event(event)?;
         } else {
@@ -57,7 +66,7 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
                     _ => {}
                 }
                 write_event(&mut contexts, context_idx, quick_xml::events::Event::Start(e))?;
-            },
+            }
             e @ quick_xml::events::Event::End(_) => {
                 write_event(&mut contexts, context_idx, e)?;
                 if let Some(idx) = context_idx {
@@ -68,7 +77,7 @@ pub fn dissect_builder_xml(buf_read: impl std::io::BufRead, targets: &mut [Vec<u
                     }
                 }
                 current_nesting -= 1;
-            },
+            }
             quick_xml::events::Event::Eof => break,
             e => write_event(&mut contexts, context_idx, e)?,
         }

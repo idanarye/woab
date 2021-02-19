@@ -1,10 +1,10 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use hashbrown::HashMap;
 use actix::prelude::*;
-use gtk::prelude::*;
 use gio::prelude::*;
+use gtk::prelude::*;
+use hashbrown::HashMap;
 
 #[macro_use]
 mod util;
@@ -30,16 +30,18 @@ impl actix::Actor for TestActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         let router = TestSignal::connector().route_to::<TestActor>(ctx);
 
-        for (action_name, signal_name) in &[
-            ("action1", "Action1"),
-            ("action2", "Action2"),
-        ] {
+        for (action_name, signal_name) in &[("action1", "Action1"), ("action2", "Action2")] {
             let action = gio::SimpleAction::new(action_name, None);
             self.action_group.add_action(&action);
-            self.actions.insert(action_name, (
+            self.actions.insert(
+                action_name,
+                (
                     action.clone(),
-                    action.connect_local("activate", false, router.handler(signal_name).unwrap()).unwrap(),
-            ));
+                    action
+                        .connect_local("activate", false, router.handler(signal_name).unwrap())
+                        .unwrap(),
+                ),
+            );
         }
         for (action_name, signal_name) in &[
             ("block", "BlockAction"),
@@ -60,10 +62,10 @@ impl actix::StreamHandler<TestSignal> for TestActor {
         match signal {
             TestSignal::Action1 => {
                 self.output.borrow_mut().push("action1");
-            },
+            }
             TestSignal::Action2 => {
                 self.output.borrow_mut().push("action2");
-            },
+            }
             TestSignal::BlockAction(_, action) => {
                 let (action, signal) = &self.actions[action.as_str()];
                 action.block_signal(signal);
@@ -95,7 +97,8 @@ fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
         action_group: action_group.clone(),
         output: output.clone(),
         actions: Default::default(),
-    }.start();
+    }
+    .start();
 
     wait_for!(*output.borrow() == ["init"])?;
     action_group.activate_action("action1", None);
@@ -118,7 +121,19 @@ fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
     // We send both action2 and action1, but action2 is disconnected
     action_group.activate_action("action2", None);
     action_group.activate_action("action1", None);
-    wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2", "unblock", "disconnect", "action1"])?;
+    wait_for!(
+        *output.borrow()
+            == [
+                "init",
+                "action1",
+                "action2",
+                "block",
+                "action2",
+                "unblock",
+                "disconnect",
+                "action1"
+            ]
+    )?;
 
     Ok(())
 }

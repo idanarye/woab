@@ -1,5 +1,5 @@
-use syn::parse::Error;
 use quote::quote;
+use syn::parse::Error;
 
 pub fn impl_removable_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     let type_ident = &ast.ident;
@@ -18,10 +18,11 @@ pub fn impl_removable_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
         }
     }
 
-    let removable_attr = removable_attr.ok_or_else(|| Error::new_spanned(ast, "#[removable(...)] is mandatory when deriving Removable"))?;
+    let removable_attr =
+        removable_attr.ok_or_else(|| Error::new_spanned(ast, "#[removable(...)] is mandatory when deriving Removable"))?;
     let widget_to_remove = &removable_attr.tokens;
 
-    Ok(quote!{
+    Ok(quote! {
         impl actix::Handler<woab::Remove> for #type_ident {
             type Result = ();
 

@@ -1,8 +1,8 @@
 use core::convert::TryInto;
 use std::cell::RefCell;
 
-use hashbrown::HashMap;
 use gtk::Builder;
+use hashbrown::HashMap;
 
 /// Holds instructions for generating a GTK builder.
 ///
@@ -130,7 +130,7 @@ impl BuilderFactory {
 /// ```
 
 /// Context for utilizing a `gtk::Builder` and connecting it to he Actix world.
-/// 
+///
 /// It wraps a `gtk::Builder` instance and provides methods to create actors that are
 /// connected to the widgets in that builder.
 ///
@@ -172,7 +172,8 @@ impl BuilderConnector {
     /// Create a widgets struct (as defined by the `W` generic parameter of
     /// [`woab::BuilderFactory`](struct.BuilderFactory.html)) and map the builder's widgets to its fields.
     pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
-        where gtk::Builder: TryInto<W>
+    where
+        gtk::Builder: TryInto<W>,
     {
         self.builder.clone().try_into()
     }
@@ -190,7 +191,6 @@ impl BuilderConnector {
     }
 
     pub fn actor<A: actix::Actor<Context = actix::Context<A>>>(&self) -> ActorBuilder<A> {
-
         let (_, rx) = actix::dev::channel::channel(16);
         let ctx = actix::Context::with_receiver(rx);
         ActorBuilder {
@@ -212,9 +212,8 @@ impl Drop for BuilderConnector {
         use gtk::prelude::BuilderExtManual;
 
         let mut callbacks = self.callbacks.borrow_mut();
-        self.builder.connect_signals(move |_, signal| {
-            callbacks.remove(signal).unwrap_or_else(|| Box::new(|_| None))
-        });
+        self.builder
+            .connect_signals(move |_, signal| callbacks.remove(signal).unwrap_or_else(|| Box::new(|_| None)));
     }
 }
 
@@ -228,7 +227,10 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
         self.actor_context.run(actor)
     }
 
-    pub fn create<'b>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> A) -> actix::Addr<A> where 'a: 'b {
+    pub fn create<'b>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> A) -> actix::Addr<A>
+    where
+        'a: 'b,
+    {
         let mut actor_builder_context = ActorBuilderContext {
             builder_connector: self.builder_connector,
             actor_context: self.actor_context,
@@ -237,7 +239,10 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
         actor_builder_context.actor_context.run(actor)
     }
 
-    pub fn try_create<'b, E>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> Result<A, E>) -> Result<actix::Addr<A>, E> where 'a: 'b {
+    pub fn try_create<'b, E>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> Result<A, E>) -> Result<actix::Addr<A>, E>
+    where
+        'a: 'b,
+    {
         let mut actor_builder_context = ActorBuilderContext {
             builder_connector: self.builder_connector,
             actor_context: self.actor_context,
@@ -252,7 +257,8 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
         R::MessageType: 'static,
         A: actix::StreamHandler<R::MessageType>,
     {
-        self.builder_connector.connect_signals(&mut self.actor_context, register_signal_handlers);
+        self.builder_connector
+            .connect_signals(&mut self.actor_context, register_signal_handlers);
         self
     }
 }
@@ -263,16 +269,17 @@ pub struct ActorBuilderContext<'a, A: actix::Actor<Context = actix::Context<A>>>
 }
 
 impl<A: actix::Actor<Context = actix::Context<A>>> ActorBuilderContext<'_, A> {
-    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error> 
-        where gtk::Builder: TryInto<W>
+    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
+    where
+        gtk::Builder: TryInto<W>,
     {
         self.builder_connector.widgets()
     }
 }
 
-impl <'a, A> std::ops::Deref for ActorBuilderContext<'a, A>
+impl<'a, A> std::ops::Deref for ActorBuilderContext<'a, A>
 where
-    A: actix::Actor<Context = actix::Context<A>>
+    A: actix::Actor<Context = actix::Context<A>>,
 {
     type Target = actix::Context<A>;
 
@@ -281,9 +288,9 @@ where
     }
 }
 
-impl <'a, A> std::ops::DerefMut for ActorBuilderContext<'a, A>
+impl<'a, A> std::ops::DerefMut for ActorBuilderContext<'a, A>
 where
-    A: actix::Actor<Context = actix::Context<A>>
+    A: actix::Actor<Context = actix::Context<A>>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.actor_context

@@ -16,7 +16,11 @@ pub fn path_to_single_string(path: &syn::Path) -> Result<String, Error> {
     Ok(segment.ident.to_string())
 }
 
-pub fn iter_attrs_parts(attrs: &[syn::Attribute], look_for: &str, mut dlg: impl FnMut(syn::Expr) -> Result<(), Error>) -> Result<(), Error> {
+pub fn iter_attrs_parts(
+    attrs: &[syn::Attribute],
+    look_for: &str,
+    mut dlg: impl FnMut(syn::Expr) -> Result<(), Error>,
+) -> Result<(), Error> {
     for attr in attrs.iter() {
         if !attr.path.get_ident().map_or(false, |ident| ident == look_for) {
             continue;
@@ -39,7 +43,11 @@ pub fn iter_attrs_parts(attrs: &[syn::Attribute], look_for: &str, mut dlg: impl 
     Ok(())
 }
 
-pub fn iter_attrs_parameters(attrs: &[syn::Attribute], look_for: &str, mut dlg: impl FnMut(syn::Path, Option<syn::Expr>) -> Result<(), Error>) -> Result<(), Error> {
+pub fn iter_attrs_parameters(
+    attrs: &[syn::Attribute],
+    look_for: &str,
+    mut dlg: impl FnMut(syn::Path, Option<syn::Expr>) -> Result<(), Error>,
+) -> Result<(), Error> {
     iter_attrs_parts(attrs, look_for, |expr| {
         match expr {
             syn::Expr::Assign(assign) => {

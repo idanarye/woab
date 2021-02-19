@@ -43,10 +43,14 @@ enum WindowSignal {
 impl actix::StreamHandler<WindowSignal> for WindowActor {
     fn handle(&mut self, signal: WindowSignal, ctx: &mut Self::Context) {
         use actix::prelude::*;
-        use gtk::prelude::*;;
+        use gtk::prelude::*;
         match signal {
             WindowSignal::ClickButton => {
-                let addend = self.factories.row_addend.instantiate().actor()
+                let addend = self
+                    .factories
+                    .row_addend
+                    .instantiate()
+                    .actor()
                     .connect_signals(AddendSignal::connector())
                     .create(|builder_ctx| {
                         let widgets: AddendWidgets = builder_ctx.widgets().unwrap();
@@ -103,11 +107,11 @@ impl actix::StreamHandler<AddendSignal> for AddendActor {
                     self.number = new_number;
                     self.window.do_send(Recalculate);
                 }
-            },
+            }
             AddendSignal::RemoveAddend => {
                 use actix::prelude::*;
                 ctx.address().do_send(woab::Remove);
-            },
+            }
         }
     }
 }
@@ -125,23 +129,20 @@ impl actix::Handler<Recalculate> for WindowActor {
         use actix::prelude::*;
         use gtk::prelude::*;
 
-        let futures = futures_util::future::join_all(self.addends.iter().map(|addend| addend.send(GetNumber)).collect::<Vec<_>>());
-        ctx.spawn(
-            futures
-            .into_actor(self)
-            .map(|result, actor, _ctx| {
-                let mut sum = 0;
-                for addend in result {
-                    if let Some(addend) = addend.unwrap() {
-                        sum += addend;
-                    } else {
-                        actor.widgets.buf_sum.set_text("#N/A");
-                        return;
-                    }
+        let futures =
+            futures_util::future::join_all(self.addends.iter().map(|addend| addend.send(GetNumber)).collect::<Vec<_>>());
+        ctx.spawn(futures.into_actor(self).map(|result, actor, _ctx| {
+            let mut sum = 0;
+            for addend in result {
+                if let Some(addend) = addend.unwrap() {
+                    sum += addend;
+                } else {
+                    actor.widgets.buf_sum.set_text("#N/A");
+                    return;
                 }
-                actor.widgets.buf_sum.set_text(&format!("{}", sum));
-            })
-        );
+            }
+            actor.widgets.buf_sum.set_text(&format!("{}", sum));
+        }));
     }
 }
 
@@ -160,19 +161,22 @@ impl actix::Handler<GetNumber> for AddendActor {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.glade")?))?);
+    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
+        "examples/example.glade",
+    )?))?);
 
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.instantiate().actor()
+    factories
+        .win_app
+        .instantiate()
+        .actor()
         .connect_signals(WindowSignal::connector())
-        .create(|ctx| {
-            WindowActor {
-                widgets: ctx.widgets().unwrap(),
-                factories,
-                addends: Vec::new(),
-            }
+        .create(|ctx| WindowActor {
+            widgets: ctx.widgets().unwrap(),
+            factories,
+            addends: Vec::new(),
         });
 
     gtk::main();

@@ -3,7 +3,6 @@ use gtk::prelude::*;
 #[macro_use]
 mod util;
 
-
 #[derive(woab::Factories)]
 struct Factories {
     #[factory(extra(buf_left, buf_right))]
@@ -46,10 +45,10 @@ impl actix::StreamHandler<TestSignal> for TestActor {
         match signal {
             TestSignal::CopyRightToLeft(_) => {
                 self.widgets.buf_left.set_text(&get_text(&self.widgets.buf_right));
-            },
+            }
             TestSignal::CopyLeftToRight => {
                 self.widgets.buf_right.set_text(&get_text(&self.widgets.buf_left));
-            },
+            }
         }
     }
 }
@@ -60,7 +59,10 @@ fn test_basic() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let mut put_widgets_in = None;
-    factories.win_test.instantiate().actor()
+    factories
+        .win_test
+        .instantiate()
+        .actor()
         .connect_signals(TestSignal::connector())
         .create(|ctx| {
             let widgets = ctx.widgets::<TestWidgets>().unwrap();

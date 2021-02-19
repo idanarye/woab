@@ -10,7 +10,11 @@ pub trait BuilderSignal: Sized + 'static {
     ///
     /// The returned function should convert the signals it revceives to the signal type, and
     /// transmit them over `tx`.
-    fn bridge_signal(signal: &str, tx: mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<RawSignalCallback, crate::Error>;
+    fn bridge_signal(
+        signal: &str,
+        tx: mpsc::Sender<Self>,
+        inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>,
+    ) -> Result<RawSignalCallback, crate::Error>;
 
     fn list_signals() -> &'static [&'static str];
 
@@ -134,14 +138,18 @@ where
     fn route_to<A>(self, ctx: &mut A::Context) -> Self::RouteSignals
     where
         A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<Self::MessageType>
+        A: actix::StreamHandler<Self::MessageType>,
     {
-        let Self { inhibit_dlg, transformer, .. } = self;
+        let Self {
+            inhibit_dlg,
+            transformer,
+            ..
+        } = self;
 
         let (tx, rx) = mpsc::channel(16);
 
         use tokio::stream::StreamExt;
-        let rx = rx.map(move|s| transformer.transform(s));
+        let rx = rx.map(move |s| transformer.transform(s));
         A::add_stream(rx, ctx);
 
         SignalRouter { tx, inhibit_dlg }
@@ -155,7 +163,12 @@ where
         let router = self.route_to::<A>(ctx);
 
         for signal in S::list_signals() {
-            callbacks.insert(signal, router.handler(signal).expect("No signal handler even though its from the list"));
+            callbacks.insert(
+                signal,
+                router
+                    .handler(signal)
+                    .expect("No signal handler even though its from the list"),
+            );
         }
     }
 }
@@ -172,7 +185,7 @@ where
     pub fn route_to<A>(self, ctx: &mut A::Context) -> <Self as RegisterSignalHandlers>::RouteSignals
     where
         A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<<Self as RegisterSignalHandlers>::MessageType>
+        A: actix::StreamHandler<<Self as RegisterSignalHandlers>::MessageType>,
     {
         <Self as RegisterSignalHandlers>::route_to::<A>(self, ctx)
     }

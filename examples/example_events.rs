@@ -1,4 +1,4 @@
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use gtk::prelude::*;
 
@@ -36,11 +36,9 @@ impl actix::Actor for WindowActor {
 
 impl WindowActor {
     fn update_pressed_time_display(&self) {
-        self.widgets.buf_count_pressed_time.set_text(&format!(
-            "L: {:?}, R: {:?}",
-            self.total_durations[0],
-            self.total_durations[1],
-        ));
+        self.widgets
+            .buf_count_pressed_time
+            .set_text(&format!("L: {:?}, R: {:?}", self.total_durations[0], self.total_durations[1],));
     }
 }
 
@@ -64,7 +62,7 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
                         return;
                     }
                 }
-            }
+            };
         }
         match signal {
             WindowSignal::Press(_, event) => {
@@ -94,24 +92,25 @@ impl actix::StreamHandler<WindowSignal> for WindowActor {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example_events.glade")?))?);
+    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
+        "examples/example_events.glade",
+    )?))?);
 
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("example")?;
 
-    factories.win_app.instantiate().actor()
-        .connect_signals(WindowSignal::connector()
-            .inhibit(|signal| {
-                match signal {
-                    WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
-                        let character = event.get_keyval().to_unicode();
-                        let is_digit = character.map(|c| c.is_digit(10)).unwrap_or(false);
-                        Some(gtk::Inhibit(is_digit))
-                    }
-                    _ => None,
-                }
-            })
-        )
+    factories
+        .win_app
+        .instantiate()
+        .actor()
+        .connect_signals(WindowSignal::connector().inhibit(|signal| match signal {
+            WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
+                let character = event.get_keyval().to_unicode();
+                let is_digit = character.map(|c| c.is_digit(10)).unwrap_or(false);
+                Some(gtk::Inhibit(is_digit))
+            }
+            _ => None,
+        }))
         .create(|ctx| WindowActor {
             widgets: ctx.widgets().unwrap(),
             press_times: Default::default(),

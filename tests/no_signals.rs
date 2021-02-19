@@ -1,11 +1,10 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use actix::prelude::*;
 
 #[macro_use]
 mod util;
-
 
 #[derive(woab::Factories)]
 struct Factories {
@@ -22,24 +21,24 @@ impl actix::Actor for TestActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         let output = self.output.clone();
         output.borrow_mut().push("before spawned future");
-        ctx.spawn(async move {
-            output.borrow_mut().push("inside spawned future");
-        }.into_actor(self));
+        ctx.spawn(
+            async move {
+                output.borrow_mut().push("inside spawned future");
+            }
+            .into_actor(self),
+        );
     }
 }
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
-pub struct TestWidgets {
-}
+pub struct TestWidgets {}
 
 #[derive(woab::BuilderSignal)]
-enum TestSignal {
-}
+enum TestSignal {}
 
 impl actix::StreamHandler<TestSignal> for TestActor {
     fn handle(&mut self, signal: TestSignal, _ctx: &mut Self::Context) {
-        match signal {
-        }
+        match signal {}
     }
 }
 
@@ -49,10 +48,11 @@ fn test_no_signals() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop("test")?;
     let output = Rc::new(RefCell::new(Vec::new()));
-    factories.win_test.instantiate().actor().start(TestActor { output: output.clone() });
-    wait_for!(*output.borrow() == [
-        "before spawned future",
-        "inside spawned future",
-    ])?;
+    factories
+        .win_test
+        .instantiate()
+        .actor()
+        .start(TestActor { output: output.clone() });
+    wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
     Ok(())
 }
