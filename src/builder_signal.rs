@@ -10,14 +10,26 @@ pub trait BuilderSignal: Sized + 'static {
     ///
     /// The returned function should convert the signals it revceives to the signal type, and
     /// transmit them over `tx`.
+    ///
+    /// The `signal` must be one of the signals listed in [`SIGNALS`](BuilderSignal::SIGNALS).
     fn bridge_signal(
         signal: &str,
         tx: mpsc::Sender<Self>,
         inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>,
     ) -> Result<RawSignalCallback, crate::Error>;
 
+    /// The list of signals supported by this [`BuilderSignal`]
     const SIGNALS: &'static [&'static str];
 
+    /// Entry point for connecting the signals supported by the `BuilderSignal`.
+    ///
+    /// The [`BuilderSingalConnector`] returned by this method can be configured fluent-interface
+    /// style and then either:
+    ///
+    /// * Get passed to [`connect_signals`](crate::ActorBuilder::connect_signals) that connects
+    /// signals emitted from a freshly created GTK builder to a freshly created Actix actor.
+    /// * Get converted to a [`SignalRouter`] via [`route_to`](RegisterSignalHandlers::route_to) to
+    /// connect GTK signals - from builders or otherwise - to an Actix actor.
     fn connector() -> BuilderSingalConnector<Self, (), ()> {
         BuilderSingalConnector {
             transformer: (),
