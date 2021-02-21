@@ -163,9 +163,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                     })),
                 },
                 /* Signal names */
-                quote! {
-                    #ident_as_str,
-                },
+                ident_as_str
             ))
         })
         .collect::<Result<Vec<_>, Error>>()?;
@@ -181,11 +179,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                 }
             }
 
-            fn list_signals() -> &'static [&'static str] {
-                &[
-                    #(#signal_names)*
-                ]
-            }
+            const SIGNALS: &'static [&'static str] = &[#(#signal_names),*];
         }
 
         impl #enum_ident {

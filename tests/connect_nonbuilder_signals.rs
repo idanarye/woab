@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use actix::prelude::*;
 use gio::prelude::*;
-use gtk::prelude::*;
 use hashbrown::HashMap;
 
 #[macro_use]

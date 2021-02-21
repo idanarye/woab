@@ -16,7 +16,7 @@ pub trait BuilderSignal: Sized + 'static {
         inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>,
     ) -> Result<RawSignalCallback, crate::Error>;
 
-    fn list_signals() -> &'static [&'static str];
+    const SIGNALS: &'static [&'static str];
 
     fn connector() -> BuilderSingalConnector<Self, (), ()> {
         BuilderSingalConnector {
@@ -162,7 +162,7 @@ where
     {
         let router = self.route_to::<A>(ctx);
 
-        for signal in S::list_signals() {
+        for signal in S::SIGNALS {
             callbacks.insert(
                 signal,
                 router
