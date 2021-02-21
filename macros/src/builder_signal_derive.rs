@@ -163,7 +163,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                     })),
                 },
                 /* Signal names */
-                ident_as_str
+                ident_as_str,
             ))
         })
         .collect::<Result<Vec<_>, Error>>()?;
