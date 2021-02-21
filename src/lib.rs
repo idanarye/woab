@@ -229,10 +229,10 @@ pub use woab_macros::Factories;
 /// ```
 pub use woab_macros::Removable;
 
+pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use builder_signal::{BuilderSignal, BuilderSingalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
 pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
-pub use builder::*;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
