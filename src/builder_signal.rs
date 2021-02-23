@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
 use tokio::sync::mpsc;
 
-/// Type of a gtk signal callback function that operates on uncast glib values
+/// Type of a gtk signal callback function that operates on uncast glib values.
 pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
 /// Represent a GTK signal that originates from a GTK builder. Refer to [the corresponding derive](derive.BuilderSignal.html).
@@ -39,6 +39,7 @@ pub trait BuilderSignal: Sized + 'static {
     }
 }
 
+#[doc(hidden)]
 pub trait SignalTransformer<S>: Clone {
     type Output: 'static;
 
@@ -61,6 +62,7 @@ impl<S: 'static, T: 'static + Clone> SignalTransformer<S> for (T,) {
     }
 }
 
+#[doc(hidden)]
 pub trait SignalsInhibit<S>: Clone {
     fn inhibit(&self, signal: &S) -> Option<gtk::Inhibit>;
 }
@@ -81,6 +83,16 @@ where
     }
 }
 
+/// Fluent interface for configuring the signal routing from GTK to Actix.
+///
+/// Typically created from [`BuilderSignal::connector`], `BuilderSingalConnector` can be configured
+/// via fluent methods like [`tag`](BuilderSingalConnector::tag) and
+/// [`inhibit`](BuilderSingalConnector::inhibit) and then either:
+///
+/// * Get passed to [`connect_signals`](crate::ActorBuilder::connect_signals) that connects signals
+/// emitted from a freshly created GTK builder to a freshly created Actix actor.
+/// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSingalConnector::route_to) to
+/// connect GTK signals - from builders or otherwise - to an Actix actor.
 pub struct BuilderSingalConnector<S, T, I>
 where
     S: BuilderSignal,
@@ -97,6 +109,14 @@ where
     S: BuilderSignal,
     I: SignalsInhibit<S>,
 {
+    /// Add a tag for identifying the builder instance that generated the signal.
+    ///
+    /// This is useful when you are using [the version of `connect_signals` that does not also
+    /// create an actor](crate::BuilderConnector::connect_signals) to connect multiple
+    /// instantiations of the same set of widgets to a single actor, and need to tell the actor
+    /// which set of widgets generated the signal.
+    ///
+    /// The big example in [`BuilderConnector`](crate::BuilderConnector) demonstrates how to use this.
     pub fn tag<T: Clone>(self, tag: T) -> BuilderSingalConnector<S, (T,), I> {
         BuilderSingalConnector {
             transformer: (tag,),
@@ -111,6 +131,48 @@ where
     S: BuilderSignal,
     T: SignalTransformer<S>,
 {
+    /// Register a function for setting the return value of the signal.
+    ///
+    /// GTK requires some signals to return a boolean value - `true` to "inhibit" and not let the
+    /// signal pass up the inheritance to other handlers, and `false` to let it. This can be
+    /// statically configured in [the `BuilderSignal` derive macro](derive.BuilderSignal.html) with
+    /// `#[signal(inhibit = true)` or `#[signal(inhibit = false)`, but sometimes you need to decide
+    /// based on the signal's parameters. In such cases you can use this function to register a
+    /// closure. If the closure returns `Some`, the signal handler will return the value returned
+    /// by the closure. If it returns `None` the signal handler will return the value configured in
+    /// the macro.
+    ///
+    /// ```no_run
+    /// # use gtk::prelude::*;
+    /// # #[derive(woab::Factories)]
+    /// # struct Factories {
+    /// #     window: woab::BuilderFactory,
+    /// # }
+    /// #
+    /// # struct MyActor;
+    /// # impl actix::Actor for MyActor {
+    /// #     type Context = actix::Context<Self>;
+    /// # }
+    /// # #[derive(woab::BuilderSignal)]
+    /// enum MySignal {
+    ///     ButtonPress(gtk::Button, #[signal(event)] gdk::EventButton), // needs to return a boolean
+    ///     ButtonClick, // needs to return nothing
+    /// }
+    /// #
+    /// # impl actix::StreamHandler<MySignal> for MyActor {
+    /// #     fn handle(&mut self, _signal: MySignal, _ctx: &mut <Self as actix::Actor>::Context) {
+    /// #     }
+    /// # }
+    ///
+    /// fn some_function_that_creates_stuff(factory: &Factories) {
+    ///     factory.window.instantiate().actor()
+    ///         .connect_signals(MySignal::connector().inhibit(|signal| match signal {
+    ///             MySignal::ButtonPress(_, event) => Some(gtk::Inhibit(event.get_button() == 3)), // inhibit on right click
+    ///             _ => None, // all other signals should use the default (static) setting
+    ///         }))
+    ///         .start(MyActor);
+    /// }
+    /// ```
     pub fn inhibit<F: Clone + Fn(&S) -> Option<gtk::Inhibit>>(self, dlg: F) -> BuilderSingalConnector<S, T, F> {
         BuilderSingalConnector {
             transformer: self.transformer,
@@ -129,6 +191,11 @@ where
     I: 'static,
     I: SignalsInhibit<S>,
 {
+    /// Create a [`SignalRouter`] that routes signals to the actor owning the supplied context.
+    ///
+    /// This method only sets the target of the signal routing - the signal router object provides
+    /// methods for connecting the signals from GTK. If they are not used no actual signals will be
+    /// routed.
     pub fn route_to<A>(self, ctx: &mut A::Context) -> SignalRouter<S, I>
     where
         A: actix::Actor<Context = actix::Context<A>>,
@@ -148,7 +215,6 @@ where
 
         SignalRouter { tx, inhibit_dlg }
     }
-
 }
 
 pub struct SignalRouter<S, I>
