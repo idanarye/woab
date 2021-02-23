@@ -28,7 +28,7 @@ pub trait BuilderSignal: Sized + 'static {
     ///
     /// * Get passed to [`connect_signals`](crate::ActorBuilder::connect_signals) that connects
     /// signals emitted from a freshly created GTK builder to a freshly created Actix actor.
-    /// * Get converted to a [`SignalRouter`] via [`route_to`](RegisterSignalHandlers::route_to) to
+    /// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSingalConnector::route_to) to
     /// connect GTK signals - from builders or otherwise - to an Actix actor.
     fn connector() -> BuilderSingalConnector<Self, (), ()> {
         BuilderSingalConnector {
@@ -37,21 +37,6 @@ pub trait BuilderSignal: Sized + 'static {
             _phantom_data: Default::default(),
         }
     }
-}
-
-pub trait RegisterSignalHandlers {
-    type MessageType;
-    type RouteSignals;
-
-    fn route_to<A>(self, ctx: &mut A::Context) -> Self::RouteSignals
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<Self::MessageType>;
-
-    fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<Self::MessageType>;
 }
 
 pub trait SignalTransformer<S>: Clone {
@@ -135,7 +120,7 @@ where
     }
 }
 
-impl<S, T, I> RegisterSignalHandlers for BuilderSingalConnector<S, T, I>
+impl<S, T, I> BuilderSingalConnector<S, T, I>
 where
     S: 'static,
     S: BuilderSignal,
@@ -144,13 +129,10 @@ where
     I: 'static,
     I: SignalsInhibit<S>,
 {
-    type MessageType = T::Output;
-    type RouteSignals = SignalRouter<S, I>;
-
-    fn route_to<A>(self, ctx: &mut A::Context) -> Self::RouteSignals
+    pub fn route_to<A>(self, ctx: &mut A::Context) -> SignalRouter<S, I>
     where
         A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<Self::MessageType>,
+        A: actix::StreamHandler<T::Output>,
     {
         let Self {
             inhibit_dlg,
@@ -167,40 +149,6 @@ where
         SignalRouter { tx, inhibit_dlg }
     }
 
-    fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<Self::MessageType>,
-    {
-        let router = self.route_to::<A>(ctx);
-
-        for signal in S::SIGNALS {
-            callbacks.insert(
-                signal,
-                router
-                    .handler(signal)
-                    .expect("No signal handler even though its from the list"),
-            );
-        }
-    }
-}
-
-impl<S, T, I> BuilderSingalConnector<S, T, I>
-where
-    S: 'static,
-    S: BuilderSignal,
-    T: 'static,
-    T: SignalTransformer<S>,
-    I: 'static,
-    I: SignalsInhibit<S>,
-{
-    pub fn route_to<A>(self, ctx: &mut A::Context) -> <Self as RegisterSignalHandlers>::RouteSignals
-    where
-        A: actix::Actor<Context = actix::Context<A>>,
-        A: actix::StreamHandler<<Self as RegisterSignalHandlers>::MessageType>,
-    {
-        <Self as RegisterSignalHandlers>::route_to::<A>(self, ctx)
-    }
 }
 
 pub struct SignalRouter<S, I>
@@ -229,5 +177,43 @@ where
     pub fn connect<O: glib::ObjectExt>(&self, obj: &O, gtk_signal: &str, actix_signal: &str) -> Result<&Self, crate::Error> {
         obj.connect_local(gtk_signal, false, self.handler(actix_signal)?)?;
         Ok(self)
+    }
+}
+
+pub trait RegisterSignalHandlers {
+    type MessageType;
+
+    fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
+    where
+        A: actix::Actor<Context = actix::Context<A>>,
+        A: actix::StreamHandler<Self::MessageType>;
+}
+
+impl<S, T, I> RegisterSignalHandlers for BuilderSingalConnector<S, T, I>
+where
+    S: 'static,
+    S: BuilderSignal,
+    T: 'static,
+    T: SignalTransformer<S>,
+    I: 'static,
+    I: SignalsInhibit<S>,
+{
+    type MessageType = T::Output;
+
+    fn register_signal_handlers<A>(self, ctx: &mut A::Context, callbacks: &mut HashMap<&'static str, crate::RawSignalCallback>)
+    where
+        A: actix::Actor<Context = actix::Context<A>>,
+        A: actix::StreamHandler<Self::MessageType>,
+    {
+        let router = self.route_to::<A>(ctx);
+
+        for signal in S::SIGNALS {
+            callbacks.insert(
+                signal,
+                router
+                    .handler(signal)
+                    .expect("No signal handler even though its from the list"),
+            );
+        }
     }
 }
