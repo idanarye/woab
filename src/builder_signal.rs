@@ -217,6 +217,11 @@ where
     }
 }
 
+/// Fluent interface for connecting the GTK side of individual signals by name.
+///
+/// A `SignalRouter` object is created with the route to the Actix actor that will receive the
+/// signals, and can be used together with GTK objects to connect the signals from them to that
+/// actor.
 pub struct SignalRouter<S, I>
 where
     S: 'static,
@@ -235,11 +240,48 @@ where
     I: 'static,
     I: SignalsInhibit<S>,
 {
+    /// Generate a handler function for a given signal, that can be connected to objects using `gtk-rs` methods.
+    ///
+    /// ```no_run
+    /// #[derive(woab::BuilderSignal)]
+    /// enum ButtonSignal {
+    ///     Clicked,
+    /// }
+    ///
+    /// fn connect_button_signal<A>(button: &gtk::Button, actor_ctx: &mut A::Context)
+    /// where
+    ///     A: actix::Actor<Context = actix::Context<A>>,
+    ///     A: actix::StreamHandler<ButtonSignal>,
+    /// {
+    ///     use gtk::prelude::*;
+    ///     let router = ButtonSignal::connector().route_to::<A>(actor_ctx);
+    ///     button.connect_local("clicked", false, router.handler("Clicked").unwrap()).unwrap();
+    /// }
+    /// ```
     pub fn handler(&self, signal: &str) -> Result<crate::RawSignalCallback, crate::Error> {
         let inhibit_dlg = self.inhibit_dlg.clone();
         S::bridge_signal(signal, self.tx.clone(), move |signal| inhibit_dlg.inhibit(signal))
     }
 
+    /// Connect a GTK object's signal. Returns itself - so it can be used fluently.
+    ///
+    /// ```no_run
+    /// #[derive(woab::BuilderSignal)]
+    /// enum ButtonSignal {
+    ///     Clicked1,
+    ///     Clicked2,
+    /// }
+    ///
+    /// fn connect_buttons_signal<A>(button1: &gtk::Button, button2: &gtk::Button, actor_ctx: &mut A::Context)
+    /// where
+    ///     A: actix::Actor<Context = actix::Context<A>>,
+    ///     A: actix::StreamHandler<ButtonSignal>,
+    /// {
+    ///     ButtonSignal::connector().route_to::<A>(actor_ctx)
+    ///         .connect(button1, "clicked", "Clicked1").unwrap()
+    ///         .connect(button2, "clicked", "Clicked2").unwrap();
+    /// }
+    /// ```
     pub fn connect<O: glib::ObjectExt>(&self, obj: &O, gtk_signal: &str, actix_signal: &str) -> Result<&Self, crate::Error> {
         obj.connect_local(gtk_signal, false, self.handler(actix_signal)?)?;
         Ok(self)
