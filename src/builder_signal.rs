@@ -288,6 +288,7 @@ where
     }
 }
 
+#[doc(hidden)] // Mainly used insternally by `connect_signals`
 pub trait RegisterSignalHandlers {
     type MessageType;
 
