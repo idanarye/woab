@@ -24,39 +24,6 @@ use hashbrown::HashMap;
 ///
 /// Refer to [`#[derive(woab::Factories)]`](derive.Factories.html) for how to create instances of
 /// this struct.
-pub struct BuilderFactory(String);
-
-impl From<String> for BuilderFactory {
-    fn from(xml: String) -> Self {
-        Self(xml)
-    }
-}
-
-impl BuilderFactory {
-    /// Create a `gtk::Builder` from the instructions inside this factory.
-    ///
-    /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
-    pub fn instantiate(&self) -> BuilderConnector {
-        Builder::from_string(&self.0).into()
-    }
-}
-
-/// Holds instructions for generating GTK widgets and connecing them to Actix actors.
-///
-/// 1. The first generic parameter, `A`, is the actor type.
-/// 2. The second generic parameter, `W`, is the widgets type. Typically created with
-///    [`#[derive(woab::WidgetsFromBuilder)]`](derive.WidgetsFromBuilder.html) on a struct that
-///    specifies the widgets of the Glade XML file that the code needs to access.
-/// 3. The third generic parameter, `S`, is the signal type. Typically created with
-///    [`#[derive(woab::BuilderSignal)]`](derive.BuilderSignal.html) on an enum that lists the
-///    signals from the Glade XML file that the code wants to handle.
-///
-/// `A` can be `()` if the widgets are to be handled by an existing actor - usually the one that
-/// handles their parent widget. `S` can also be `()` if it is desired to just generate widgets
-/// without connecting a signal.
-///
-/// Refer to [`#[derive(woab::Factories)]`](derive.Factories.html) for how to create instances of
-/// this struct.
 ///
 /// ```no_run
 /// # use gtk::prelude::*;
@@ -128,13 +95,35 @@ impl BuilderFactory {
 ///         });
 /// }
 /// ```
+pub struct BuilderFactory(String);
+
+impl From<String> for BuilderFactory {
+    fn from(xml: String) -> Self {
+        Self(xml)
+    }
+}
+
+impl BuilderFactory {
+    /// Create a `gtk::Builder` from the instructions inside this factory.
+    ///
+    /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
+    pub fn instantiate(&self) -> BuilderConnector {
+        Builder::from_string(&self.0).into()
+    }
+}
 
 /// Context for utilizing a `gtk::Builder` and connecting it to he Actix world.
 ///
 /// It wraps a `gtk::Builder` instance and provides methods to create actors that are
 /// connected to the widgets in that builder.
 ///
-/// See [`woab::BuilderFactory`](struct.BuilderFactory.html) for usage example.
+/// See [`BuilderFactory`] for usage example.
+///
+/// # Caveats
+///
+/// If you connect signals via a builder connector, they will only be connected once the connector
+/// is dropped. If you need the signals connected before the connector is naturally dropped (e.g. -
+/// if you start `gtk::main()` in the same scope) use [`finish`](BuilderConnector::finish).
 pub struct BuilderConnector {
     builder: gtk::Builder,
     callbacks: RefCell<HashMap<&'static str, crate::RawSignalCallback>>,
@@ -150,6 +139,7 @@ impl From<gtk::Builder> for BuilderConnector {
 }
 
 impl BuilderConnector {
+    /// Get a GTK object from the builder by id.
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
     where
         W: glib::IsA<glib::Object>,
@@ -169,8 +159,7 @@ impl BuilderConnector {
         })
     }
 
-    /// Create a widgets struct (as defined by the `W` generic parameter of
-    /// [`woab::BuilderFactory`](struct.BuilderFactory.html)) and map the builder's widgets to its fields.
+    /// Create a widgets struct who's fields are mapped to the builder's widgets.
     pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
     where
         gtk::Builder: TryInto<W>,
@@ -178,6 +167,16 @@ impl BuilderConnector {
         self.builder.clone().try_into()
     }
 
+    /// Route signals defined by the builder to an Actix actor.
+    ///
+    /// This only connects the signals defined by the builder signal connector passed in the second
+    /// argument. Such a connector is usually obtained from
+    /// [`BuilderSignal::connector`](crate::BuilderSignal::connector).
+    ///
+    /// # Caveats
+    ///
+    /// The signals will only be connected when the builder is dropped (either when the scope ends
+    /// or when you call [`finish`](BuilderConnector::finish))
     pub fn connect_signals<A, R>(&self, ctx: &mut actix::Context<A>, register_signal_handlers: R) -> &Self
     where
         A: actix::Actor<Context = actix::Context<A>>,
@@ -190,6 +189,7 @@ impl BuilderConnector {
         self
     }
 
+    /// "Entry point" for creating an Actix actor that uses the builder.
     pub fn actor<A: actix::Actor<Context = actix::Context<A>>>(&self) -> ActorBuilder<A> {
         let (_, rx) = actix::dev::channel::channel(16);
         let ctx = actix::Context::with_receiver(rx);
@@ -199,9 +199,11 @@ impl BuilderConnector {
         }
     }
 
-    /// Create a stream of all the signals.
+    /// Perform the actual signal connection.
     ///
-    /// Will return `None` if there are no signals, to allow avoiding closed streams.
+    /// Until this method is called, or until the `BuilderConnector` is dropped, the signals will
+    /// not be connected and if GTK runs during that time the signals it emits will not be sent to
+    /// the Actix actor(s).
     pub fn finish(self) {
         std::mem::drop(self)
     }
@@ -217,16 +219,28 @@ impl Drop for BuilderConnector {
     }
 }
 
+/// Fluent interface for launching an Actix actor that works with a GTK builder's instantiation.
 pub struct ActorBuilder<'a, A: actix::Actor<Context = actix::Context<A>>> {
     builder_connector: &'a BuilderConnector,
     actor_context: A::Context,
 }
 
 impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
+    /// Start a new actor by value.
+    ///
+    /// The actor will receive builder signals registered by calls to
+    /// [`connect_signals`](ActorBuilder::connect_signals) on this `ActorBuilder`.
     pub fn start(self, actor: A) -> actix::Addr<A> {
         self.actor_context.run(actor)
     }
 
+    /// Start a new actor from a closure.
+    ///
+    /// The closure receives an [`ActorBuilderContext`] which can be used for getting the widgets
+    /// and for accessing the Actix actor context.
+    ///
+    /// The actor will receive builder signals registered by calls to
+    /// [`connect_signals`](ActorBuilder::connect_signals) on this `ActorBuilder`.
     pub fn create<'b>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> A) -> actix::Addr<A>
     where
         'a: 'b,
@@ -239,6 +253,13 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
         actor_builder_context.actor_context.run(actor)
     }
 
+    /// Start a new actor from a closure that can return an error.
+    ///
+    /// The closure receives an [`ActorBuilderContext`] which can be used for getting the widgets
+    /// and for accessing the Actix actor context.
+    ///
+    /// The actor will receive builder signals registered by calls to
+    /// [`connect_signals`](ActorBuilder::connect_signals) on this `ActorBuilder`.
     pub fn try_create<'b, E>(self, dlg: impl FnOnce(&mut ActorBuilderContext<'a, A>) -> Result<A, E>) -> Result<actix::Addr<A>, E>
     where
         'a: 'b,
@@ -251,6 +272,11 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
         Ok(actor_builder_context.actor_context.run(actor))
     }
 
+    /// Connect signals from the GTK builder represented by this `ActorBuilder` to the Actix actor
+    /// represented by this `ActorBuilder`.
+    ///
+    /// The `RegisterSignalHandlers` required for running this method is usually obtained from
+    /// [`BuilderSignal::connector`](crate::BuilderSignal::connector).
     pub fn connect_signals<R>(mut self, register_signal_handlers: R) -> Self
     where
         R: crate::RegisterSignalHandlers,
