@@ -9,8 +9,8 @@
 //!
 //! To use WoAB one would typically create a factories struct using
 //! [`woab::Factories`](derive.Factories.html) and use it dissect the Glade XML file(s). Each field
-//! of the factories struct will be a [`woab::BuilderFactory`](struct.BuilderFactory.html) that can create:
-
+//! of the factories struct will be a [`woab::BuilderFactory`](BuilderFactory) that can create:
+//!
 //! * An Actor (optional)
 //! * A widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html)
 //! * A signal enum (optional) using [`woab::BuilderSignal`](derive.BuilderSignal.html)
@@ -25,11 +25,11 @@
 //! tagged signals - `StreamHandler::finished` should be overridden to avoid stopping the actor
 //! when one instance of the widgets is removed!!!**
 //!
-//! To remove widget-bound actors at runtime, see [`woab::Remove`](struct.Remove.html).
+//! To remove widget-bound actors at runtime, see [`woab::Remove`](Remove).
 //!
 //! After initializing GTK and before starting the main loop,
-//! [`woab::run_actix_inside_gtk_event_loop`](fn.run_actix_inside_gtk_event_loop.html) **must** be
-//! called. **Do not run the Actix system manually!**
+//! [`woab::run_actix_inside_gtk_event_loop`](run_actix_inside_gtk_event_loop) **must** be called.
+//! **Do not run the Actix system manually!**
 //!
 //! ```no_run
 //! use gtk::prelude::*;
@@ -120,7 +120,7 @@ mod event_loops_bridge;
 /// ```
 pub use woab_macros::WidgetsFromBuilder;
 
-/// Represent a GTK signal that originates from a GTK builder. See [the corresponding trait](trait.BuilderSignal.html).
+/// Represent a GTK signal that originates from a GTK builder. See [the corresponding trait](BuilderSignal).
 ///
 /// Must be used to decorate an enum. Each signal one wants to handle should be a variant of the
 /// enum. Unit variants ignore the signal parameters, and tuple variants convert each parameter to
@@ -141,10 +141,9 @@ pub use woab_macros::BuilderSignal;
 /// `GtkListBox`) and see how they look together inside Glade, and then split the XML to multiple
 /// factories that create them separately during runtime.
 ///
-/// Typically the fields of the struct will be of type
-/// [`woab::BuilderFactory`](struct.BuilderFactory.html), but
-/// anything `From<String>` is allowed so [`woab::BuilderFactory`](struct.BuilderFactory.html) or
-/// even just `String`s are also okay, if they are needed.
+/// Typically the fields of the struct will be of type [`woab::BuilderFactory`](BuilderFactory),
+/// but anything `From<String>` is allowed so [`woab::BuilderFactory`](BuilderFactory) or even just
+/// `String`s are also okay, if they are needed.
 ///
 /// If a widget needs to be accompanied by some root level resource (like `GtkTextBuffer` or
 /// `GtkListStore`) these resources should be listed inside a `#[factory(extra(...))]` attribute.
@@ -175,7 +174,7 @@ pub use woab_macros::BuilderSignal;
 /// ```
 pub use woab_macros::Factories;
 
-/// Make the actor remove itself and its widgets when it gets the [`woab::Remove`](struct.Remove.html) message.
+/// Make the actor remove itself and its widgets when it gets the [`woab::Remove`](Remove) message.
 ///
 /// The mandatory attribute `removable` must be an expression that resolves to a GTK widget that
 /// has a parent. When the `woab::Remove` message is received, this actor will remove that widget
@@ -264,7 +263,7 @@ pub enum Error {
 
 /// A message for removing actors along with their GUI
 ///
-/// Refer to `#[derive(woab::Removable)]` docs for usage instructions.
+/// Refer to [`#[derive(woab::Removable)]`](derive.Removable.html) docs for usage instructions.
 /// ```no_run
 /// #[derive(woab::Removable)]
 /// #[removable(self.widgets.main_window)]
