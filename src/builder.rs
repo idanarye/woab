@@ -289,12 +289,18 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
     }
 }
 
+/// Context for creating the actor from the [`ActorBuilder`].
+///
+/// In addition to its own methods, this context derefs to the Actix context, which can be used for
+/// getting the address, connecting streams, spawning futures, and everything else a mutable
+/// reference to an Actix context allows.
 pub struct ActorBuilderContext<'a, A: actix::Actor<Context = actix::Context<A>>> {
     builder_connector: &'a BuilderConnector,
     actor_context: A::Context,
 }
 
 impl<A: actix::Actor<Context = actix::Context<A>>> ActorBuilderContext<'_, A> {
+    /// Create a widgets struct who's fields are mapped to the builder's widgets.
     pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
     where
         gtk::Builder: TryInto<W>,
