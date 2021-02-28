@@ -287,6 +287,24 @@ impl<'a, A: actix::Actor<Context = actix::Context<A>>> ActorBuilder<'a, A> {
             .connect_signals(&mut self.actor_context, register_signal_handlers);
         self
     }
+
+    /// Create a widgets struct who's fields are mapped to the builder's widgets.
+    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
+    where
+        gtk::Builder: TryInto<W>,
+    {
+        self.builder_connector.widgets()
+    }
+
+    /// Get a reference to the Actix context.
+    pub fn actor_context(&self) -> &A::Context {
+        &self.actor_context
+    }
+
+    /// Get a mutable reference to the Actix context.
+    pub fn actor_context_mut(&mut self) -> &mut A::Context {
+        &mut self.actor_context
+    }
 }
 
 /// Context for creating the actor from the [`ActorBuilder`].
