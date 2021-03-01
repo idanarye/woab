@@ -23,15 +23,15 @@ pub trait BuilderSignal: Sized + 'static {
 
     /// Entry point for connecting the signals supported by the `BuilderSignal`.
     ///
-    /// The [`BuilderSingalConnector`] returned by this method can be configured fluent-interface
+    /// The [`BuilderSignalConnector`] returned by this method can be configured fluent-interface
     /// style and then either:
     ///
     /// * Get passed to [`connect_signals`](crate::ActorBuilder::connect_signals) that connects
     /// signals emitted from a freshly created GTK builder to a freshly created Actix actor.
-    /// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSingalConnector::route_to) to
+    /// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSignalConnector::route_to) to
     /// connect GTK signals - from builders or otherwise - to an Actix actor.
-    fn connector() -> BuilderSingalConnector<Self, (), ()> {
-        BuilderSingalConnector {
+    fn connector() -> BuilderSignalConnector<Self, (), ()> {
+        BuilderSignalConnector {
             transformer: (),
             inhibit_dlg: (),
             _phantom_data: Default::default(),
@@ -85,15 +85,15 @@ where
 
 /// Fluent interface for configuring the signal routing from GTK to Actix.
 ///
-/// Typically created from [`BuilderSignal::connector`], `BuilderSingalConnector` can be configured
-/// via fluent methods like [`tag`](BuilderSingalConnector::tag) and
-/// [`inhibit`](BuilderSingalConnector::inhibit) and then either:
+/// Typically created from [`BuilderSignal::connector`], `BuilderSignalConnector` can be configured
+/// via fluent methods like [`tag`](BuilderSignalConnector::tag) and
+/// [`inhibit`](BuilderSignalConnector::inhibit) and then either:
 ///
 /// * Get passed to [`connect_signals`](crate::ActorBuilder::connect_signals) that connects signals
 /// emitted from a freshly created GTK builder to a freshly created Actix actor.
-/// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSingalConnector::route_to) to
+/// * Get converted to a [`SignalRouter`] via [`route_to`](BuilderSignalConnector::route_to) to
 /// connect GTK signals - from builders or otherwise - to an Actix actor.
-pub struct BuilderSingalConnector<S, T, I>
+pub struct BuilderSignalConnector<S, T, I>
 where
     S: BuilderSignal,
     T: Clone,
@@ -104,7 +104,7 @@ where
     _phantom_data: core::marker::PhantomData<S>,
 }
 
-impl<S, I> BuilderSingalConnector<S, (), I>
+impl<S, I> BuilderSignalConnector<S, (), I>
 where
     S: BuilderSignal,
     I: SignalsInhibit<S>,
@@ -117,8 +117,8 @@ where
     /// which set of widgets generated the signal.
     ///
     /// The big example in [`BuilderConnector`](crate::BuilderConnector) demonstrates how to use this.
-    pub fn tag<T: Clone>(self, tag: T) -> BuilderSingalConnector<S, (T,), I> {
-        BuilderSingalConnector {
+    pub fn tag<T: Clone>(self, tag: T) -> BuilderSignalConnector<S, (T,), I> {
+        BuilderSignalConnector {
             transformer: (tag,),
             inhibit_dlg: self.inhibit_dlg,
             _phantom_data: Default::default(),
@@ -126,7 +126,7 @@ where
     }
 }
 
-impl<S, T> BuilderSingalConnector<S, T, ()>
+impl<S, T> BuilderSignalConnector<S, T, ()>
 where
     S: BuilderSignal,
     T: SignalTransformer<S>,
@@ -173,8 +173,8 @@ where
     ///         .start(MyActor);
     /// }
     /// ```
-    pub fn inhibit<F: Clone + Fn(&S) -> Option<gtk::Inhibit>>(self, dlg: F) -> BuilderSingalConnector<S, T, F> {
-        BuilderSingalConnector {
+    pub fn inhibit<F: Clone + Fn(&S) -> Option<gtk::Inhibit>>(self, dlg: F) -> BuilderSignalConnector<S, T, F> {
+        BuilderSignalConnector {
             transformer: self.transformer,
             inhibit_dlg: dlg,
             _phantom_data: Default::default(),
@@ -182,7 +182,7 @@ where
     }
 }
 
-impl<S, T, I> BuilderSingalConnector<S, T, I>
+impl<S, T, I> BuilderSignalConnector<S, T, I>
 where
     S: 'static,
     S: BuilderSignal,
@@ -298,7 +298,7 @@ pub trait RegisterSignalHandlers {
         A: actix::StreamHandler<Self::MessageType>;
 }
 
-impl<S, T, I> RegisterSignalHandlers for BuilderSingalConnector<S, T, I>
+impl<S, T, I> RegisterSignalHandlers for BuilderSignalConnector<S, T, I>
 where
     S: 'static,
     S: BuilderSignal,

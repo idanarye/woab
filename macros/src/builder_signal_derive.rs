@@ -180,7 +180,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
         }
 
         impl #enum_ident {
-            fn connector() -> woab::BuilderSingalConnector<Self, (), ()> {
+            fn connector() -> woab::BuilderSignalConnector<Self, (), ()> {
                 <Self as woab::BuilderSignal>::connector()
             }
         }

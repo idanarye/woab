@@ -119,7 +119,7 @@ impl BuilderFactory {
 ///
 /// See [`BuilderFactory`] for usage example.
 ///
-/// # Caveats
+/// # Pitfalls
 ///
 /// If you connect signals via a builder connector, they will only be connected once the connector
 /// is dropped. If you need the signals connected before the connector is naturally dropped (e.g. -
@@ -173,7 +173,7 @@ impl BuilderConnector {
     /// argument. Such a connector is usually obtained from
     /// [`BuilderSignal::connector`](crate::BuilderSignal::connector).
     ///
-    /// # Caveats
+    /// # Pitfalls
     ///
     /// The signals will only be connected when the builder is dropped (either when the scope ends
     /// or when you call [`finish`](BuilderConnector::finish))
