@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "woab"
-version = "0.1.0"
+version = "0.2.0"
 description = "Bridge between GTK and Actix to create actor-based GUIs"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"

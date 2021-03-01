@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## 0.2.0 - 2021-03-01
 ### Added
 - `#[signal(inhibit = true|false)]` attribute for
   `#[derive(woab::BuilderSignal)]` for statically setting the return type of
