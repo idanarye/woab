@@ -151,13 +151,10 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
                     #ident_as_str => Ok(Box::new(move |args| {
                         let signal = #msg_construction;
                         let return_value = #signal_return_value;
-                        match tx.clone().try_send(signal) {
+                        match tx.clone().send(signal) {
                             Ok(_) => return_value,
-                            Err(tokio::sync::mpsc::error::TrySendError::Closed(_)) => {
-                                panic!("Unable to send {} signal - channel is closed", #ident_as_str);
-                            },
-                            Err(tokio::sync::mpsc::error::TrySendError::Full(_)) => {
-                                panic!("Unable to send {} signal - channel is full", #ident_as_str);
+                            Err(err) => {
+                                panic!("Unable to send {} signal - {}", #ident_as_str, err);
                             },
                         }
                     })),
@@ -171,7 +168,7 @@ pub fn impl_builder_signal_derive(ast: &syn::DeriveInput) -> Result<proc_macro2:
     let (match_arms, signal_names) = vec_of_tuples.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
     Ok(quote! {
         impl woab::BuilderSignal for #enum_ident {
-            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::Sender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<woab::RawSignalCallback, woab::Error> {
+            fn bridge_signal(signal: &str, tx: tokio::sync::mpsc::UnboundedSender<Self>, inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>) -> Result<woab::RawSignalCallback, woab::Error> {
                 use tokio::sync::mpsc::error::TrySendError;
                 match signal {
                     #(#match_arms)*

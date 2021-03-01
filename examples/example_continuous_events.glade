@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkTextBuffer" id="size_descr"/>
+  <object class="GtkApplicationWindow" id="win_app">
+    <property name="can-focus">False</property>
+    <signal name="configure-event" handler="WindowConfigure" swapped="no"/>
+    <child>
+      <object class="GtkTextView">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="editable">False</property>
+        <property name="buffer">size_descr</property>
+      </object>
+    </child>
+  </object>
+</interface>

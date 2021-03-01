@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     directly (not a closure that creates it) or with `create`/`try_create`
     which accepts a closure that accepts an enhanced context (unlike Actix
     context and widgets. The widgets can be created from the enhanced context)
+- Signals are now routed to actors through unbounded Tokio channels.
 
 ## 0.1.0 - 2020-09-02
 ### Added

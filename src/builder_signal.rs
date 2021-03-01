@@ -14,7 +14,7 @@ pub trait BuilderSignal: Sized + 'static {
     /// The `signal` must be one of the signals listed in [`SIGNALS`](BuilderSignal::SIGNALS).
     fn bridge_signal(
         signal: &str,
-        tx: mpsc::Sender<Self>,
+        tx: mpsc::UnboundedSender<Self>,
         inhibit_dlg: impl 'static + Fn(&Self) -> Option<gtk::Inhibit>,
     ) -> Result<RawSignalCallback, crate::Error>;
 
@@ -207,7 +207,7 @@ where
             ..
         } = self;
 
-        let (tx, rx) = mpsc::channel(16);
+        let (tx, rx) = mpsc::unbounded_channel();
 
         use tokio::stream::StreamExt;
         let rx = rx.map(move |s| transformer.transform(s));
@@ -229,7 +229,7 @@ where
     I: 'static,
     I: SignalsInhibit<S>,
 {
-    tx: mpsc::Sender<S>,
+    tx: mpsc::UnboundedSender<S>,
     inhibit_dlg: I,
 }
 
