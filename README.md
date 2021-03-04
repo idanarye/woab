@@ -2,6 +2,8 @@
 [![Latest Version](https://img.shields.io/crates/v/woab.svg)](https://crates.io/crates/woab)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://idanarye.github.io/woab/)
 
+**IMPORTANT!!!** The signal handling API is going to go through a big, breaking overhaul. See https://github.com/idanarye/woab/issues/15.
+
 # WoAB
 
 WoAB (Widgets on Actors Bridge) is a library for combining the widgets toolkit
