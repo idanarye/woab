@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "woab"
-version = "0.2.0"
+version = "0.2.1"
 description = "Bridge between GTK and Actix to create actor-based GUIs"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"
@@ -20,7 +20,7 @@ glib = "^0.10"
 gdk = "^0.13"
 actix = "^0.9"
 tokio = "^0.2"
-woab-macros = { version = "0.1.0", path = "macros" }
+woab-macros = { version = "0.2.1", path = "macros" }
 quick-xml = "0.18.1"
 thiserror = "1.0.20"
 hashbrown = "0.9.1"

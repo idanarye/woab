@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## 0.2.1 - 2021-03-18
+### Fixed
+- Fix the version of the macro crate.
+
 ## 0.2.0 - 2021-03-01
 ### Added
 - `#[signal(inhibit = true|false)]` attribute for
