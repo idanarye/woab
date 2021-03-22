@@ -1,6 +1,30 @@
 use hashbrown::HashMap;
 use tokio::sync::mpsc;
 
+pub type GtkSignal = GtkSignalTagged<()>;
+
+#[derive(actix::Message)]
+#[rtype(result = "glib::Value")]
+pub struct GtkSignalTagged<T> {
+    pub handler_name: &'static str,
+    pub arguments: Vec<glib::Value>,
+    pub tag: T,
+}
+
+pub trait WoabSignalledActor: actix::Handler<GtkSignal> {
+    /// The list of signals supported by this actor
+    const SIGNALS: &'static [&'static str];
+
+    fn handler(_signal: &str) -> Result<crate::RawSignalCallback, crate::Error> {
+        todo!("create a closure that cranks tokio and waits for a result")
+    }
+
+    fn connect_signal<O: glib::ObjectExt>(obj: &O, gtk_signal: &str, actix_signal: &str) -> Result<glib::SignalHandlerId, crate::Error> {
+        // TODO check `actix_signal` against `SIGNALS`
+        Ok(obj.connect_local(gtk_signal, false, Self::handler(actix_signal)?)?)
+    }
+}
+
 /// Type of a gtk signal callback function that operates on uncast glib values.
 pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
