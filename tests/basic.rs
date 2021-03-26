@@ -57,18 +57,20 @@ impl actix::StreamHandler<TestSignal> for TestActor {
 fn test_basic() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("basic.glade") as &[u8])?;
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("test")?;
+    woab::run_actix_inside_gtk_event_loop()?;
     let mut put_widgets_in = None;
-    factories
-        .win_test
-        .instantiate()
-        .actor()
-        .connect_signals(TestSignal::connector())
-        .create(|ctx| {
-            let widgets = ctx.widgets::<TestWidgets>().unwrap();
-            put_widgets_in = Some(widgets.clone());
-            TestActor { widgets }
-        });
+    woab::block_on(async {
+        factories
+            .win_test
+            .instantiate()
+            .actor()
+            .connect_signals(TestSignal::connector())
+            .create(|ctx| {
+                let widgets = ctx.widgets::<TestWidgets>().unwrap();
+                put_widgets_in = Some(widgets.clone());
+                TestActor { widgets }
+            });
+    });
     let widgets = put_widgets_in.unwrap();
     widgets.buf_left.set_text("test left");
     wait_for!(get_text(&widgets.buf_right) == "")?;

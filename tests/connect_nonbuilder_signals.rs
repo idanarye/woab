@@ -87,17 +87,19 @@ impl actix::StreamHandler<TestSignal> for TestActor {
 #[test]
 fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("test")?;
+    woab::run_actix_inside_gtk_event_loop()?;
 
     let output = Rc::new(RefCell::new(Vec::new()));
 
     let action_group = gio::SimpleActionGroup::new();
-    TestActor {
-        action_group: action_group.clone(),
-        output: output.clone(),
-        actions: Default::default(),
-    }
-    .start();
+    woab::block_on(async {
+        TestActor {
+            action_group: action_group.clone(),
+            output: output.clone(),
+            actions: Default::default(),
+        }
+        .start();
+    });
 
     wait_for!(*output.borrow() == ["init"])?;
     action_group.activate_action("action1", None);

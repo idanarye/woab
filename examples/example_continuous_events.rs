@@ -50,16 +50,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?))?);
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("example")?;
+    woab::run_actix_inside_gtk_event_loop()?;
 
-    factories
-        .win_app
-        .instantiate()
-        .actor()
-        .connect_signals(WindowSignal::connector())
-        .create(|ctx| WindowActor {
-            widgets: ctx.widgets().unwrap(),
-        });
+    woab::block_on(async {
+        factories
+            .win_app
+            .instantiate()
+            .actor()
+            .connect_signals(WindowSignal::connector())
+            .create(|ctx| WindowActor {
+                widgets: ctx.widgets().unwrap(),
+            });
+    });
 
     gtk::main();
     Ok(())

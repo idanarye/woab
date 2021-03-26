@@ -113,19 +113,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.glade")?))?;
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("example")?;
+    woab::run_actix_inside_gtk_event_loop()?;
 
-    factories
-        .win_app
-        .instantiate()
-        .actor()
-        .connect_signals(WindowSignal::connector())
-        .create(|ctx| WindowActor {
-            widgets: ctx.widgets().unwrap(),
-            factories,
-            next_addend_id: 0,
-            addends: Default::default(),
-        });
+    woab::block_on(async {
+        factories
+            .win_app
+            .instantiate()
+            .actor()
+            .connect_signals(WindowSignal::connector())
+            .create(|ctx| WindowActor {
+                widgets: ctx.widgets().unwrap(),
+                factories,
+                next_addend_id: 0,
+                addends: Default::default(),
+            });
+    });
 
     gtk::main();
     Ok(())

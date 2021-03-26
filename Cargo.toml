@@ -18,15 +18,18 @@ categories = ["gui"]
 gtk = "^0.9"
 glib = "^0.10"
 gdk = "^0.13"
-actix = "^0.9"
-tokio = "^0.2"
+actix = "^0.11"
+# tokio = { version = "^1.4", features = ["rt"] }
+tokio = "^1.4"
 woab-macros = { version = "0.2.1", path = "macros" }
-quick-xml = "0.18.1"
-thiserror = "1.0.20"
-hashbrown = "0.9.1"
+quick-xml = "0.22.0"
+thiserror = "1.0.24"
+hashbrown = "0.11.2"
+tokio-stream = "0.1.5"
+futures-util = "0.3.13"
 
 [dev-dependencies]
-futures-util = "0.3.5"
+futures-util = "0.3.13"
 gtk-test = "0.6.1"
-anyhow = "1.0.32"
+anyhow = "1.0.40"
 gio = "0.9.1"

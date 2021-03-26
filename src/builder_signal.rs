@@ -209,7 +209,8 @@ where
 
         let (tx, rx) = mpsc::unbounded_channel();
 
-        use tokio::stream::StreamExt;
+        let rx = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+        use futures_util::stream::StreamExt;
         let rx = rx.map(move |s| transformer.transform(s));
         A::add_stream(rx, ctx);
 

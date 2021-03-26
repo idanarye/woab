@@ -24,6 +24,8 @@ demonstration.
 
 ## Pitfalls
 
+* When you start Actix actors from outside Tokio/Actix, you must use
+  `woab::block_on`. This is a limitation of Actix that we need to respect.
 * GTK requires some signals to return a boolean value - `true` to "inhibit" and
   not let the signal pass up the inheritance to other handlers, and `false` to
   let it. WoAB cannot automatically detect which signals need it and which not,

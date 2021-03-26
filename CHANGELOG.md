@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- `woab::block_on`, for running the Tokio runtime and Actix system WoAB is
+  using.
+
+### Changed
+- [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:
+  - Actors can no longer just be started from outide Tokio/Actix. Instead, they
+    must be started in a future (`async` block) passed the new `woab::block_on`
+    function.
+  - `woab::run_actix_inside_gtk_event_loop` no longer accepts a name.
+
 ## 0.2.1 - 2021-03-18
 ### Fixed
 - Fix the version of the macro crate.

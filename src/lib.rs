@@ -79,7 +79,7 @@
 //! #    }
 //!     let factories = std::rc::Rc::new(Factories::read(read_builder_xml())?);
 //!     gtk::init()?;
-//!     woab::run_actix_inside_gtk_event_loop("my-WoAB-app")?; // <===== IMPORTANT!!!
+//!     woab::run_actix_inside_gtk_event_loop()?; // <===== IMPORTANT!!!
 //!
 //!     factories.main_window.instantiate().actor()
 //!         .create(|ctx| {
@@ -98,6 +98,8 @@
 //!
 //! # Pitfalls
 //!
+//! * When you start Actix actors from outside Tokio/Actix, you must use
+//! [`woab::block_on`](block_on). This is a limitation of Actix that we need to respect.
 //! * GTK requires some signals to return a boolean value - `true` to "inhibit" and not let the
 //!   signal pass up the inheritance to other handlers, and `false` to let it. WoAB cannot
 //!   automatically detect which signals need it and which not, and will return `None` by default.
@@ -243,7 +245,7 @@ pub use woab_macros::Removable;
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use builder_signal::{BuilderSignal, BuilderSignalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
-pub use event_loops_bridge::run_actix_inside_gtk_event_loop;
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

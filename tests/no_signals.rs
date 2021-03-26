@@ -46,13 +46,15 @@ impl actix::StreamHandler<TestSignal> for TestActor {
 fn test_no_signals() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("no_signals.glade") as &[u8])?;
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("test")?;
+    woab::run_actix_inside_gtk_event_loop()?;
     let output = Rc::new(RefCell::new(Vec::new()));
-    factories
-        .win_test
-        .instantiate()
-        .actor()
-        .start(TestActor { output: output.clone() });
+    woab::block_on(async {
+        factories
+            .win_test
+            .instantiate()
+            .actor()
+            .start(TestActor { output: output.clone() });
+    });
     wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
     Ok(())
 }

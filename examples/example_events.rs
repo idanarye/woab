@@ -97,25 +97,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?))?);
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop("example")?;
+    woab::run_actix_inside_gtk_event_loop()?;
 
-    factories
-        .win_app
-        .instantiate()
-        .actor()
-        .connect_signals(WindowSignal::connector().inhibit(|signal| match signal {
-            WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
-                let character = event.get_keyval().to_unicode();
-                let is_digit = character.map(|c| c.is_digit(10)).unwrap_or(false);
-                Some(gtk::Inhibit(is_digit))
-            }
-            _ => None,
-        }))
-        .create(|ctx| WindowActor {
-            widgets: ctx.widgets().unwrap(),
-            press_times: Default::default(),
-            total_durations: Default::default(),
-        });
+    woab::block_on(async {
+        factories
+            .win_app
+            .instantiate()
+            .actor()
+            .connect_signals(WindowSignal::connector().inhibit(|signal| match signal {
+                WindowSignal::AllCharactersEntryKeyPressed(_, event) => {
+                    let character = event.get_keyval().to_unicode();
+                    let is_digit = character.map(|c| c.is_digit(10)).unwrap_or(false);
+                    Some(gtk::Inhibit(is_digit))
+                }
+                _ => None,
+            }))
+            .create(|ctx| WindowActor {
+                widgets: ctx.widgets().unwrap(),
+                press_times: Default::default(),
+                total_durations: Default::default(),
+            });
+    });
 
     gtk::main();
     Ok(())
