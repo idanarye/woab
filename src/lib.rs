@@ -118,6 +118,7 @@ mod builder;
 mod builder_dissect;
 mod builder_signal;
 mod event_loops_bridge;
+mod signal;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -246,6 +247,7 @@ pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use builder_signal::{BuilderSignal, BuilderSignalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop};
+pub use signal::{Signal, SignalResult};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

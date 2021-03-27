@@ -207,6 +207,26 @@ impl BuilderConnector {
     pub fn finish(self) {
         std::mem::drop(self)
     }
+
+    pub fn connect_to(&self, recipient: actix::Recipient<crate::Signal>) -> &Self {
+        // TODO: add the more powerful `connect` method and make this method use it
+        use gtk::prelude::BuilderExtManual;
+        self.builder.connect_signals(move |_, signal_name| {
+            let signal_creator = crate::Signal::creator(signal_name, ());
+            let recipient = recipient.clone();
+            Box::new(move |parameters| {
+                let signal = signal_creator(parameters.to_owned());
+                let result = crate::block_on(recipient.send(signal)).unwrap().unwrap();
+                if let Some(gtk::Inhibit(inhibit)) = result {
+                    use glib::value::ToValue;
+                    Some(inhibit.to_value())
+                } else {
+                    None
+                }
+            })
+        });
+        self
+    }
 }
 
 impl Drop for BuilderConnector {
