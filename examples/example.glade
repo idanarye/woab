@@ -4,7 +4,7 @@
   <requires lib="gtk+" version="3.22"/>
   <object class="GtkTextBuffer" id="buf_addend">
     <property name="text" translatable="yes">0</property>
-    <signal name="changed" handler="AddendChanged" swapped="no"/>
+    <signal name="changed" handler="addend_changed" swapped="no"/>
   </object>
   <object class="GtkTextBuffer" id="buf_sum">
     <property name="text" translatable="yes">0</property>
@@ -22,7 +22,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
             <property name="valign">start</property>
-            <signal name="clicked" handler="ClickButton" swapped="no"/>
+            <signal name="clicked" handler="click_button" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -73,7 +73,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="selection_mode">none</property>
-                    <signal name="remove" handler="AddendRemoved" swapped="no"/>
+                    <signal name="remove" handler="addend_removed" swapped="no"/>
                     <child>
                       <object class="GtkListBoxRow" id="row_addend">
                         <property name="width_request">40</property>
@@ -114,7 +114,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <signal name="clicked" handler="RemoveAddend" swapped="no"/>
+                                <signal name="clicked" handler="remove_addend" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left_attach">2</property>

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - `woab::block_on`, for running the Tokio runtime and Actix system WoAB is
   using.
+- `woab::Signal` - a dynamic signal type to replace `BuilderSignal`.
+  - Unlike `BuilderSignal`, `woab::Signal` handling is done while the GTK
+    signal is running, and it is an Actix message that can have a result - the
+    inhibitness.
+- `BuilderConnector::connect_to` and `BuilderConnector::connect_with` to
+  connect the builder signals to actors using `woab::Signal`.
 
 ### Changed
 - [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:

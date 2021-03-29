@@ -5,7 +5,7 @@ use send_wrapper::SendWrapper;
 pub struct Signal<T = ()>(SendWrapper<SignalData<T>>);
 pub type SignalResult = Result<Option<gtk::Inhibit>, crate::Error>;
 
-impl actix::Message for Signal {
+impl<T> actix::Message for Signal<T> {
     type Result = SignalResult;
 }
 
@@ -29,6 +29,10 @@ impl<T: Clone> Signal<T> {
 }
 
 impl<T> Signal<T> {
+    pub fn new(name: Rc<String>, parameters: Vec<glib::Value>, tag: T) -> Self {
+        Signal(SendWrapper::new(SignalData { name, parameters, tag }))
+    }
+
     pub fn name(&self) -> &str {
         &*self.0.name
     }

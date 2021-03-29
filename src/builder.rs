@@ -208,24 +208,13 @@ impl BuilderConnector {
         std::mem::drop(self)
     }
 
-    pub fn connect_to(&self, recipient: actix::Recipient<crate::Signal>) -> &Self {
-        // TODO: add the more powerful `connect` method and make this method use it
-        use gtk::prelude::BuilderExtManual;
-        self.builder.connect_signals(move |_, signal_name| {
-            let signal_creator = crate::Signal::creator(signal_name, ());
-            let recipient = recipient.clone();
-            Box::new(move |parameters| {
-                let signal = signal_creator(parameters.to_owned());
-                let result = crate::block_on(recipient.send(signal)).unwrap().unwrap();
-                if let Some(gtk::Inhibit(inhibit)) = result {
-                    use glib::value::ToValue;
-                    Some(inhibit.to_value())
-                } else {
-                    None
-                }
-            })
-        });
+    pub fn connect_to(&self, target: impl ConnectGtkBuilderSignals) -> &Self {
+        target.connect_gtk_builder_signals(self, &self.builder);
         self
+    }
+
+    pub fn connect_with<R: ConnectGtkBuilderSignals>(&self, dlg: impl FnOnce(&Self) -> R) -> &Self {
+        self.connect_to(dlg(self))
     }
 }
 
@@ -236,6 +225,67 @@ impl Drop for BuilderConnector {
         let mut callbacks = self.callbacks.borrow_mut();
         self.builder
             .connect_signals(move |_, signal| callbacks.remove(signal).unwrap_or_else(|| Box::new(|_| None)));
+    }
+}
+
+pub trait ConnectGtkBuilderSignals {
+    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &gtk::Builder);
+}
+
+impl<T: Clone + 'static> ConnectGtkBuilderSignals for (T, actix::Recipient<crate::Signal<T>>) {
+    fn connect_gtk_builder_signals(self, _: &BuilderConnector, builder: &gtk::Builder) {
+        use gtk::prelude::BuilderExtManual;
+        builder.connect_signals(move |_, signal_name| {
+            let signal_name = std::rc::Rc::new(signal_name.to_owned());
+            let (tag, recipient) = self.clone();
+            Box::new(move |parameters| {
+                if let Some(result) = crate::try_block_on(async {
+                    let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                    recipient.send(signal).await
+                }) {
+                    let result = result.unwrap().unwrap();
+                    if let Some(gtk::Inhibit(inhibit)) = result {
+                        use glib::value::ToValue;
+                        Some(inhibit.to_value())
+                    } else {
+                        None
+                    }
+                } else {
+                    let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                    recipient.do_send(signal).unwrap();
+                    None
+                }
+            })
+        });
+    }
+}
+
+impl ConnectGtkBuilderSignals for actix::Recipient<crate::Signal> {
+    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
+        ((), self).connect_gtk_builder_signals(bcn, builder)
+    }
+}
+
+impl<T: Clone + 'static, A: actix::Actor> ConnectGtkBuilderSignals for (T, actix::Addr<A>)
+where
+    A: actix::Actor,
+    A: actix::Handler<crate::Signal<T>>,
+    <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal<T>>,
+{
+    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
+        let (tag, actor) = self;
+        (tag, actor.recipient()).connect_gtk_builder_signals(bcn, builder)
+    }
+}
+
+impl<A: actix::Actor> ConnectGtkBuilderSignals for actix::Addr<A>
+where
+    A: actix::Actor,
+    A: actix::Handler<crate::Signal>,
+    <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal>,
+{
+    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
+        ((), self).connect_gtk_builder_signals(bcn, builder)
     }
 }
 

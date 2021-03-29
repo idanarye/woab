@@ -246,7 +246,7 @@ pub use woab_macros::Removable;
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use builder_signal::{BuilderSignal, BuilderSignalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
-pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop};
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
 pub use signal::{Signal, SignalResult};
 
 #[derive(thiserror::Error, Debug)]

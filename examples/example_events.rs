@@ -101,16 +101,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop()?;
 
     woab::block_on(async {
-        let bld = factories.win_app.instantiate();
-        bld.connect_to(
+        factories.win_app.instantiate().connect_with(|bld| {
             WindowActor {
                 widgets: bld.widgets().unwrap(),
                 press_times: Default::default(),
                 total_durations: Default::default(),
             }
             .start()
-            .recipient(),
-        );
+        });
     });
 
     gtk::main();
