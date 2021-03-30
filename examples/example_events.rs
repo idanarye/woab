@@ -120,14 +120,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         factories.win_app.instantiate().connect_with(|bld| {
             bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
             woab::NamespacedSignalRouter::new()
-                .route_ns("PressCountingActor", PressCountingActor {
-                    widgets: bld.widgets().unwrap(),
-                    press_times: Default::default(),
-                    total_durations: Default::default(),
-                }.start().recipient())
-                .route_ns("CharacterMoverActor", CharacterMoverActor {
-                    widgets: bld.widgets().unwrap(),
-                }.start().recipient())
+                .route(
+                    PressCountingActor {
+                        widgets: bld.widgets().unwrap(),
+                        press_times: Default::default(),
+                        total_durations: Default::default(),
+                    }
+                    .start(),
+                )
+                .route(
+                    CharacterMoverActor {
+                        widgets: bld.widgets().unwrap(),
+                    }
+                    .start(),
+                )
         });
     });
 

@@ -103,16 +103,31 @@ impl<T> NamespacedSignalRouter<T> {
         }
     }
 
-    pub fn route_ns(mut self, namespace: &str, target: actix::Recipient<crate::Signal<T>>) -> Self {
+    pub fn route_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
         match self.targets.entry(namespace.to_owned()) {
             hashbrown::hash_map::Entry::Occupied(_) => {
                 panic!("Namespace {:?} is already routed", namespace);
             }
             hashbrown::hash_map::Entry::Vacant(entry) => {
-                entry.insert(target);
+                entry.insert(recipient);
             }
         }
         self
+    }
+
+    pub fn route<A>(self, actor: actix::Addr<A>) -> Self
+    where
+        T: 'static,
+        A: actix::Actor,
+        A: actix::Handler<crate::Signal<T>>,
+        <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal<T>>,
+    {
+        let namespace = core::any::type_name::<A>();
+        let namespace = namespace.split("<").next().unwrap(); // strip generics
+        let namespace = namespace.split("::").last().unwrap(); // strip package prefix (unreliable)
+        let namespace = namespace.split("; ").last().unwrap(); // strip qualifies
+        let namespace = namespace.split("&").last().unwrap(); // strip reference
+        self.route_ns(namespace, actor.recipient())
     }
 }
 
