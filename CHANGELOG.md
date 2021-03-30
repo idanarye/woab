@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     inhibitness.
 - `BuilderConnector::connect_to` and `BuilderConnector::connect_with` to
   connect the builder signals to actors using `woab::Signal`.
+- `woab::route_signal` to route signals by name.
 
 ### Changed
 - [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:

@@ -208,12 +208,15 @@ impl BuilderConnector {
         std::mem::drop(self)
     }
 
-    pub fn connect_to(&self, target: impl ConnectGtkBuilderSignals) -> &Self {
-        target.connect_gtk_builder_signals(self, &self.builder);
+    pub fn connect_to(&self, target: impl IntoGenerateRoutingGtkHandler) -> &Self {
+        let mut generator = target.into_generate_routing_gtk_handler();
+        use gtk::prelude::BuilderExtManual;
+        self.builder
+            .connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
         self
     }
 
-    pub fn connect_with<R: ConnectGtkBuilderSignals>(&self, dlg: impl FnOnce(&Self) -> R) -> &Self {
+    pub fn connect_with<G: IntoGenerateRoutingGtkHandler>(&self, dlg: impl FnOnce(&Self) -> G) -> &Self {
         self.connect_to(dlg(self))
     }
 }
@@ -228,64 +231,94 @@ impl Drop for BuilderConnector {
     }
 }
 
-pub trait ConnectGtkBuilderSignals {
-    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &gtk::Builder);
+pub fn route_signal(
+    obj: impl glib::ObjectExt,
+    gtk_signal: &str,
+    actix_signal: &str,
+    target: impl IntoGenerateRoutingGtkHandler,
+) -> Result<glib::SignalHandlerId, crate::Error> {
+    let handler = target
+        .into_generate_routing_gtk_handler()
+        .generate_routing_gtk_handler(actix_signal);
+    let handler_id = obj.connect_local(gtk_signal, false, handler)?;
+    Ok(handler_id)
 }
 
-impl<T: Clone + 'static> ConnectGtkBuilderSignals for (T, actix::Recipient<crate::Signal<T>>) {
-    fn connect_gtk_builder_signals(self, _: &BuilderConnector, builder: &gtk::Builder) {
-        use gtk::prelude::BuilderExtManual;
-        builder.connect_signals(move |_, signal_name| {
-            let signal_name = std::rc::Rc::new(signal_name.to_owned());
-            let (tag, recipient) = self.clone();
-            Box::new(move |parameters| {
-                if let Some(result) = crate::try_block_on(async {
-                    let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                    recipient.send(signal).await
-                }) {
-                    let result = result.unwrap().unwrap();
-                    if let Some(gtk::Inhibit(inhibit)) = result {
-                        use glib::value::ToValue;
-                        Some(inhibit.to_value())
-                    } else {
-                        None
-                    }
+pub trait GenerateRoutingGtkHandler {
+    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> crate::RawSignalCallback;
+}
+
+impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crate::Signal<T>>) {
+    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> crate::RawSignalCallback {
+        let signal_name = std::rc::Rc::new(signal_name.to_owned());
+        let (tag, recipient) = self.clone();
+        Box::new(move |parameters| {
+            if let Some(result) = crate::try_block_on(async {
+                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                recipient.send(signal).await
+            }) {
+                let result = result.unwrap().unwrap();
+                if let Some(gtk::Inhibit(inhibit)) = result {
+                    use glib::value::ToValue;
+                    Some(inhibit.to_value())
                 } else {
-                    let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                    recipient.do_send(signal).unwrap();
                     None
                 }
-            })
-        });
+            } else {
+                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                recipient.do_send(signal).unwrap();
+                None
+            }
+        })
     }
 }
 
-impl ConnectGtkBuilderSignals for actix::Recipient<crate::Signal> {
-    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
-        ((), self).connect_gtk_builder_signals(bcn, builder)
+pub trait IntoGenerateRoutingGtkHandler {
+    type Generator: GenerateRoutingGtkHandler;
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator;
+}
+
+impl<T: Clone + 'static> IntoGenerateRoutingGtkHandler for (T, actix::Recipient<crate::Signal<T>>) {
+    type Generator = Self;
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
+        self
     }
 }
 
-impl<T: Clone + 'static, A: actix::Actor> ConnectGtkBuilderSignals for (T, actix::Addr<A>)
+impl IntoGenerateRoutingGtkHandler for actix::Recipient<crate::Signal> {
+    type Generator = ((), Self);
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
+        ((), self)
+    }
+}
+
+impl<T: Clone + 'static, A: actix::Actor> IntoGenerateRoutingGtkHandler for (T, actix::Addr<A>)
 where
     A: actix::Actor,
     A: actix::Handler<crate::Signal<T>>,
     <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal<T>>,
 {
-    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
+    type Generator = (T, actix::Recipient<crate::Signal<T>>);
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
         let (tag, actor) = self;
-        (tag, actor.recipient()).connect_gtk_builder_signals(bcn, builder)
+        (tag, actor.recipient())
     }
 }
 
-impl<A: actix::Actor> ConnectGtkBuilderSignals for actix::Addr<A>
+impl<A: actix::Actor> IntoGenerateRoutingGtkHandler for actix::Addr<A>
 where
     A: actix::Actor,
     A: actix::Handler<crate::Signal>,
     <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal>,
 {
-    fn connect_gtk_builder_signals(self, bcn: &BuilderConnector, builder: &Builder) {
-        ((), self).connect_gtk_builder_signals(bcn, builder)
+    type Generator = ((), actix::Recipient<crate::Signal>);
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
+        ((), self.recipient())
     }
 }
 
