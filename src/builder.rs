@@ -26,6 +26,7 @@ use hashbrown::HashMap;
 /// this struct.
 ///
 /// ```no_run
+/// # use actix::prelude::*;
 /// # use gtk::prelude::*;
 /// #[derive(woab::Factories)]
 /// struct Factories {
@@ -39,14 +40,15 @@ use hashbrown::HashMap;
 /// # impl actix::Actor for WindowActor {
 /// #     type Context = actix::Context<Self>;
 /// # }
-/// # #[derive(woab::BuilderSignal)]
-/// # enum WindowSignal {}
 ///
-/// impl actix::StreamHandler<WindowSignal> for WindowActor {
-///     fn handle(&mut self, signal: WindowSignal, _ctx: &mut <Self as actix::Actor>::Context) {
-///         match signal {
+/// impl actix::Handler<woab::Signal> for WindowActor {
+///     type Result = woab::SignalResult;
+///
+///     fn handle(&mut self, msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+///         Ok(match msg.name() {
 ///             // Handle the signals of the main window
-///         }
+///             _ => msg.cant_handle()?,
+///         })
 ///     }
 /// }
 ///
@@ -61,38 +63,33 @@ use hashbrown::HashMap;
 ///     row: gtk::ListBoxRow,
 ///     label: gtk::Label,
 /// }
-/// # #[derive(woab::BuilderSignal)]
-/// # enum RowSignal {}
 ///
-/// impl actix::StreamHandler<(usize, RowSignal)> for WindowActor {
-///     fn handle(&mut self, (row_number, signal): (usize, RowSignal), _ctx: &mut <Self as actix::Actor>::Context) {
-///         match signal {
-///             // Handle the signals of row #row_number
-///         }
+/// impl actix::Handler<woab::Signal<usize>> for WindowActor {
+///     type Result = woab::SignalResult;
+///
+///     fn handle(&mut self, msg: woab::Signal<usize>, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+///         let row_number = msg.tag();
+///         Ok(match msg.name() {
+///             // Handle the signals of the row
+///             _ => msg.cant_handle()?,
+///         })
 ///     }
-///
-///     // ******************************************************
-///     // * VERY IMPORTANT! Otherwise once one row is deleted, *
-///     // * its signal stream will be closed and the default   *
-///     // * implementation will close the WindowActor.         *
-///     // ******************************************************
-///     fn finished(&mut self, _ctx: &mut Self::Context) {}
 /// }
 ///
 /// fn create_window_with_rows(factory: &Factories) {
-///     factory.window.instantiate().actor()
-///         .connect_signals(WindowSignal::connector())
-///         .create(|ctx| {
-///             let widgets: WindowWidgets = ctx.widgets().unwrap();
-///             for row_number in 0..10 {
-///                 let row_widgets: RowWidgets = factory.row.instantiate()
-///                     .connect_signals(ctx, RowSignal::connector().tag(row_number))
-///                     .widgets().unwrap();
-///                 row_widgets.label.set_text(&format!("Roe number {}", row_number));
-///                 widgets.list_box.add(&row_widgets.row);
-///             }
-///             WindowActor { widgets }
-///         });
+///     factory.window.instantiate().connect_with(|bld| {
+///         let widgets: WindowWidgets = bld.widgets().unwrap();
+///         let list_box = widgets.list_box.clone();
+///         let window_actor = WindowActor { widgets }.start();
+///         for row_number in 0..10 {
+///             let row_bld = factory.row.instantiate();
+///             let row_widgets: RowWidgets = row_bld.widgets().unwrap();
+///             row_widgets.label.set_text(&format!("Row number {}", row_number));
+///             list_box.add(&row_widgets.row);
+///             row_bld.connect_to((row_number, window_actor.clone()));
+///         }
+///         window_actor
+///     });
 /// }
 /// ```
 pub struct BuilderFactory(String);
