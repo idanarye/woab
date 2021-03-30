@@ -1,3 +1,4 @@
+use actix::prelude::*;
 use gtk::prelude::*;
 
 #[macro_use]
@@ -26,12 +27,6 @@ pub struct TestWidgets {
     buf_right: gtk::TextBuffer,
 }
 
-#[derive(woab::BuilderSignal)]
-enum TestSignal {
-    CopyRightToLeft(gtk::Button),
-    CopyLeftToRight,
-}
-
 fn get_text(buffer: &gtk::TextBuffer) -> String {
     if let Some(text) = buffer.get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true) {
         text.into()
@@ -40,16 +35,21 @@ fn get_text(buffer: &gtk::TextBuffer) -> String {
     }
 }
 
-impl actix::StreamHandler<TestSignal> for TestActor {
-    fn handle(&mut self, signal: TestSignal, _ctx: &mut Self::Context) {
-        match signal {
-            TestSignal::CopyRightToLeft(_) => {
+impl actix::Handler<woab::Signal> for TestActor {
+    type Result = woab::SignalResult;
+
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "copy_right_to_left" => {
                 self.widgets.buf_left.set_text(&get_text(&self.widgets.buf_right));
+                None
             }
-            TestSignal::CopyLeftToRight => {
+            "copy_left_to_right" => {
                 self.widgets.buf_right.set_text(&get_text(&self.widgets.buf_left));
+                None
             }
-        }
+            _ => msg.cant_handle()?,
+        })
     }
 }
 
@@ -60,16 +60,11 @@ fn test_basic() -> anyhow::Result<()> {
     woab::run_actix_inside_gtk_event_loop()?;
     let mut put_widgets_in = None;
     woab::block_on(async {
-        factories
-            .win_test
-            .instantiate()
-            .actor()
-            .connect_signals(TestSignal::connector())
-            .create(|ctx| {
-                let widgets = ctx.widgets::<TestWidgets>().unwrap();
-                put_widgets_in = Some(widgets.clone());
-                TestActor { widgets }
-            });
+        factories.win_test.instantiate().connect_with(|bld| {
+            let widgets = bld.widgets::<TestWidgets>().unwrap();
+            put_widgets_in = Some(widgets.clone());
+            TestActor { widgets }.start()
+        });
     });
     let widgets = put_widgets_in.unwrap();
     widgets.buf_left.set_text("test left");

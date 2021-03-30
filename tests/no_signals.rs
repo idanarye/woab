@@ -33,15 +33,6 @@ impl actix::Actor for TestActor {
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {}
 
-#[derive(woab::BuilderSignal)]
-enum TestSignal {}
-
-impl actix::StreamHandler<TestSignal> for TestActor {
-    fn handle(&mut self, signal: TestSignal, _ctx: &mut Self::Context) {
-        match signal {}
-    }
-}
-
 #[test]
 fn test_no_signals() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("no_signals.glade") as &[u8])?;
