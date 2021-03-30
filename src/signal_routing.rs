@@ -91,3 +91,88 @@ where
         ((), self.recipient())
     }
 }
+
+pub struct NamespacedSignalRouter<T> {
+    targets: hashbrown::HashMap<String, actix::Recipient<crate::Signal<T>>>,
+}
+
+impl<T> NamespacedSignalRouter<T> {
+    pub fn new() -> Self {
+        NamespacedSignalRouter {
+            targets: Default::default(),
+        }
+    }
+
+    pub fn route_ns(mut self, namespace: &str, target: actix::Recipient<crate::Signal<T>>) -> Self {
+        match self.targets.entry(namespace.to_owned()) {
+            hashbrown::hash_map::Entry::Occupied(_) => {
+                panic!("Namespace {:?} is already routed", namespace);
+            }
+            hashbrown::hash_map::Entry::Vacant(entry) => {
+                entry.insert(target);
+            }
+        }
+        self
+    }
+}
+
+impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSignalRouter<T>) {
+    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
+        let (tag, router) = self;
+        let signal_namespace = {
+            let mut parts = signal_name.split("::");
+            if let Some(signal_namespace) = parts.next() {
+                if parts.next().is_none() {
+                    panic!("Signal {:?} does not have a namespace", signal_name)
+                } else {
+                    signal_namespace
+                }
+            } else {
+                panic!("Signal is empty")
+            }
+        };
+
+        let recipient = if let Some(recipient) = router.targets.get(signal_namespace) {
+            recipient.clone()
+        } else {
+            panic!("Unknown namespace {:?}", signal_namespace)
+        };
+
+        let signal_name = std::rc::Rc::new(signal_name.to_owned());
+        let tag = tag.clone();
+        Box::new(move |parameters| {
+            if let Some(result) = crate::try_block_on(async {
+                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                recipient.send(signal).await
+            }) {
+                let result = result.unwrap().unwrap();
+                if let Some(gtk::Inhibit(inhibit)) = result {
+                    use glib::value::ToValue;
+                    Some(inhibit.to_value())
+                } else {
+                    None
+                }
+            } else {
+                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+                recipient.do_send(signal).unwrap();
+                None
+            }
+        })
+    }
+}
+
+impl<T: Clone + 'static> IntoGenerateRoutingGtkHandler for (T, NamespacedSignalRouter<T>) {
+    type Generator = Self;
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
+        self
+    }
+}
+
+impl IntoGenerateRoutingGtkHandler for NamespacedSignalRouter<()> {
+    type Generator = ((), Self);
+
+    fn into_generate_routing_gtk_handler(self) -> Self::Generator {
+        ((), self)
+    }
+}

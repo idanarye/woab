@@ -16,8 +16,8 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
-            <signal name="button-press-event" handler="press" swapped="no"/>
-            <signal name="button-release-event" handler="release" swapped="no"/>
+            <signal name="button-press-event" handler="PressCountingActor::press" swapped="no"/>
+            <signal name="button-release-event" handler="PressCountingActor::release" swapped="no"/>
           </object>
           <packing>
             <property name="left-attach">0</property>
@@ -64,7 +64,7 @@
           <object class="GtkEntry">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
-            <signal name="key-press-event" handler="all_characters_entry_key_pressed" swapped="no"/>
+            <signal name="key-press-event" handler="CharacterMoverActor::all_characters_entry_key_pressed" swapped="no"/>
           </object>
           <packing>
             <property name="left-attach">1</property>

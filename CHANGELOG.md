@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   connect the builder signals to actors using `woab::Signal`.
 - `woab::route_signal` to route individual signals directly from the GTK
   object, without a builder.
+- `woab::NamespacedSignalRouter` for routing signals from the same builder to
+  different actors.
 
 ### Changed
 - [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:

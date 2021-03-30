@@ -10,32 +10,25 @@ pub struct Factories {
 }
 
 #[derive(woab::WidgetsFromBuilder)]
-pub struct WindowWidgets {
-    win_app: gtk::ApplicationWindow,
+pub struct PressCountingWidgets {
     buf_count_pressed_time: gtk::TextBuffer,
-    only_digits: gtk::Entry,
 }
 
-struct WindowActor {
-    widgets: WindowWidgets,
+struct PressCountingActor {
+    widgets: PressCountingWidgets,
     press_times: [Option<Instant>; 2],
     total_durations: [Duration; 2],
 }
 
-impl actix::Actor for WindowActor {
+impl actix::Actor for PressCountingActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         self.update_pressed_time_display();
-        self.widgets.win_app.show();
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        gtk::main_quit();
     }
 }
 
-impl WindowActor {
+impl PressCountingActor {
     fn update_pressed_time_display(&self) {
         self.widgets
             .buf_count_pressed_time
@@ -43,7 +36,7 @@ impl WindowActor {
     }
 }
 
-impl actix::Handler<woab::Signal> for WindowActor {
+impl actix::Handler<woab::Signal> for PressCountingActor {
     type Result = woab::SignalResult;
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
@@ -56,14 +49,14 @@ impl actix::Handler<woab::Signal> for WindowActor {
         }
 
         Ok(match msg.name() {
-            "press" => {
+            "PressCountingActor::press" => {
                 let event: gdk::EventButton = msg.param::<gdk::Event>(1)?.downcast().unwrap();
                 if let Some(idx) = button_to_idx(&event) {
                     self.press_times[idx] = Some(Instant::now());
                 }
                 Some(gtk::Inhibit(false))
             }
-            "release" => {
+            "PressCountingActor::release" => {
                 let event: gdk::EventButton = msg.param::<gdk::Event>(1)?.downcast().unwrap();
                 if let Some(idx) = button_to_idx(&event) {
                     if let Some(press_time) = self.press_times[idx] {
@@ -75,7 +68,30 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 }
                 Some(gtk::Inhibit(false))
             }
-            "all_characters_entry_key_pressed" => {
+            _ => msg.cant_handle()?,
+        })
+    }
+}
+
+#[derive(woab::WidgetsFromBuilder)]
+pub struct CharacterMoverWidgets {
+    only_digits: gtk::Entry,
+}
+
+struct CharacterMoverActor {
+    widgets: CharacterMoverWidgets,
+}
+
+impl actix::Actor for CharacterMoverActor {
+    type Context = actix::Context<Self>;
+}
+
+impl actix::Handler<woab::Signal> for CharacterMoverActor {
+    type Result = woab::SignalResult;
+
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "CharacterMoverActor::all_characters_entry_key_pressed" => {
                 let event: gdk::EventKey = msg.param::<gdk::Event>(1)?.downcast().unwrap();
                 if let Some(character) = event.get_keyval().to_unicode() {
                     if character.is_digit(10) {
@@ -102,12 +118,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     woab::block_on(async {
         factories.win_app.instantiate().connect_with(|bld| {
-            WindowActor {
-                widgets: bld.widgets().unwrap(),
-                press_times: Default::default(),
-                total_durations: Default::default(),
-            }
-            .start()
+            bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
+            woab::NamespacedSignalRouter::new()
+                .route_ns("PressCountingActor", PressCountingActor {
+                    widgets: bld.widgets().unwrap(),
+                    press_times: Default::default(),
+                    total_durations: Default::default(),
+                }.start().recipient())
+                .route_ns("CharacterMoverActor", CharacterMoverActor {
+                    widgets: bld.widgets().unwrap(),
+                }.start().recipient())
         });
     });
 
