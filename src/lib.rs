@@ -104,7 +104,6 @@
 
 mod builder;
 mod builder_dissect;
-mod builder_signal;
 mod event_loops_bridge;
 mod signal;
 
@@ -122,21 +121,6 @@ mod signal;
 /// }
 /// ```
 pub use woab_macros::WidgetsFromBuilder;
-
-/// Represent a GTK signal that originates from a GTK builder. See [the corresponding trait](BuilderSignal).
-///
-/// Must be used to decorate an enum. Each signal one wants to handle should be a variant of the
-/// enum. Unit variants ignore the signal parameters, and tuple variants convert each parameter to
-/// its proper GTK type.
-///
-/// ```no_run
-/// #[derive(woab::BuilderSignal)]
-/// enum MyAppSignal {
-///     SomeButtonClicked, // We don't need the parameter because it's just the button.
-///     OtherButtonClicked(gtk::Button), // Still just the button but we want it for some reason.
-/// }
-/// ```
-pub use woab_macros::BuilderSignal;
 
 /// Dissect a single Glade XML file to multiple builder factories.
 ///
@@ -234,9 +218,11 @@ pub use woab_macros::Removable;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
-pub use builder_signal::{BuilderSignal, BuilderSignalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
 pub use signal::{Signal, SignalResult};
+
+/// Type of a gtk signal callback function that operates on uncast glib values.
+pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
