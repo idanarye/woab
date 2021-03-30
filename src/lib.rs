@@ -106,6 +106,7 @@ mod builder;
 mod builder_dissect;
 mod event_loops_bridge;
 mod signal;
+mod signal_routing;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -220,9 +221,7 @@ pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
 pub use signal::{Signal, SignalResult};
-
-/// Type of a gtk signal callback function that operates on uncast glib values.
-pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
+pub use signal_routing::{route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, RawSignalCallback};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
