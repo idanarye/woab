@@ -39,6 +39,16 @@ impl actix::Handler<woab::Signal> for WindowActor {
                     .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
                 Some(gtk::Inhibit(false))
             }
+            "decrease_width" => {
+                let (width, height) = self.widgets.win_app.get_size();
+                self.widgets.win_app.resize(width - 10, height);
+                None
+            }
+            "increase_width" => {
+                let (width, height) = self.widgets.win_app.get_size();
+                self.widgets.win_app.resize(width + 10, height);
+                None
+            }
             _ => msg.cant_handle()?,
         })
     }
