@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `woab::NamespacedSignalRouter` for routing signals from the same builder to
   different actors.
 - `BuilderConnector::with_object`.
+- `#[widget(nested)]` for nesting widget structs.
 
 ### Changed
 - [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:

@@ -22,9 +22,19 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
         .iter()
         .map(|field| {
             /* Handle renaming */
+            let mut nested = false;
             let mut name = None;
             iter_attrs_parameters(&field.attrs, "widget", |attr_name, value| {
                 match path_to_single_string(&attr_name)?.as_str() {
+                    "nested" => {
+                        if nested {
+                            return Err(Error::new_spanned(value, "attribute `nested` can only be specified once"));
+                        }
+                        if value.is_some() {
+                            return Err(Error::new_spanned(value, "attribute `nested` cannot have a value"));
+                        }
+                        nested = true;
+                    }
                     "name" => {
                         let value = value.ok_or_else(|| Error::new_spanned(attr_name, "attribute `name` must have a value"))?;
                         if name.is_some() {
@@ -38,11 +48,27 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
                 }
                 Ok(())
             })?;
+            if nested && name.is_some() {
+                return Err(Error::new_spanned(field, "`nested` and `name` are mutually exclusive"));
+            }
 
             let field_ident = field
                 .ident
                 .as_ref()
                 .ok_or_else(|| Error::new(field.span(), "Nameless field"))?;
+
+            if nested {
+                // NOTE: Not using `?` because it `into`es the error and the type checker does not like that.
+                return Ok(quote! {
+                    #field_ident: {
+                        match std::convert::TryInto::try_into(builder) {
+                            Ok(ok) => ok,
+                            Err(err) => return Err(err),
+                        }
+                    },
+                })
+            }
+
             let field_type = &field.ty;
             let ident_as_str = match name {
                 Some(syn::Expr::Lit(syn::ExprLit {
