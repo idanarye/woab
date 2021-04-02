@@ -29,7 +29,7 @@ pub fn try_block_on<F: Future>(fut: F) -> Option<<F as Future>::Output> {
 pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
     glib::idle_add_local(move || {
         try_block_on(async {
-            tokio::time::sleep(tokio::time::Duration::new(0, 0)).await;
+            actix::clock::sleep(core::time::Duration::new(0, 0)).await;
         });
         glib::source::Continue(true)
     });
