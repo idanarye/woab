@@ -20,7 +20,7 @@ struct WindowActor {
     factories: Factories,
     widgets: WindowWidgets,
     next_addend_id: usize,
-    addends: std::collections::HashMap<usize, (AddendWidgets, Option<isize>)>,
+    addends: std::collections::HashMap<usize, (gtk::ListBoxRow, Option<isize>)>,
 }
 
 impl actix::Actor for WindowActor {
@@ -44,15 +44,15 @@ impl actix::Handler<woab::Signal> for WindowActor {
             "click_button" => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                let widgets: AddendWidgets = self
+                self
                     .factories
                     .row_addend
                     .instantiate()
-                    .connect_to((addend_id, ctx.address()))
-                    .widgets()
-                    .unwrap();
-                self.widgets.lst_addition.add(&widgets.row_addend);
-                self.addends.insert(addend_id, (widgets, Some(0)));
+                    .with_object("row_addend", |row_addend| {
+                        self.widgets.lst_addition.add(&row_addend);
+                        self.addends.insert(addend_id, (row_addend, Some(0)));
+                    })
+                    .connect_to((addend_id, ctx.address()));
                 self.recalculate();
                 None
             }
@@ -60,11 +60,6 @@ impl actix::Handler<woab::Signal> for WindowActor {
             _ => msg.cant_handle()?,
         })
     }
-}
-
-#[derive(woab::WidgetsFromBuilder)]
-struct AddendWidgets {
-    row_addend: gtk::ListBoxRow,
 }
 
 impl actix::Handler<woab::Signal<usize>> for WindowActor {
@@ -87,7 +82,7 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
             }
             "remove_addend" => {
                 if let Some((widgets, _)) = self.addends.remove(msg.tag()) {
-                    self.widgets.lst_addition.remove(&widgets.row_addend);
+                    self.widgets.lst_addition.remove(&widgets);
                     self.recalculate();
                 }
                 None

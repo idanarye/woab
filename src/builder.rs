@@ -150,6 +150,14 @@ impl BuilderConnector {
         })
     }
 
+    pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
+    where
+        W: glib::IsA<glib::Object>,
+    {
+        dlg(self.get_object(id).unwrap());
+        self
+    }
+
     /// Create a widgets struct who's fields are mapped to the builder's widgets.
     pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
     where
