@@ -44,8 +44,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
             "click_button" => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                self
-                    .factories
+                self.factories
                     .row_addend
                     .instantiate()
                     .with_object("row_addend", |row_addend| {

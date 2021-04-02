@@ -79,9 +79,7 @@ impl Ball {
             let mut position = self.position[coord];
             let velocity = self.velocity[coord];
             position += velocity * step_length;
-            if 0.0 < velocity && max_pos[coord] < position {
-                self.velocity[coord] = -velocity;
-            } else if velocity < 0.0 && position < min_pos[coord] {
+            if (0.0 < velocity && max_pos[coord] < position) || (velocity < 0.0 && position < min_pos[coord]) {
                 self.velocity[coord] = -velocity;
             } else {
                 self.position[coord] = position;
