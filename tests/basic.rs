@@ -68,7 +68,7 @@ fn test_basic() -> anyhow::Result<()> {
     });
     let widgets = put_widgets_in.unwrap();
     widgets.buf_left.set_text("test left");
-    wait_for!(get_text(&widgets.buf_right) == "")?;
+    wait_for!(get_text(&widgets.buf_right).is_empty())?;
     widgets.btn_copy_left_to_right.emit_clicked();
     wait_for!(get_text(&widgets.buf_right) == "test left")?;
     widgets.buf_left.set_text("");
