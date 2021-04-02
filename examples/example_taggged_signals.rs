@@ -1,3 +1,4 @@
+use actix::prelude::*;
 use gtk::prelude::*;
 
 #[derive(woab::Factories)]
@@ -19,7 +20,7 @@ struct WindowActor {
     factories: Factories,
     widgets: WindowWidgets,
     next_addend_id: usize,
-    addends: std::collections::HashMap<usize, (AddendWidgets, Option<isize>)>,
+    addends: std::collections::HashMap<usize, (gtk::ListBoxRow, Option<isize>)>,
 }
 
 impl actix::Actor for WindowActor {
@@ -35,67 +36,59 @@ impl actix::Actor for WindowActor {
     }
 }
 
-#[derive(woab::BuilderSignal)]
-enum WindowSignal {
-    ClickButton,
-}
+impl actix::Handler<woab::Signal> for WindowActor {
+    type Result = woab::SignalResult;
 
-impl actix::StreamHandler<WindowSignal> for WindowActor {
-    fn handle(&mut self, signal: WindowSignal, ctx: &mut Self::Context) {
-        match signal {
-            WindowSignal::ClickButton => {
+    fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "click_button" => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                let widgets: AddendWidgets = self
-                    .factories
+                self.factories
                     .row_addend
                     .instantiate()
-                    .connect_signals(ctx, AddendSignal::connector().tag(addend_id))
-                    .widgets()
-                    .unwrap();
-                self.widgets.lst_addition.add(&widgets.row_addend);
-                self.addends.insert(addend_id, (widgets, Some(0)));
+                    .with_object("row_addend", |row_addend| {
+                        self.widgets.lst_addition.add(&row_addend);
+                        self.addends.insert(addend_id, (row_addend, Some(0)));
+                    })
+                    .connect_to((addend_id, ctx.address()));
                 self.recalculate();
+                None
             }
-        }
+            "addend_removed" => None,
+            _ => msg.cant_handle()?,
+        })
     }
 }
 
-#[derive(woab::WidgetsFromBuilder)]
-struct AddendWidgets {
-    row_addend: gtk::ListBoxRow,
-}
+impl actix::Handler<woab::Signal<usize>> for WindowActor {
+    type Result = woab::SignalResult;
 
-#[derive(Debug, woab::BuilderSignal)]
-enum AddendSignal {
-    AddendChanged(gtk::TextBuffer),
-    RemoveAddend,
-}
-
-impl actix::StreamHandler<(usize, AddendSignal)> for WindowActor {
-    fn handle(&mut self, (id, signal): (usize, AddendSignal), _ctx: &mut Self::Context) {
-        match signal {
-            AddendSignal::AddendChanged(buffer) => {
+    fn handle(&mut self, msg: woab::Signal<usize>, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "addend_changed" => {
+                let buffer: gtk::TextBuffer = msg.param(0)?;
                 let new_number: Option<isize> = buffer
                     .get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true)
                     .and_then(|text| text.parse().ok());
-                if let Some((_, number)) = self.addends.get_mut(&id) {
+                if let Some((_, number)) = self.addends.get_mut(msg.tag()) {
                     if new_number != *number {
                         *number = new_number;
                         self.recalculate();
                     }
                 }
+                None
             }
-            AddendSignal::RemoveAddend => {
-                if let Some((widgets, _)) = self.addends.remove(&id) {
-                    self.widgets.lst_addition.remove(&widgets.row_addend);
+            "remove_addend" => {
+                if let Some((widgets, _)) = self.addends.remove(msg.tag()) {
+                    self.widgets.lst_addition.remove(&widgets);
                     self.recalculate();
                 }
+                None
             }
-        }
+            _ => msg.cant_handle()?,
+        })
     }
-
-    fn finished(&mut self, _ctx: &mut Self::Context) {}
 }
 
 impl WindowActor {
@@ -116,17 +109,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop()?;
 
     woab::block_on(async {
-        factories
-            .win_app
-            .instantiate()
-            .actor()
-            .connect_signals(WindowSignal::connector())
-            .create(|ctx| WindowActor {
-                widgets: ctx.widgets().unwrap(),
+        factories.win_app.instantiate().connect_with(|bld| {
+            WindowActor {
+                widgets: bld.widgets().unwrap(),
                 factories,
                 next_addend_id: 0,
                 addends: Default::default(),
-            });
+            }
+            .start()
+        });
     });
 
     gtk::main();

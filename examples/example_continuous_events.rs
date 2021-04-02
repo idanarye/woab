@@ -1,3 +1,4 @@
+use actix::prelude::*;
 use gtk::prelude::*;
 
 #[derive(woab::Factories)]
@@ -24,23 +25,32 @@ impl actix::Actor for WindowActor {
     }
 }
 
-#[derive(woab::BuilderSignal)]
-enum WindowSignal {
-    #[signal(inhibit = false)]
-    WindowConfigure(gtk::ApplicationWindow, #[signal(event)] gdk::EventConfigure),
-}
+impl actix::Handler<woab::Signal> for WindowActor {
+    type Result = woab::SignalResult;
 
-impl actix::StreamHandler<WindowSignal> for WindowActor {
-    fn handle(&mut self, signal: WindowSignal, _ctx: &mut Self::Context) {
-        match signal {
-            WindowSignal::WindowConfigure(_, event) => {
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "window_configure" => {
+                let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
                 let (left, top) = event.get_position();
                 let (width, height) = event.get_size();
                 self.widgets
                     .size_descr
                     .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
+                Some(gtk::Inhibit(false))
             }
-        }
+            "decrease_width" => {
+                let (width, height) = self.widgets.win_app.get_size();
+                self.widgets.win_app.resize(width - 10, height);
+                None
+            }
+            "increase_width" => {
+                let (width, height) = self.widgets.win_app.get_size();
+                self.widgets.win_app.resize(width + 10, height);
+                None
+            }
+            _ => msg.cant_handle()?,
+        })
     }
 }
 
@@ -53,14 +63,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::run_actix_inside_gtk_event_loop()?;
 
     woab::block_on(async {
-        factories
-            .win_app
-            .instantiate()
-            .actor()
-            .connect_signals(WindowSignal::connector())
-            .create(|ctx| WindowActor {
-                widgets: ctx.widgets().unwrap(),
-            });
+        factories.win_app.instantiate().connect_with(|bld| {
+            WindowActor {
+                widgets: bld.widgets().unwrap(),
+            }
+            .start()
+        });
     });
 
     gtk::main();

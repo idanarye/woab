@@ -8,15 +8,6 @@ use hashbrown::HashMap;
 #[macro_use]
 mod util;
 
-#[derive(Debug, PartialEq, woab::BuilderSignal)]
-enum TestSignal {
-    Action1,
-    Action2,
-    BlockAction(gio::SimpleAction, #[signal(variant)] String),
-    UnblockAction(gio::SimpleAction, #[signal(variant)] String),
-    DisconnectAction(gio::SimpleAction, #[signal(variant)] String),
-}
-
 struct TestActor {
     action_group: gio::SimpleActionGroup,
     output: Rc<RefCell<Vec<&'static str>>>,
@@ -27,8 +18,6 @@ impl actix::Actor for TestActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let router = TestSignal::connector().route_to::<TestActor>(ctx);
-
         for (action_name, signal_name) in &[("action1", "Action1"), ("action2", "Action2")] {
             let action = gio::SimpleAction::new(action_name, None);
             self.action_group.add_action(&action);
@@ -36,9 +25,7 @@ impl actix::Actor for TestActor {
                 action_name,
                 (
                     action.clone(),
-                    action
-                        .connect_local("activate", false, router.handler(signal_name).unwrap())
-                        .unwrap(),
+                    woab::route_signal(action, "activate", signal_name, ctx.address()).unwrap(),
                 ),
             );
         }
@@ -49,38 +36,52 @@ impl actix::Actor for TestActor {
         ] {
             let action = gio::SimpleAction::new(action_name, Some(&*String::static_variant_type()));
             self.action_group.add_action(&action);
-            router.connect(&action, "activate", signal_name).unwrap();
+            woab::route_signal(action, "activate", signal_name, ctx.address()).unwrap();
         }
 
         self.output.borrow_mut().push("init");
     }
 }
 
-impl actix::StreamHandler<TestSignal> for TestActor {
-    fn handle(&mut self, signal: TestSignal, _ctx: &mut Self::Context) {
-        match signal {
-            TestSignal::Action1 => {
+impl actix::Handler<woab::Signal> for TestActor {
+    type Result = woab::SignalResult;
+
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "Action1" => {
                 self.output.borrow_mut().push("action1");
+                None
             }
-            TestSignal::Action2 => {
+            "Action2" => {
                 self.output.borrow_mut().push("action2");
+                None
             }
-            TestSignal::BlockAction(_, action) => {
-                let (action, signal) = &self.actions[action.as_str()];
+            "BlockAction" => {
+                let action = msg.param::<glib::Variant>(1)?;
+                let action = action.get_str().unwrap();
+                let (action, signal) = &self.actions[action];
                 action.block_signal(signal);
                 self.output.borrow_mut().push("block");
+                None
             }
-            TestSignal::UnblockAction(_, action) => {
-                let (action, signal) = &self.actions[action.as_str()];
+            "UnblockAction" => {
+                let action = msg.param::<glib::Variant>(1)?;
+                let action = action.get_str().unwrap();
+                let (action, signal) = &self.actions[action];
                 action.unblock_signal(signal);
                 self.output.borrow_mut().push("unblock");
+                None
             }
-            TestSignal::DisconnectAction(_, action) => {
-                let (action, signal) = self.actions.remove(&*action).unwrap();
+            "DisconnectAction" => {
+                let action = msg.param::<glib::Variant>(1)?;
+                let action = action.get_str().unwrap();
+                let (action, signal) = self.actions.remove(action).unwrap();
                 action.disconnect(signal);
                 self.output.borrow_mut().push("disconnect");
+                None
             }
-        }
+            _ => msg.cant_handle()?,
+        })
     }
 }
 

@@ -9,17 +9,18 @@
 //!
 //! To use WoAB one would typically create a factories struct using
 //! [`woab::Factories`](derive.Factories.html) and use it dissect the Glade XML file(s). Each field
-//! of the factories struct will be a [`woab::BuilderFactory`](BuilderFactory) that can create:
+//! of the factories struct will be a [`woab::BuilderFactory`](BuilderFactory) that can:
 //!
-//! * An Actor (optional)
-//! * A widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html)
-//! * A signal enum (optional) using [`woab::BuilderSignal`](derive.BuilderSignal.html)
+//! * Create a widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html).
+//! * Route the signals defined in the builder to Actix handlers using [`woab::Signal`](Signal)
+//!   messages.
 //!
 //! The factories can then be used to generate the GTK widgets and either connect them to a new
 //! actor which will receive the signals defined in the Glade GTK or connect them to an existing
 //! actor and tag the signals (so that multiple instances can be added - e.g. with `GtkListBox` -
 //! and the signal handler can know from which one the event came). The actors receive the signals
-//! as Actix streams, and use `StreamHandler` to handle them.
+//! as Actix messages, and the `Handler` returns the inhibitness decision (if the signal requires
+//! it)
 //!
 //! To remove widget-bound actors at runtime, see [`woab::Remove`](Remove).
 //!
@@ -28,6 +29,7 @@
 //! **Do not run the Actix system manually!**
 //!
 //! ```no_run
+//! use actix::prelude::*;
 //! use gtk::prelude::*;
 //!
 //! #[derive(woab::Factories)]
@@ -53,23 +55,23 @@
 //!     // Other widgets inside the window to interact with.
 //! }
 //!
-//! #[derive(woab::BuilderSignal)]
-//! enum AppSignal {
-//!     // These are custom signals defined in Glade's "Signals" tab.
-//!     Sig1, // Use unit variants when the signal parameters can be ignored.
-//!     Sig2(gtk::TextBuffer), // Use tuple variants when the signal parameters are needed.
-//! }
+//! impl actix::Handler<woab::Signal> for AppActor {
+//!     type Result = woab::SignalResult;
 //!
-//! impl actix::StreamHandler<AppSignal> for AppActor {
-//!     fn handle(&mut self, signal: AppSignal, ctx: &mut Self::Context) {
-//!         match signal {
-//!             AppSignal::Sig1 => {
-//!                 // Behavior for Sig1.
+//!     fn handle(&mut self, msg: woab::Signal, ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+//!         Ok(match msg.name() {
+//!             // These are custom signals defined in Glade's "Signals" tab.
+//!             "sig1" => {
+//!                 // Behavior for sig1.
+//!                 None // GTK does not expect sig1 to return anything
 //!             },
-//!             AppSignal::Sig2(text_buffer) => {
-//!                 // Behavior for Sig2 that uses the signal parameter.
+//!             "sig2" => {
+//!                 let text_buffer: gtk::TextBuffer = msg.param(0)?;
+//!                 // Behavior for sig2 that uses the signal parameter.
+//!                 Some(gtk::Inhibit(false)) // GTK expects sig2 to return its inhibitness decision
 //!             },
-//!         }
+//!             _ => msg.cant_handle()?,
+//!         })
 //!     }
 //! }
 //!
@@ -81,15 +83,14 @@
 //!     gtk::init()?;
 //!     woab::run_actix_inside_gtk_event_loop()?; // <===== IMPORTANT!!!
 //!
-//!     factories.main_window.instantiate().actor()
-//!         .create(|ctx| {
-//!             let widgets: AppWidgets = ctx.widgets().unwrap();
-//!             widgets.main_window.show_all(); // Could also be done inside the actor
-//!             AppActor {
-//!                 widgets,
-//!                 factories: factories,
-//!             }
-//!         });
+//!     factories.main_window.instantiate().connect_with(|bld| {
+//!         let widgets: AppWidgets = bld.widgets().unwrap();
+//!         widgets.main_window.show_all(); // Could also be done inside the actor
+//!         AppActor {
+//!             widgets,
+//!             factories: factories,
+//!         }.start()
+//!     });
 //!
 //!     gtk::main();
 //!     Ok(())
@@ -100,24 +101,12 @@
 //!
 //! * When you start Actix actors from outside Tokio/Actix, you must use
 //! [`woab::block_on`](block_on). This is a limitation of Actix that we need to respect.
-//! * GTK requires some signals to return a boolean value - `true` to "inhibit" and not let the
-//!   signal pass up the inheritance to other handlers, and `false` to let it. WoAB cannot
-//!   automatically detect which signals need it and which not, and will return `None` by default.
-//!   To set the value, use `#[signal(inhibit = ...)]` on the signal variant in [the
-//!   `BuilderSignal` derive macro](derive.BuilderSignal.html) or use
-//!   [the `inhibit()` method of `BuilderConnector`](BuilderSignalConnector::inhibit).
-//! * If multiple tagged signals are streamed to the same actor - which is the typical use case for
-//!   tagged signals - `StreamHandler::finished` should be overridden to avoid stopping the actor
-//!   when one instance of the widgets is removed!!!
-//! * If you connect signals via a builder connector, they will only be connected once the
-//!   connector is dropped. If you need the signals connected before the connector is naturally
-//!   dropped (e.g. - if you start `gtk::main()` in the same scope) use the
-//!   [`finish`](BuilderConnector::finish) method of the builder connector.
 
 mod builder;
 mod builder_dissect;
-mod builder_signal;
 mod event_loops_bridge;
+mod signal;
+mod signal_routing;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -133,21 +122,6 @@ mod event_loops_bridge;
 /// }
 /// ```
 pub use woab_macros::WidgetsFromBuilder;
-
-/// Represent a GTK signal that originates from a GTK builder. See [the corresponding trait](BuilderSignal).
-///
-/// Must be used to decorate an enum. Each signal one wants to handle should be a variant of the
-/// enum. Unit variants ignore the signal parameters, and tuple variants convert each parameter to
-/// its proper GTK type.
-///
-/// ```no_run
-/// #[derive(woab::BuilderSignal)]
-/// enum MyAppSignal {
-///     SomeButtonClicked, // We don't need the parameter because it's just the button.
-///     OtherButtonClicked(gtk::Button), // Still just the button but we want it for some reason.
-/// }
-/// ```
-pub use woab_macros::BuilderSignal;
 
 /// Dissect a single Glade XML file to multiple builder factories.
 ///
@@ -195,6 +169,7 @@ pub use woab_macros::Factories;
 /// from its parent and close itself.
 ///
 /// ```no_run
+/// # use actix::prelude::*;
 /// # use gtk::prelude::*;
 /// #
 /// # #[derive(woab::Factories)]
@@ -207,9 +182,6 @@ pub use woab_macros::Factories;
 /// #     list_box_row: gtk::ListBoxRow,
 /// # }
 /// #
-/// # #[derive(woab::BuilderSignal)]
-/// # enum RowSignal {}
-/// #
 /// #[derive(woab::Removable)]
 /// #[removable(self.widgets.list_box_row)]
 /// struct RowActor {
@@ -220,20 +192,23 @@ pub use woab_macros::Factories;
 /// #     type Context = actix::Context<Self>;
 /// # }
 /// #
-/// # impl actix::StreamHandler<RowSignal> for RowActor {
-/// #     fn handle(&mut self, _: RowSignal, _: &mut <Self as actix::Actor>::Context) {}
+/// # impl actix::Handler<woab::Signal> for RowActor {
+/// #     type Result = woab::SignalResult;
+/// #
+/// #     fn handle(&mut self, msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+/// #         Ok(None)
+/// #     }
 /// # }
 ///
 /// fn create_the_row(factories: &Factories, list_box: &gtk::ListBox) -> actix::Addr<RowActor> {
-///     factories.list_box_row.instantiate().actor()
-///         .connect_signals(RowSignal::connector())
-///         .create(|ctx| {
-///             let widgets: RowWidgets = ctx.widgets().unwrap();
-///             list_box.add(&widgets.list_box_row);
-///             RowActor {
-///                 widgets,
-///             }
-///         })
+///     let bld = factories.list_box_row.instantiate();
+///     let widgets: RowWidgets = bld.widgets().unwrap();
+///     list_box.add(&widgets.list_box_row);
+///     let addr = RowActor {
+///         widgets,
+///     }.start();
+///     bld.connect_to(addr.clone());
+///     addr
 /// }
 ///
 /// fn remove_the_row(row: &actix::Addr<RowActor>) {
@@ -244,8 +219,11 @@ pub use woab_macros::Removable;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
-pub use builder_signal::{BuilderSignal, BuilderSignalConnector, RawSignalCallback, RegisterSignalHandlers, SignalRouter};
-pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop};
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
+pub use signal::{Signal, SignalResult};
+pub use signal_routing::{
+    route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter, RawSignalCallback,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

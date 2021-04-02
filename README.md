@@ -26,20 +26,6 @@ demonstration.
 
 * When you start Actix actors from outside Tokio/Actix, you must use
   `woab::block_on`. This is a limitation of Actix that we need to respect.
-* GTK requires some signals to return a boolean value - `true` to "inhibit" and
-  not let the signal pass up the inheritance to other handlers, and `false` to
-  let it. WoAB cannot automatically detect which signals need it and which not,
-  and will return `None` by default.  To set the value, use `#[signal(inhibit =
-  ...)]` on the signal variant in the `BuilderSignal` derive macro or use the
-  `inhibit()` method of `BuilderConnector`.
-* If multiple tagged signals are streamed to the same actor - which is the
-  typical use case for tagged signals - `StreamHandler::finished` should be
-  overridden to avoid stopping the actor when one instance of the widgets is
-  removed!!!
-* If you connect signals via a builder connector, they will only be connected
-  once the connector is dropped. If you need the signals connected before the
-  connector is naturally dropped (e.g. - if you start `gtk::main()` in the same
-  scope) use the `finish()` method of the builder connector.
 
 ## License
 

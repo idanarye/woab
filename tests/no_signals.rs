@@ -30,17 +30,18 @@ impl actix::Actor for TestActor {
     }
 }
 
-#[derive(Clone, woab::WidgetsFromBuilder)]
-pub struct TestWidgets {}
+impl actix::Handler<woab::Signal> for TestActor {
+    type Result = woab::SignalResult;
 
-#[derive(woab::BuilderSignal)]
-enum TestSignal {}
-
-impl actix::StreamHandler<TestSignal> for TestActor {
-    fn handle(&mut self, signal: TestSignal, _ctx: &mut Self::Context) {
-        match signal {}
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            _ => msg.cant_handle()?,
+        })
     }
 }
+
+#[derive(Clone, woab::WidgetsFromBuilder)]
+pub struct TestWidgets {}
 
 #[test]
 fn test_no_signals() -> anyhow::Result<()> {
@@ -52,8 +53,7 @@ fn test_no_signals() -> anyhow::Result<()> {
         factories
             .win_test
             .instantiate()
-            .actor()
-            .start(TestActor { output: output.clone() });
+            .connect_to(TestActor { output: output.clone() }.start());
     });
     wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
     Ok(())

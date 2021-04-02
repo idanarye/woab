@@ -16,7 +16,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <signal name="clicked" handler="CopyRightToLeft" swapped="no"/>
+            <signal name="clicked" handler="copy_right_to_left" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -29,7 +29,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <signal name="clicked" handler="CopyLeftToRight" swapped="no"/>
+            <signal name="clicked" handler="copy_left_to_right" swapped="no"/>
           </object>
           <packing>
             <property name="left_attach">1</property>
