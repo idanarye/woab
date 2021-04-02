@@ -93,7 +93,13 @@ where
 }
 
 pub struct NamespacedSignalRouter<T> {
-    targets: hashbrown::HashMap<String, actix::Recipient<crate::Signal<T>>>,
+    targets: hashbrown::HashMap<String, NamespacedSignalRouterTarget<T>>,
+}
+
+#[derive(Clone)]
+struct NamespacedSignalRouterTarget<T> {
+    recipient: actix::Recipient<crate::Signal<T>>,
+    strip_namespace: bool,
 }
 
 impl<T> NamespacedSignalRouter<T> {
@@ -103,19 +109,40 @@ impl<T> NamespacedSignalRouter<T> {
         }
     }
 
-    pub fn route_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
+    fn add_target(&mut self, namespace: &str, target: NamespacedSignalRouterTarget<T>) {
         match self.targets.entry(namespace.to_owned()) {
             hashbrown::hash_map::Entry::Occupied(_) => {
                 panic!("Namespace {:?} is already routed", namespace);
             }
             hashbrown::hash_map::Entry::Vacant(entry) => {
-                entry.insert(recipient);
+                entry.insert(target);
             }
         }
+    }
+
+    pub fn route_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
+        self.add_target(
+            namespace,
+            NamespacedSignalRouterTarget {
+                recipient,
+                strip_namespace: false,
+            },
+        );
         self
     }
 
-    pub fn route<A>(self, actor: actix::Addr<A>) -> Self
+    pub fn route_strip_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
+        self.add_target(
+            namespace,
+            NamespacedSignalRouterTarget {
+                recipient,
+                strip_namespace: true,
+            },
+        );
+        self
+    }
+
+    pub fn route<A>(mut self, actor: actix::Addr<A>) -> Self
     where
         T: 'static,
         A: actix::Actor,
@@ -127,7 +154,14 @@ impl<T> NamespacedSignalRouter<T> {
         let namespace = namespace.split("::").last().unwrap(); // strip package prefix (unreliable)
         let namespace = namespace.split("; ").last().unwrap(); // strip qualifies
         let namespace = namespace.split("&").last().unwrap(); // strip reference
-        self.route_ns(namespace, actor.recipient())
+        self.add_target(
+            namespace,
+            NamespacedSignalRouterTarget {
+                recipient: actor.recipient(),
+                strip_namespace: true,
+            },
+        );
+        self
     }
 }
 
@@ -147,18 +181,26 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
             }
         };
 
-        let recipient = if let Some(recipient) = router.targets.get(signal_namespace) {
-            recipient.clone()
+        let target = if let Some(target) = router.targets.get(signal_namespace) {
+            target.clone()
         } else {
             panic!("Unknown namespace {:?}", signal_namespace)
         };
 
-        let signal_name = std::rc::Rc::new(signal_name.to_owned());
+        let signal_name = std::rc::Rc::new(
+            if target.strip_namespace {
+                let (_, without_namespace) = signal_name.split_at(signal_namespace.len() + 2);
+                without_namespace
+            } else {
+                signal_name
+            }
+            .to_owned(),
+        );
         let tag = tag.clone();
         Box::new(move |parameters| {
             if let Some(result) = crate::try_block_on(async {
                 let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                recipient.send(signal).await
+                target.recipient.send(signal).await
             }) {
                 let result = result.unwrap().unwrap();
                 if let Some(gtk::Inhibit(inhibit)) = result {
@@ -169,7 +211,7 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
                 }
             } else {
                 let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                recipient.do_send(signal).unwrap();
+                target.recipient.do_send(signal).unwrap();
                 None
             }
         })
