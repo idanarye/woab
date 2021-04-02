@@ -110,7 +110,7 @@ mod signal_routing;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
-/// This needs to be a struct, where each field is a GTK type and its name must match the id of the
+/// This needs to be a struct, where each field is a GTK type and its name must match the ID of the
 /// widgets in the Glade XML file. This derive implements a `From<&gtk::Builder>` for the struct.
 ///
 /// ```no_run
@@ -121,6 +121,17 @@ mod signal_routing;
 ///     some_label: gtk::Label,
 /// }
 /// ```
+///
+/// The `#[widget(…)]` attribute is supported on the fields of the struct, with the following
+/// values:
+///
+/// - `name = "..."`: Use a different name for matching the ID of the widget.
+///
+/// - `nested`: Instead of taking a single widget by ID, put another `WidgetsFromBuilder` derived
+///   type (or any other type that implements `TryFrom<&gtk::Builder>`) as the field's type and
+///   have take all its widgets from the same builder. The name of the field is ignored, because
+///   the nested type already names all the widgets it needs.
+
 pub use woab_macros::WidgetsFromBuilder;
 
 /// Dissect a single Glade XML file to multiple builder factories.
