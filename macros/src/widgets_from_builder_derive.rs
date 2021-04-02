@@ -66,7 +66,7 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
                             Err(err) => return Err(err),
                         }
                     },
-                })
+                });
             }
 
             let field_type = &field.ty;

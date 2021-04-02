@@ -131,7 +131,6 @@ mod signal_routing;
 ///   type (or any other type that implements `TryFrom<&gtk::Builder>`) as the field's type and
 ///   have take all its widgets from the same builder. The name of the field is ignored, because
 ///   the nested type already names all the widgets it needs.
-
 pub use woab_macros::WidgetsFromBuilder;
 
 /// Dissect a single Glade XML file to multiple builder factories.
