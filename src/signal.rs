@@ -42,10 +42,25 @@ impl<T> Signal<T> {
     }
 
     pub fn param<'a, P: glib::value::FromValueOptional<'a>>(&'a self, index: usize) -> Result<P, crate::Error> {
-        // TODO: handle errors
-        let value = &self.0.parameters[index];
-        let value = value.get().unwrap().unwrap();
-        Ok(value)
+        let value = &self
+            .0
+            .parameters
+            .get(index)
+            .ok_or_else(|| crate::Error::SignalParameterIndexOutOfBound {
+                signal: self.name().to_owned(),
+                index,
+                num_parameters: self.0.parameters.len(),
+            })?;
+        if let Ok(Some(value)) = value.get() {
+            Ok(value)
+        } else {
+            Err(crate::Error::IncorrectSignalParameter {
+                signal: self.name().to_owned(),
+                index,
+                expected_type: <P as glib::types::StaticType>::static_type(),
+                actual_type: value.type_(),
+            })
+        }
     }
 
     pub fn cant_handle(&self) -> SignalResult {

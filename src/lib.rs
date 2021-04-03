@@ -261,6 +261,21 @@ pub enum Error {
 
     #[error("{} does not have a signal named {0:?}")]
     NoSuchSignalError(&'static str, String),
+
+    #[error("Expected the parameter at index {index} of {signal:?} to be {expected_type} - not {actual_type}")]
+    IncorrectSignalParameter {
+        signal: String,
+        index: usize,
+        expected_type: glib::types::Type,
+        actual_type: glib::types::Type,
+    },
+
+    #[error("{signal:?} does not have a parameter at index {index} - it only has {num_parameters} parameters")]
+    SignalParameterIndexOutOfBound {
+        signal: String,
+        index: usize,
+        num_parameters: usize,
+    },
 }
 
 /// A message for removing actors along with their GUI
