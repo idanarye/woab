@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 /// Type of a gtk signal callback function that operates on uncast glib values.
 pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
@@ -20,24 +22,32 @@ pub trait GenerateRoutingGtkHandler {
 
 impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crate::Signal<T>>) {
     fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
-        let signal_name = std::rc::Rc::new(signal_name.to_owned());
+        let signal_name = Rc::new(signal_name.to_owned());
         let (tag, recipient) = self.clone();
         Box::new(move |parameters| {
-            if let Some(result) = crate::try_block_on(async {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                recipient.send(signal).await
-            }) {
-                let result = result.unwrap().unwrap();
-                if let Some(gtk::Inhibit(inhibit)) = result {
-                    use glib::value::ToValue;
-                    Some(inhibit.to_value())
-                } else {
+            let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+            let signal_name = Rc::downgrade(&signal_name);
+            match crate::try_block_on(recipient.send(signal)) {
+                Ok(result) => {
+                    let result = result.unwrap().unwrap();
+                    if let Some(gtk::Inhibit(inhibit)) = result {
+                        use glib::value::ToValue;
+                        Some(inhibit.to_value())
+                    } else {
+                        None
+                    }
+                }
+                Err(future) => {
+                    actix::spawn(async move {
+                        let result = future.await.unwrap().unwrap();
+                        if result.is_some() {
+                            let signal_name = signal_name.upgrade();
+                            let signal_name = signal_name.as_ref().map(|s| s.as_str()).unwrap_or("???");
+                            panic!("Expected {:?} handler to return None - got {:?}", signal_name, result);
+                        }
+                    });
                     None
                 }
-            } else {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                recipient.do_send(signal).unwrap();
-                None
             }
         })
     }
@@ -187,7 +197,7 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
             panic!("Unknown namespace {:?}", signal_namespace)
         };
 
-        let signal_name = std::rc::Rc::new(
+        let signal_name = Rc::new(
             if target.strip_namespace {
                 let (_, without_namespace) = signal_name.split_at(signal_namespace.len() + 2);
                 without_namespace
@@ -198,21 +208,29 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
         );
         let tag = tag.clone();
         Box::new(move |parameters| {
-            if let Some(result) = crate::try_block_on(async {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                target.recipient.send(signal).await
-            }) {
-                let result = result.unwrap().unwrap();
-                if let Some(gtk::Inhibit(inhibit)) = result {
-                    use glib::value::ToValue;
-                    Some(inhibit.to_value())
-                } else {
+            let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+            let signal_name = Rc::downgrade(&signal_name);
+            match crate::try_block_on(target.recipient.send(signal)) {
+                Ok(result) => {
+                    let result = result.unwrap().unwrap();
+                    if let Some(gtk::Inhibit(inhibit)) = result {
+                        use glib::value::ToValue;
+                        Some(inhibit.to_value())
+                    } else {
+                        None
+                    }
+                }
+                Err(future) => {
+                    actix::spawn(async move {
+                        let result = future.await.unwrap().unwrap();
+                        if result.is_some() {
+                            let signal_name = signal_name.upgrade();
+                            let signal_name = signal_name.as_ref().map(|s| s.as_str()).unwrap_or("???");
+                            panic!("Expected {:?} handler to return None - got {:?}", signal_name, result);
+                        }
+                    });
                     None
                 }
-            } else {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                target.recipient.do_send(signal).unwrap();
-                None
             }
         })
     }

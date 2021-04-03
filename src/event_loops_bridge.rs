@@ -11,16 +11,16 @@ thread_local! {
 /// actors of the program) or when expecting message responses from inside GTK signal handlers that
 /// are not routed to Actix.
 pub fn block_on<F: Future>(fut: F) -> <F as Future>::Output {
-    try_block_on(fut).expect("Already inside Actix context")
+    try_block_on(fut).map_err(|_| "Already inside Actix context").unwrap()
 }
 
-pub fn try_block_on<F: Future>(fut: F) -> Option<<F as Future>::Output> {
+pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
     ACTIX_SYSTEM_RUNNER.with(|system_runner| {
         if let Ok(system_runner) = system_runner.try_borrow_mut() {
-            let result = Some(system_runner.block_on(fut));
-            result
+            let result = system_runner.block_on(fut);
+            Ok(result)
         } else {
-            None
+            Err(fut)
         }
     })
 }
@@ -30,7 +30,9 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
     glib::idle_add_local(move || {
         try_block_on(async {
             actix::clock::sleep(core::time::Duration::new(0, 0)).await;
-        });
+        })
+        .map_err(|_| "`idle_add_local` called inside Actix context")
+        .unwrap();
         glib::source::Continue(true)
     });
     Ok(())
