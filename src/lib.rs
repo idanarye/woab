@@ -100,7 +100,11 @@
 //! # Pitfalls
 //!
 //! * When you start Actix actors from outside Tokio/Actix, you must use
-//! [`woab::block_on`](block_on). This is a limitation of Actix that we need to respect.
+//!   [`woab::block_on`](block_on). This is a limitation of Actix that we need to respect.
+//! * Some GTK actions (like removing a widget) can fire signals synchronously. If these signals
+//!   are registered as builder signals, WoAB will not be able to route them and panic because it
+//!   will happen while the Actix runtime is occupied. To work around this, use
+//!   [`woab::schedule_outside`](schedule_outside).
 
 mod builder;
 mod builder_dissect;
@@ -229,7 +233,7 @@ pub use woab_macros::Removable;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
-pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, schedule_outside, try_block_on};
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
     route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter, RawSignalCallback,
