@@ -55,7 +55,10 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 self.recalculate();
                 None
             }
-            "addend_removed" => None,
+            "addend_removed" => {
+                self.recalculate();
+                None
+            }
             _ => msg.cant_handle()?,
         })
     }
@@ -80,9 +83,11 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
                 None
             }
             "remove_addend" => {
-                if let Some((widgets, _)) = self.addends.remove(msg.tag()) {
-                    self.widgets.lst_addition.remove(&widgets);
-                    self.recalculate();
+                if let Some((addend, _)) = self.addends.remove(msg.tag()) {
+                    let lst_addition = self.widgets.lst_addition.clone();
+                    woab::schedule_outside(move || {
+                        lst_addition.remove(&addend);
+                    });
                 }
                 None
             }

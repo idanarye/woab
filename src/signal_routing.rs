@@ -26,28 +26,16 @@ impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crat
         let (tag, recipient) = self.clone();
         Box::new(move |parameters| {
             let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-            let signal_name = Rc::downgrade(&signal_name);
-            match crate::try_block_on(recipient.send(signal)) {
-                Ok(result) => {
-                    let result = result.unwrap().unwrap();
-                    if let Some(gtk::Inhibit(inhibit)) = result {
-                        use glib::value::ToValue;
-                        Some(inhibit.to_value())
-                    } else {
-                        None
-                    }
-                }
-                Err(future) => {
-                    actix::spawn(async move {
-                        let result = future.await.unwrap().unwrap();
-                        if result.is_some() {
-                            let signal_name = signal_name.upgrade();
-                            let signal_name = signal_name.as_ref().map(|s| s.as_str()).unwrap_or("???");
-                            panic!("Expected {:?} handler to return None - got {:?}", signal_name, result);
-                        }
-                    });
-                    None
-                }
+            let result = if let Ok(result) = crate::try_block_on(recipient.send(signal)) {
+                result.unwrap().unwrap()
+            } else {
+                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::schedule_outside()`", signal_name)
+            };
+            if let Some(gtk::Inhibit(inhibit)) = result {
+                use glib::value::ToValue;
+                Some(inhibit.to_value())
+            } else {
+                None
             }
         })
     }
@@ -209,28 +197,16 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
         let tag = tag.clone();
         Box::new(move |parameters| {
             let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-            let signal_name = Rc::downgrade(&signal_name);
-            match crate::try_block_on(target.recipient.send(signal)) {
-                Ok(result) => {
-                    let result = result.unwrap().unwrap();
-                    if let Some(gtk::Inhibit(inhibit)) = result {
-                        use glib::value::ToValue;
-                        Some(inhibit.to_value())
-                    } else {
-                        None
-                    }
-                }
-                Err(future) => {
-                    actix::spawn(async move {
-                        let result = future.await.unwrap().unwrap();
-                        if result.is_some() {
-                            let signal_name = signal_name.upgrade();
-                            let signal_name = signal_name.as_ref().map(|s| s.as_str()).unwrap_or("???");
-                            panic!("Expected {:?} handler to return None - got {:?}", signal_name, result);
-                        }
-                    });
-                    None
-                }
+            let result = if let Ok(result) = crate::try_block_on(target.recipient.send(signal)) {
+                result.unwrap().unwrap()
+            } else {
+                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::schedule_outside()`", signal_name)
+            };
+            if let Some(gtk::Inhibit(inhibit)) = result {
+                use glib::value::ToValue;
+                Some(inhibit.to_value())
+            } else {
+                None
             }
         })
     }

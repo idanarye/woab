@@ -33,8 +33,11 @@ pub fn impl_removable_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
                 let widget = &#widget_to_remove;
                 if let Some(parent) = widget.get_parent() {
                     let parent = parent.downcast::<gtk::Container>().unwrap();
+                    let widget = widget.clone();
                     ctx.stop();
-                    parent.remove(widget);
+                    woab::schedule_outside(move || {
+                        parent.remove(&widget);
+                    });
                 }
             }
         }
