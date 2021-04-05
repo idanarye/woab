@@ -18,25 +18,18 @@ impl actix::Actor for TestActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        for (action_name, signal_name) in &[("action1", "Action1"), ("action2", "Action2")] {
+        for action_name in &["action1", "action2"] {
             let action = gio::SimpleAction::new(action_name, None);
             self.action_group.add_action(&action);
             self.actions.insert(
                 action_name,
-                (
-                    action.clone(),
-                    woab::route_signal(&action, "activate", signal_name, ctx.address()).unwrap(),
-                ),
+                (action.clone(), woab::route_action(&action, ctx.address()).unwrap()),
             );
         }
-        for (action_name, signal_name) in &[
-            ("block", "BlockAction"),
-            ("unblock", "UnblockAction"),
-            ("disconnect", "DisconnectAction"),
-        ] {
+        for action_name in &["block", "unblock", "disconnect"] {
             let action = gio::SimpleAction::new(action_name, Some(&*String::static_variant_type()));
             self.action_group.add_action(&action);
-            woab::route_signal(&action, "activate", signal_name, ctx.address()).unwrap();
+            woab::route_action(&action, ctx.address()).unwrap();
         }
 
         self.output.borrow_mut().push("init");
@@ -48,15 +41,15 @@ impl actix::Handler<woab::Signal> for TestActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
-            "Action1" => {
+            "action1" => {
                 self.output.borrow_mut().push("action1");
                 None
             }
-            "Action2" => {
+            "action2" => {
                 self.output.borrow_mut().push("action2");
                 None
             }
-            "BlockAction" => {
+            "block" => {
                 let action = msg.param::<glib::Variant>(1)?;
                 let action = action.get_str().unwrap();
                 let (action, signal) = &self.actions[action];
@@ -64,7 +57,7 @@ impl actix::Handler<woab::Signal> for TestActor {
                 self.output.borrow_mut().push("block");
                 None
             }
-            "UnblockAction" => {
+            "unblock" => {
                 let action = msg.param::<glib::Variant>(1)?;
                 let action = action.get_str().unwrap();
                 let (action, signal) = &self.actions[action];
@@ -72,7 +65,7 @@ impl actix::Handler<woab::Signal> for TestActor {
                 self.output.borrow_mut().push("unblock");
                 None
             }
-            "DisconnectAction" => {
+            "disconnect" => {
                 let action = msg.param::<glib::Variant>(1)?;
                 let action = action.get_str().unwrap();
                 let (action, signal) = self.actions.remove(action).unwrap();

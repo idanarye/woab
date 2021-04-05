@@ -63,6 +63,15 @@ impl<T> Signal<T> {
         }
     }
 
+    pub fn action_param<P: glib::variant::FromVariant>(&self) -> Result<P, crate::Error> {
+        let value: glib::Variant = self.param(1)?;
+        value.get().ok_or_else(|| crate::Error::IncorrectActionParameter {
+            signal: self.name().to_owned(),
+            expected_type: <P as glib::variant::StaticVariantType>::static_variant_type().into_owned(),
+            actual_type: value.type_().to_owned(),
+        })
+    }
+
     pub fn cant_handle(&self) -> SignalResult {
         Err(crate::Error::NoSuchSignalError("Actor", (*self.0.name).to_owned()))
     }
