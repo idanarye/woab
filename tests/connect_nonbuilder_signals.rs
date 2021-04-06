@@ -25,7 +25,7 @@ impl actix::Actor for TestActor {
                 action_name,
                 (
                     action.clone(),
-                    woab::route_signal(action, "activate", signal_name, ctx.address()).unwrap(),
+                    woab::route_signal(&action, "activate", signal_name, ctx.address()).unwrap(),
                 ),
             );
         }
@@ -36,7 +36,7 @@ impl actix::Actor for TestActor {
         ] {
             let action = gio::SimpleAction::new(action_name, Some(&*String::static_variant_type()));
             self.action_group.add_action(&action);
-            woab::route_signal(action, "activate", signal_name, ctx.address()).unwrap();
+            woab::route_signal(&action, "activate", signal_name, ctx.address()).unwrap();
         }
 
         self.output.borrow_mut().push("init");

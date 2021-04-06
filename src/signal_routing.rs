@@ -4,7 +4,7 @@ use std::rc::Rc;
 pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
 pub fn route_signal(
-    obj: impl glib::ObjectExt,
+    obj: &impl glib::ObjectExt,
     gtk_signal: &str,
     actix_signal: &str,
     target: impl IntoGenerateRoutingGtkHandler,
