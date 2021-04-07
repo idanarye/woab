@@ -23,11 +23,11 @@ quick-xml = "0.22.0"
 thiserror = "1.0.24"
 hashbrown = "0.11.2"
 send_wrapper = "0.5.0"
+gio = "^0.9"
 
 [dev-dependencies]
 futures-util = "0.3.13"
 gtk-test = "0.6.1"
 anyhow = "1.0.40"
-gio = "0.9.1"
 cairo-rs = "0.9.1"
 gdk = "^0.13"

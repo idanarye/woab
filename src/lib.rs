@@ -236,7 +236,8 @@ pub use builder_dissect::dissect_builder_xml;
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, schedule_outside, try_block_on};
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
-    route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter, RawSignalCallback,
+    route_action, route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter,
+    RawSignalCallback,
 };
 
 #[derive(thiserror::Error, Debug)]
@@ -279,6 +280,13 @@ pub enum Error {
         signal: String,
         index: usize,
         num_parameters: usize,
+    },
+
+    #[error("Expected the action parameter of {signal:?} to be {expected_type} - not {actual_type}")]
+    IncorrectActionParameter {
+        signal: String,
+        expected_type: glib::VariantType,
+        actual_type: glib::VariantType,
     },
 }
 

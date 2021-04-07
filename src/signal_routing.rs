@@ -16,6 +16,18 @@ pub fn route_signal(
     Ok(handler_id)
 }
 
+pub fn route_action(
+    action: &(impl glib::ObjectExt + gio::ActionExt),
+    target: impl IntoGenerateRoutingGtkHandler,
+) -> Result<glib::SignalHandlerId, crate::Error> {
+    let signal = if action.get_state().is_some() {
+        "change-state"
+    } else {
+        "activate"
+    };
+    route_signal(action, signal, action.get_name().unwrap().as_str(), target)
+}
+
 pub trait GenerateRoutingGtkHandler {
     fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback;
 }
