@@ -29,15 +29,15 @@ fn test_param_extraction() -> anyhow::Result<()> {
         Ok(woab::params!()) => {
             panic!("Should have failed");
         }
-        Err(err) => Err(err)?,
+        Err(err) => return Err(err.into()),
     }
 
     let woab::params!(a: i32, b: String) = signal!(3i32, "four").params()?;
     assert_eq!(a, 3);
     assert_eq!(b, "four");
 
-    let woab::params!(c: i32, _, d: f32) = signal!(5i32, "six", 7.0f32).params()?;
+    let woab::params!(c: i32, _, d: Vec<String>) = signal!(5i32, "six", ["seven", "eight"]).params()?;
     assert_eq!(c, 5);
-    assert_eq!(d, 7.0);
+    assert_eq!(d, ["seven", "eight"]);
     Ok(())
 }
