@@ -144,6 +144,28 @@ impl BuilderConnector {
         })
     }
 
+    /// Fluent interface for doing something with a particular object from the builder.
+    ///
+    /// This is useful for setting up the builder created widgets:
+    ///
+    /// ```no_run
+    /// # use actix::prelude::*;
+    /// # use gtk::prelude::*;
+    /// # struct MyActor;
+    /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
+    /// # impl actix::Handler<woab::Signal> for MyActor {
+    /// #     type Result = woab::SignalResult;
+    /// #     fn handle(&mut self, _msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+    /// #         Ok(None)
+    /// #     }
+    /// # }
+    /// # let builder_factory: woab::BuilderFactory = panic!();
+    /// builder_factory.instantiate()
+    ///     .with_object("window", |window: gtk::ApplicationWindow| {
+    ///         window.show();
+    ///     })
+    ///     .connect_to(MyActor.start());
+    /// ```
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
     where
         W: glib::IsA<glib::Object>,
