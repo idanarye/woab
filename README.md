@@ -1,6 +1,7 @@
 [![Build Status](https://github.com/idanarye/woab/workflows/CI/badge.svg)](https://github.com/idanarye/woab/actions)
 [![Latest Version](https://img.shields.io/crates/v/woab.svg)](https://crates.io/crates/woab)
-[![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://idanarye.github.io/woab/)
+[![Rust Documentation - Latest Version](https://img.shields.io/badge/docs-rustdoc-blue.svg)](https://docs.rs/woab)
+[![Rust Documentation - Nightly](https://img.shields.io/badge/docs-nightly-purple.svg)](https://idanarye.github.io/woab/)
 
 **IMPORTANT!!!** The signal handling API is going to go through a big, breaking overhaul. See https://github.com/idanarye/woab/issues/15.
 
