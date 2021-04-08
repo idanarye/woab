@@ -30,7 +30,7 @@ impl<T: Clone> Signal<T> {
 
 #[doc(hidden)]
 impl<T> SignalData<T> {
-    fn raw_param<'a>(&'a self, index: usize) -> Result<&'a glib::Value, crate::Error> {
+    fn raw_param(&self, index: usize) -> Result<&glib::Value, crate::Error> {
         self.parameters
             .get(index)
             .ok_or_else(|| crate::Error::SignalParameterIndexOutOfBound {

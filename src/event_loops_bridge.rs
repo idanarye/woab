@@ -1,9 +1,11 @@
 use core::cell::RefCell;
 use core::future::Future;
 
+type ScheudleOutsideDlgs = std::collections::VecDeque<Box<dyn FnOnce()>>;
+
 thread_local! {
     static ACTIX_SYSTEM_RUNNER: RefCell<actix::SystemRunner> = RefCell::new(actix::System::new());
-    static SCHEDULED_OUTSIDE: core::cell::RefCell<Option<std::collections::VecDeque<Box<dyn FnOnce()>>>> = Default::default();
+    static SCHEDULED_OUTSIDE: core::cell::RefCell<Option<ScheudleOutsideDlgs>> = Default::default();
 }
 
 /// Run a feature inside the Actix system GTK will be spinning.

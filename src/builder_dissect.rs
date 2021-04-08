@@ -16,7 +16,7 @@ pub fn dissect_builder_xml(
     }
 
     let mut contexts = targets
-        .into_iter()
+        .iter_mut()
         .map(|target| WriteContext {
             writer: quick_xml::Writer::new(std::io::Cursor::new(target)),
             prev_idx: None,
@@ -46,24 +46,21 @@ pub fn dissect_builder_xml(
         match reader.read_event(&mut buf)? {
             quick_xml::events::Event::Start(e) => {
                 current_nesting += 1;
-                match e.name() {
-                    b"object" => {
-                        let new_idx = e.attributes().find_map(|attr| {
-                            let attr = attr.ok()?;
-                            if attr.key != b"id" {
-                                return None;
-                            }
-                            let id = std::str::from_utf8(&attr.value).ok()?;
-                            id_to_idx(id)
-                        });
-                        if let Some(new_idx) = new_idx {
-                            contexts[new_idx].prev_idx = context_idx;
-                            assert!(contexts[new_idx].nesting == 0);
-                            contexts[new_idx].nesting = current_nesting;
-                            context_idx = Some(new_idx);
+                if e.name() == b"object" {
+                    let new_idx = e.attributes().find_map(|attr| {
+                        let attr = attr.ok()?;
+                        if attr.key != b"id" {
+                            return None;
                         }
+                        let id = std::str::from_utf8(&attr.value).ok()?;
+                        id_to_idx(id)
+                    });
+                    if let Some(new_idx) = new_idx {
+                        contexts[new_idx].prev_idx = context_idx;
+                        assert!(contexts[new_idx].nesting == 0);
+                        contexts[new_idx].nesting = current_nesting;
+                        context_idx = Some(new_idx);
                     }
-                    _ => {}
                 }
                 write_event(&mut contexts, context_idx, quick_xml::events::Event::Start(e))?;
             }

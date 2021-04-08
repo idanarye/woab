@@ -115,7 +115,7 @@ struct NamespacedSignalRouterTarget<T> {
 impl<T> NamespacedSignalRouter<T> {
     pub fn new() -> Self {
         NamespacedSignalRouter {
-            targets: Default::default(),
+            targets: hashbrown::HashMap::new(),
         }
     }
 
@@ -160,10 +160,10 @@ impl<T> NamespacedSignalRouter<T> {
         <A as actix::Actor>::Context: actix::dev::ToEnvelope<A, crate::Signal<T>>,
     {
         let namespace = core::any::type_name::<A>();
-        let namespace = namespace.split("<").next().unwrap(); // strip generics
+        let namespace = namespace.split('<').next().unwrap(); // strip generics
         let namespace = namespace.split("::").last().unwrap(); // strip package prefix (unreliable)
         let namespace = namespace.split("; ").last().unwrap(); // strip qualifies
-        let namespace = namespace.split("&").last().unwrap(); // strip reference
+        let namespace = namespace.split('&').last().unwrap(); // strip reference
         self.add_target(
             namespace,
             NamespacedSignalRouterTarget {
