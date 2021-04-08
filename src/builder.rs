@@ -166,7 +166,7 @@ impl BuilderConnector {
     ///     })
     ///     .connect_to(MyActor.start());
     /// ```
-    pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
+    pub fn with_object<W>(self, id: &str, dlg: impl FnOnce(W)) -> Self
     where
         W: glib::IsA<glib::Object>,
     {
@@ -182,16 +182,75 @@ impl BuilderConnector {
         self.builder.clone().try_into()
     }
 
-    pub fn connect_to(&self, target: impl crate::IntoGenerateRoutingGtkHandler) -> &Self {
+    /// Route the builder's signals to Actix.
+    ///
+    /// * `bld.connect_to(target)` will connect all the signals defined in the Glade XML to
+    ///   `target`, which can be an `actix::Recipient<woab::Signal>`, an `actix::Addr<A>` for A
+    ///   that handles `woab::Signal`, or a
+    ///   [`woab::NamespacedSignalRouter`](crate::NamespacedSignalRouter).
+    /// * `bld.connect_to((tag, target))` will connect all the signals to `target` and add a tag.
+    ///   The tag must be `Clone`, and will be sent along with the signal. The signal type will be
+    ///   `woab::Signal<T>` where `T` is the type of the tag.
+    ///
+    /// ```no_run
+    /// # use actix::prelude::*;
+    /// # use gtk::prelude::*;
+    /// # struct MyActor;
+    /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
+    /// # impl actix::Handler<woab::Signal> for MyActor {
+    /// #     type Result = woab::SignalResult;
+    /// #     fn handle(&mut self, _msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+    /// #         Ok(None)
+    /// #     }
+    /// # }
+    /// # let builder_factory: woab::BuilderFactory = panic!();
+    /// builder_factory.instantiate().connect_to(MyActor.start());
+    /// ```
+    pub fn connect_to(self, target: impl crate::IntoGenerateRoutingGtkHandler) {
         let mut generator = target.into_generate_routing_gtk_handler();
         use crate::GenerateRoutingGtkHandler;
         use gtk::prelude::BuilderExtManual;
         self.builder
             .connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
-        self
     }
 
-    pub fn connect_with<G: crate::IntoGenerateRoutingGtkHandler>(&self, dlg: impl FnOnce(&Self) -> G) -> &Self {
-        self.connect_to(dlg(self))
+    /// Runs a closure and passes the result to [`connect_to`](BuilderConnector::connect_to).
+    ///
+    /// This is mostly a convenience method. The closure receives the `&BuilderConnector` and can
+    /// be use it to retrieve widgets from the builder instantiation and use them in the creation
+    /// of the actor.
+    ///
+    /// ```no_run
+    /// # use actix::prelude::*;
+    /// # use gtk::prelude::*;
+    /// #[derive(woab::WidgetsFromBuilder)]
+    /// struct MyWidgets {
+    ///     my_button: gtk::Button,
+    ///     my_textfield: gtk::Entry,
+    /// }
+    ///
+    /// struct MyActor {
+    ///     widgets: MyWidgets,
+    ///     my_window: gtk::Window, // for whatever reason not in `MyWidgets`
+    /// }
+    /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
+    /// # impl actix::Handler<woab::Signal> for MyActor {
+    /// #     type Result = woab::SignalResult;
+    /// #     fn handle(&mut self, _msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+    /// #         Ok(None)
+    /// #     }
+    /// # }
+    /// # let builder_factory: woab::BuilderFactory = panic!();
+    /// builder_factory.instantiate().connect_with(|bld| {
+    ///     MyActor {
+    ///         widgets: bld.widgets().unwrap(),
+    ///         my_window: bld.get_object("my_window").unwrap(),
+    ///     }
+    ///     .start()
+    /// });
+    /// ```
+    pub fn connect_with<G: crate::IntoGenerateRoutingGtkHandler>(self, dlg: impl FnOnce(&Self) -> G) {
+        let target = dlg(&self);
+        self.connect_to(target)
     }
 }
