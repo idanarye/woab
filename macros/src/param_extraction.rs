@@ -15,13 +15,8 @@ impl syn::parse::Parse for Input {
 
 #[derive(Debug)]
 enum SingleParam {
-    Extract {
-        pat: syn::Pat,
-        ty: syn::Type,
-    },
-    Ignore {
-        pat: syn::Pat,
-    },
+    Extract { pat: syn::Pat, ty: syn::Type },
+    Ignore { pat: syn::Pat },
 }
 
 impl syn::parse::Parse for SingleParam {

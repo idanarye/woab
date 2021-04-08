@@ -17,7 +17,11 @@ fn test_param_extraction() -> anyhow::Result<()> {
     }
     let () = signal!().params()?;
     match signal!(1i32, "two").params() {
-        Err(woab::Error::NotAllParametersExtracted { signal, num_parameters, num_extracted }) => {
+        Err(woab::Error::NotAllParametersExtracted {
+            signal,
+            num_parameters,
+            num_extracted,
+        }) => {
             assert_eq!(signal, "signal");
             assert_eq!(num_parameters, 2);
             assert_eq!(num_extracted, 0);
@@ -25,7 +29,7 @@ fn test_param_extraction() -> anyhow::Result<()> {
         Ok(woab::params!()) => {
             panic!("Should have failed");
         }
-        Err(err) => Err(err)?
+        Err(err) => Err(err)?,
     }
 
     let woab::params!(a: i32, b: String) = signal!(3i32, "four").params()?;

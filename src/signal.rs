@@ -31,8 +31,7 @@ impl<T: Clone> Signal<T> {
 #[doc(hidden)]
 impl<T> SignalData<T> {
     fn raw_param<'a>(&'a self, index: usize) -> Result<&'a glib::Value, crate::Error> {
-        self
-            .parameters
+        self.parameters
             .get(index)
             .ok_or_else(|| crate::Error::SignalParameterIndexOutOfBound {
                 signal: self.name.as_str().to_owned(),
@@ -102,7 +101,7 @@ impl SignalParamReceiver<'_> for () {
                 signal: signal.name.as_str().to_owned(),
                 num_parameters: signal.parameters.len(),
                 num_extracted: from_index,
-            })
+            });
         }
         Ok(())
     }
@@ -114,7 +113,11 @@ where
     R: SignalParamReceiver<'a>,
 {
     fn fill_from_index<D>(signal: &'a SignalData<D>, from_index: usize) -> Result<Self, crate::Error> {
-        Ok((signal.param(from_index)?, core::marker::PhantomData, R::fill_from_index(signal, from_index + 1)?))
+        Ok((
+            signal.param(from_index)?,
+            core::marker::PhantomData,
+            R::fill_from_index(signal, from_index + 1)?,
+        ))
     }
 }
 

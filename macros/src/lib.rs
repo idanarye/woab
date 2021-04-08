@@ -1,8 +1,8 @@
 mod factories_derive;
+mod param_extraction;
 mod removable_derive;
 mod util;
 mod widgets_from_builder_derive;
-mod param_extraction;
 
 #[proc_macro_derive(WidgetsFromBuilder, attributes(widget))]
 pub fn derive_widgets_from_builder(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
