@@ -7,8 +7,8 @@
 
 # WoAB
 
-WoAB (Widgets on Actors Bridge) is a library for combining the widgets toolkit
-[GTK](https://gtk-rs.org/) with the actors framework
+WoAB (Widgets on Actors Bridge) is a GUI microframework for combining the
+widgets toolkit [GTK](https://gtk-rs.org/) with the actors framework
 [Actix](https://actix.rs/). It helps with:
 
 * Running the actors inside the GTK thread, allowing message handlers to
