@@ -14,6 +14,8 @@
 //! * Create a widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html).
 //! * Route the signals defined in the builder to Actix handlers using [`woab::Signal`](Signal)
 //!   messages.
+//! * In the Actix handler, match on the signal name (`msg.name()`) and use
+//!   [`woab::params!`](crate::params!) to extract the signal parameters.
 //!
 //! The factories can then be used to generate the GTK widgets and either connect them to a new
 //! actor which will receive the signals defined in the Glade GTK or connect them to an existing
@@ -66,8 +68,8 @@
 //!                 None // GTK does not expect sig1 to return anything
 //!             },
 //!             "sig2" => {
-//!                 let text_buffer: gtk::TextBuffer = msg.param(0)?;
-//!                 // Behavior for sig2 that uses the signal parameter.
+//!                 let woab::params!(text_buffer: gtk::TextBuffer, _) = msg.params()?;
+//!                 // Behavior for sig2 that uses the signal parameters.
 //!                 Some(gtk::Inhibit(false)) // GTK expects sig2 to return its inhibitness decision
 //!             },
 //!             _ => msg.cant_handle()?,
@@ -231,6 +233,22 @@ pub use woab_macros::Factories;
 /// ```
 pub use woab_macros::Removable;
 
+/// Helper macro for extracting signal parameters from [`woab::Signal`](crate::Signal).
+///
+/// ```rust
+/// # let _ = |msg: woab::Signal| {
+/// let woab::params!(
+///     _,
+///     param1: String,
+///     param2,
+/// ) = msg.params()?; // `msg` is the `woab::Signal`
+/// # woab::SignalResult::Ok(None)
+/// # };
+/// ```
+///
+/// All the signal parameters must be matched against, but `_` can be used for unneeded parameters.
+/// Parameters with types will be converted to that type, and untyped parameters will be
+/// `&glib::Value`.
 pub use woab_macros::params;
 
 pub use builder::*;
