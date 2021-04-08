@@ -102,6 +102,7 @@ where
     }
 }
 
+#[derive(Default)]
 pub struct NamespacedSignalRouter<T> {
     targets: hashbrown::HashMap<String, NamespacedSignalRouterTarget<T>>,
 }
@@ -113,12 +114,6 @@ struct NamespacedSignalRouterTarget<T> {
 }
 
 impl<T> NamespacedSignalRouter<T> {
-    pub fn new() -> Self {
-        NamespacedSignalRouter {
-            targets: hashbrown::HashMap::new(),
-        }
-    }
-
     fn add_target(&mut self, namespace: &str, target: NamespacedSignalRouterTarget<T>) {
         match self.targets.entry(namespace.to_owned()) {
             hashbrown::hash_map::Entry::Occupied(_) => {

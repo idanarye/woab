@@ -34,9 +34,7 @@ impl actix::Handler<woab::Signal> for TestActor {
     type Result = woab::SignalResult;
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
-        Ok(match msg.name() {
-            _ => msg.cant_handle()?,
-        })
+        msg.cant_handle()
     }
 }
 

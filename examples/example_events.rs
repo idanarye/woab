@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     woab::block_on(async {
         factories.win_app.instantiate().connect_with(|bld| {
             bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
-            woab::NamespacedSignalRouter::new()
+            woab::NamespacedSignalRouter::default()
                 .route(
                     PressCountingActor {
                         widgets: bld.widgets().unwrap(),
