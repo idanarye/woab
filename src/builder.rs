@@ -113,12 +113,6 @@ impl BuilderFactory {
 /// connected to the widgets in that builder.
 ///
 /// See [`BuilderFactory`] for usage example.
-///
-/// # Pitfalls
-///
-/// If you connect signals via a builder connector, they will only be connected once the connector
-/// is dropped. If you need the signals connected before the connector is naturally dropped (e.g. -
-/// if you start `gtk::main()` in the same scope) use [`finish`](BuilderConnector::finish).
 pub struct BuilderConnector {
     builder: gtk::Builder,
 }
