@@ -231,6 +231,8 @@ pub use woab_macros::Factories;
 /// ```
 pub use woab_macros::Removable;
 
+pub use woab_macros::params;
+
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, schedule_outside, try_block_on};
@@ -287,6 +289,13 @@ pub enum Error {
         signal: String,
         expected_type: glib::VariantType,
         actual_type: glib::VariantType,
+    },
+
+    #[error("{signal:?} has {num_parameters} parameters - only {num_extracted} extracted")]
+    NotAllParametersExtracted {
+        signal: String,
+        num_parameters: usize,
+        num_extracted: usize,
     },
 }
 

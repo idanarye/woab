@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `#[widget(nested)]` for nesting widget structs.
 - `woab::schedule_outside` for running things that would fire signals outside
   the Actix runtime.
+- `woab::params!` macro for extracting params from signals.
 
 ### Changed
 - [**BREAKING**] Updated Actix to 0.11 and Tokio to 1.14. Consequences:

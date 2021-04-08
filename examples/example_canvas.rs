@@ -21,7 +21,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "draw" => {
-                let draw_ctx: cairo::Context = msg.param(1)?;
+                let woab::params!(_, draw_ctx: cairo::Context) = msg.params()?;
                 draw_ctx.arc(
                     self.ball.position[0],
                     self.ball.position[1],
