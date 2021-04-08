@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "woab"
-version = "0.2.1"
+version = "0.3.0"
 description = "Widgets on Actors Bridge - GUI microframework for combining GTK with Actix"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"
@@ -18,7 +18,7 @@ categories = ["gui"]
 gtk = "^0.9"
 glib = "^0.10"
 actix = { version = "^0.11", default-features = false }
-woab-macros = { version = "0.2.1", path = "macros" }
+woab-macros = { version = "0.3.0", path = "macros" }
 quick-xml = "0.22.0"
 thiserror = "1.0.24"
 hashbrown = "0.11.2"

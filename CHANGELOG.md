@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## 0.3.0 - 2021-02-09
 ### Added
 - `woab::block_on`, for running the Tokio runtime and Actix system WoAB is
   using.
@@ -31,11 +32,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     must be started in a future (`async` block) passed the new `woab::block_on`
     function.
   - `woab::run_actix_inside_gtk_event_loop` no longer accepts a name.
+- `BuilderConnector` is now consumes when the signals are routed.
 
 ### Removed
 - [**BREAKING**] Removed everything related to `BuilderSignal` - the derive
   macro, the trait, and all the builder connector methods and helper structs.
   Use `woab::Signal` instead.
+- [**REGRESSION**] Removed conversion of GDK events from `gdk::Event` to the
+  concrete event type. Ability will be added again when possible - see #22.
 
 ## 0.2.1 - 2021-03-18
 ### Fixed
