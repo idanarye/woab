@@ -20,6 +20,10 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "close" => {
+                gtk::main_quit();
+                None
+            }
             "draw" => {
                 let woab::params!(_, draw_ctx: cairo::Context) = msg.params()?;
                 draw_ctx.arc(

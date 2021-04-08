@@ -30,6 +30,10 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "close" => {
+                gtk::main_quit();
+                None
+            }
             "window_configure" => {
                 let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
                 let (left, top) = event.get_position();

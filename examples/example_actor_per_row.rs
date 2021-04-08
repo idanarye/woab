@@ -40,6 +40,10 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "close" => {
+                gtk::main_quit();
+                None
+            }
             "click_button" => {
                 self.factories.row_addend.instantiate().connect_with(|bld| {
                     let widgets: AddendWidgets = bld.widgets().unwrap();

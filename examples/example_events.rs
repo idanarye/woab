@@ -9,6 +9,26 @@ pub struct Factories {
     win_app: woab::BuilderFactory,
 }
 
+struct WindowActor;
+
+impl actix::Actor for WindowActor {
+    type Context = actix::Context<Self>;
+}
+
+impl actix::Handler<woab::Signal> for WindowActor {
+    type Result = woab::SignalResult;
+
+    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg.name() {
+            "close" => {
+                gtk::main_quit();
+                None
+            }
+            _ => msg.cant_handle()?,
+        })
+    }
+}
+
 #[derive(woab::WidgetsFromBuilder)]
 pub struct PressCountingWidgets {
     buf_count_pressed_time: gtk::TextBuffer,
@@ -120,6 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         factories.win_app.instantiate().connect_with(|bld| {
             bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
             woab::NamespacedSignalRouter::default()
+                .route(WindowActor.start())
                 .route(
                     PressCountingActor {
                         widgets: bld.widgets().unwrap(),

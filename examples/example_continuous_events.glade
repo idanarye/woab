@@ -6,6 +6,7 @@
   <object class="GtkApplicationWindow" id="win_app">
     <property name="can-focus">False</property>
     <signal name="configure-event" handler="window_configure" swapped="no"/>
+    <signal name="destroy" handler="close" swapped="no"/>
     <child>
       <!-- n-columns=2 n-rows=2 -->
       <object class="GtkGrid">

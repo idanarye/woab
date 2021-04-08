@@ -24,6 +24,11 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
+            "close" => {
+                let woab::params!(win_app: gtk::ApplicationWindow) = msg.params()?;
+                win_app.get_application().unwrap().quit();
+                None
+            }
             "increment" => {
                 self.simple_data += 1;
                 self.widgets.simple.set_text(&format!("{}", self.simple_data));

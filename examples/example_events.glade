@@ -5,6 +5,7 @@
   <object class="GtkTextBuffer" id="buf_count_pressed_time"/>
   <object class="GtkApplicationWindow" id="win_app">
     <property name="can-focus">False</property>
+    <signal name="destroy" handler="WindowActor::close" swapped="no"/>
     <child>
       <!-- n-columns=2 n-rows=3 -->
       <object class="GtkGrid">
