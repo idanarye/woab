@@ -54,7 +54,7 @@ impl<T> SignalData<T> {
         if let Ok(Some(value)) = value.get() {
             Ok(value)
         } else {
-            Err(crate::Error::IncorrectSignalParameter {
+            Err(crate::Error::IncorrectSignalParameterType {
                 signal: self.name.as_str().to_owned(),
                 index,
                 expected_type: <P as glib::types::StaticType>::static_type(),
@@ -141,7 +141,7 @@ impl<T> Signal<T> {
     ///     }
     /// }
     pub fn cant_handle(&self) -> SignalResult {
-        Err(crate::Error::NoSuchSignalError("Actor", (*self.0.name).to_owned()))
+        Err(crate::Error::NoSuchSignalError(self.0.name.as_str().to_owned()))
     }
 
     /// To be used with the [`woab::params!`](crate::params!) macro to extract all the signal's parameters.
