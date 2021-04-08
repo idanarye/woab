@@ -3,6 +3,17 @@ use std::rc::Rc;
 /// Type of a gtk signal callback function that operates on uncast glib values.
 pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 
+/// Route a GTK signal to an Actix actor that can handle [`woab::Signal`](crate::Signal).
+///
+/// ```no_run
+/// let widget: gtk::Button;
+/// let target: actix::Recipient<woab::Signal>; // `actix::Addr` is also supported
+/// # widget = panic!();
+/// # target = panic!();
+/// woab::route_signal(&widget, "clicked", "button_clicked", target).unwrap();
+/// ```
+///
+/// * The `actix_signal` argument is the signal name used for identifying the signal inside the actor.
 pub fn route_signal(
     obj: &impl glib::ObjectExt,
     gtk_signal: &str,
@@ -16,6 +27,19 @@ pub fn route_signal(
     Ok(handler_id)
 }
 
+/// Route a GIO action to an Actix actor that can handle [`woab::Signal`](crate::Signal).
+/// ```no_run
+/// let action = gio::SimpleAction::new("action_name", None);
+/// let target: actix::Recipient<woab::Signal>; // `actix::Addr` is also supported
+/// # target = panic!();
+/// woab::route_action(&action, target).unwrap();
+/// ```
+///
+/// * The action name will be used for identifying the signal inside the actor.
+/// * Both stateless and stateful actions are supported - the correct signal will be chosen
+///   automatically.
+/// * To get the action parameter/state inside the handler, use the
+///   [`action_param`](crate::Signal::action_param) method.
 pub fn route_action(
     action: &(impl glib::ObjectExt + gio::ActionExt),
     target: impl IntoGenerateRoutingGtkHandler,
@@ -28,6 +52,7 @@ pub fn route_action(
     route_signal(action, signal, action.get_name().unwrap().as_str(), target)
 }
 
+#[doc(hidden)]
 pub trait GenerateRoutingGtkHandler {
     fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback;
 }
@@ -53,6 +78,7 @@ impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crat
     }
 }
 
+#[doc(hidden)]
 pub trait IntoGenerateRoutingGtkHandler {
     type Generator: GenerateRoutingGtkHandler;
 
@@ -102,6 +128,7 @@ where
     }
 }
 
+/// Signal
 #[derive(Default)]
 pub struct NamespacedSignalRouter<T> {
     targets: hashbrown::HashMap<String, NamespacedSignalRouterTarget<T>>,
@@ -113,6 +140,64 @@ struct NamespacedSignalRouterTarget<T> {
     strip_namespace: bool,
 }
 
+/// Split signals from the same builder to multiple actors, based on namespaces.
+///
+/// To be passed to [`connect_to`](crate::BuilderConnector::connect_to) instead of an
+/// `Addr`/`Recipient`. The namespace format is `"namespace::signal"`. The
+/// [`route`](NamespacedSignalRouter::route) method will automatically detect the namespace based
+/// on the actor type, and will strip it from the signals passed to that actor.
+///
+/// ```no_run
+/// # use actix::prelude::*;
+/// struct Actor1;
+/// # impl actix::Actor for Actor1 { type Context = actix::Context<Self>; }
+///
+/// impl actix::Handler<woab::Signal> for Actor1 {
+///     type Result = woab::SignalResult;
+///
+///     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+///         Ok(match msg.name() {
+///             "signal1" => {
+///                 // Handles "Actor1::signal1"
+///                 None
+///             }
+///             "signal2" => {
+///                 // Handles "Actor1::signal2"
+///                 None
+///             }
+///             _ => msg.cant_handle()?,
+///         })
+///     }
+/// }
+///
+/// struct Actor2;
+/// # impl actix::Actor for Actor2 { type Context = actix::Context<Self>; }
+///
+/// impl actix::Handler<woab::Signal> for Actor2 {
+///     type Result = woab::SignalResult;
+///
+///     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+///         Ok(match msg.name() {
+///             "signal3" => {
+///                 // Handles "Actor2::signal3"
+///                 None
+///             }
+///             "signal4" => {
+///                 // Handles "Actor2::signal4"
+///                 None
+///             }
+///             _ => msg.cant_handle()?,
+///         })
+///     }
+/// }
+///
+/// # let factory: woab::BuilderFactory = panic!();
+/// factory.instantiate().connect_to(
+///     woab::NamespacedSignalRouter::default()
+///     .route(Actor1.start())
+///     .route(Actor2.start())
+/// );
+/// ```
 impl<T> NamespacedSignalRouter<T> {
     fn add_target(&mut self, namespace: &str, target: NamespacedSignalRouterTarget<T>) {
         match self.targets.entry(namespace.to_owned()) {
@@ -125,6 +210,7 @@ impl<T> NamespacedSignalRouter<T> {
         }
     }
 
+    /// Route signals of the specified namespace, keeping the namespace.
     pub fn route_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
         self.add_target(
             namespace,
@@ -136,6 +222,7 @@ impl<T> NamespacedSignalRouter<T> {
         self
     }
 
+    /// Route signals of the specified namespace, stripping the namespace.
     pub fn route_strip_ns(mut self, namespace: &str, recipient: actix::Recipient<crate::Signal<T>>) -> Self {
         self.add_target(
             namespace,
@@ -147,6 +234,10 @@ impl<T> NamespacedSignalRouter<T> {
         self
     }
 
+    /// Route signals of automatically detected namespace, stripping the namespace.
+    ///
+    /// The namespace is the actor's namespace, without any qualifications, and generics, and
+    /// without the name of the module it is in.
     pub fn route<A>(mut self, actor: actix::Addr<A>) -> Self
     where
         T: 'static,
