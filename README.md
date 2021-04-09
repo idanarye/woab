@@ -3,8 +3,6 @@
 [![Rust Documentation - Latest Version](https://img.shields.io/badge/docs-released-blue.svg)](https://docs.rs/woab)
 [![Rust Documentation - Nightly](https://img.shields.io/badge/docs-nightly-purple.svg)](https://idanarye.github.io/woab/)
 
-**IMPORTANT!!!** The signal handling API is going to go through a big, breaking overhaul. See https://github.com/idanarye/woab/issues/15.
-
 # WoAB
 
 WoAB (Widgets on Actors Bridge) is a GUI microframework for combining the
