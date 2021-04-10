@@ -36,11 +36,11 @@ pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
 }
 
 /// Start an Actix `System` that runs inside the GTK thread.
-pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
+pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
     SCHEDULED_OUTSIDE.with(|scheduled_outside| {
         scheduled_outside.borrow_mut().get_or_insert_with(&Default::default);
     });
-    glib::idle_add_local(move || {
+    let source_id = glib::idle_add_local(|| {
         try_block_on(async {
             actix::clock::sleep(core::time::Duration::new(0, 0)).await;
         })
@@ -51,7 +51,7 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
         }
         glib::source::Continue(true)
     });
-    Ok(())
+    Ok(source_id)
 }
 
 /// Run a closure outside the Actix system.
