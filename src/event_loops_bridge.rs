@@ -126,7 +126,10 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(oneshot::Sender<T>)) -> Result<
     rx.await
 }
 
-pub async fn run_dialog(dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt), close_after: bool) -> gtk::ResponseType {
+pub async fn run_dialog(
+    dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt),
+    close_after: bool,
+) -> gtk::ResponseType {
     dialog.set_modal(true);
     dialog.show();
     wake_from(|tx| {
@@ -137,5 +140,7 @@ pub async fn run_dialog(dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk:
                 dialog.close();
             }
         });
-    }).await.unwrap()
+    })
+    .await
+    .unwrap()
 }

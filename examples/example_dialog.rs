@@ -35,17 +35,21 @@ impl actix::Handler<woab::Signal> for WindowActor {
             }
             "open_dialog" => {
                 let bld = self.dialog_factory.instantiate();
-                ctx.spawn(async move {
-                    let dialog: gtk::Dialog = bld.connect_with(|bld| {
-                        DialogActor {
-                            widgets: bld.widgets().unwrap()
-                        }
-                        .start()
-                    }).get_object("dialog").unwrap();
-                    woab::run_dialog(&dialog, false).await
-                }.into_actor(self)
-                .map(|response, actor, _ctx| {
-                    match response {
+                ctx.spawn(
+                    async move {
+                        let dialog: gtk::Dialog = bld
+                            .connect_with(|bld| {
+                                DialogActor {
+                                    widgets: bld.widgets().unwrap(),
+                                }
+                                .start()
+                            })
+                            .get_object("dialog")
+                            .unwrap();
+                        woab::run_dialog(&dialog, false).await
+                    }
+                    .into_actor(self)
+                    .map(|response, actor, _ctx| match response {
                         gtk::ResponseType::Yes => {
                             actor.yes_count += 1;
                             actor.widgets.yes_count.set_text(&actor.yes_count.to_string());
@@ -57,28 +61,35 @@ impl actix::Handler<woab::Signal> for WindowActor {
                         gtk::ResponseType::DeleteEvent => {}
                         gtk::ResponseType::None => {}
                         _ => panic!("Cannot handle dialog response {:?}", response),
-                    }
-                }));
+                    }),
+                );
                 None
             }
             "reset" => {
-                ctx.spawn(async move {
-                    woab::run_dialog(&gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-                        None,
-                        gtk::DialogFlags::all(),
-                        gtk::MessageType::Question,
-                        gtk::ButtonsType::YesNo,
-                        "Reset the counters?",
-                    ), true).await
-                }.into_actor(self)
-                .map(|response, actor, _ctx| {
-                    if response == gtk::ResponseType::Yes {
-                        actor.yes_count = 0;
-                        actor.no_count = 0;
-                        actor.widgets.yes_count.set_text("0");
-                        actor.widgets.no_count.set_text("0");
+                ctx.spawn(
+                    async move {
+                        woab::run_dialog(
+                            &gtk::MessageDialog::new::<gtk::ApplicationWindow>(
+                                None,
+                                gtk::DialogFlags::all(),
+                                gtk::MessageType::Question,
+                                gtk::ButtonsType::YesNo,
+                                "Reset the counters?",
+                            ),
+                            true,
+                        )
+                        .await
                     }
-                }));
+                    .into_actor(self)
+                    .map(|response, actor, _ctx| {
+                        if response == gtk::ResponseType::Yes {
+                            actor.yes_count = 0;
+                            actor.no_count = 0;
+                            actor.widgets.yes_count.set_text("0");
+                            actor.widgets.no_count.set_text("0");
+                        }
+                    }),
+                );
                 None
             }
             _ => msg.cant_handle()?,
