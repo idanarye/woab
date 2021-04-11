@@ -126,6 +126,16 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(oneshot::Sender<T>)) -> Result<
     rx.await
 }
 
+pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Result<T, oneshot::error::RecvError> {
+    wake_from(|tx| {
+        glib::MainContext::ref_thread_default().spawn_local(async move {
+            let result = fut.await;
+            tx.send(result).map_err(|_| "Unable to send future result").unwrap();
+        });
+    })
+    .await
+}
+
 pub async fn run_dialog(
     dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt),
     close_after: bool,

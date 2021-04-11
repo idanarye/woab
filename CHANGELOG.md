@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   getting widgets after the signals were connected.
 - Facilities for working with GTK inside futures that run on the Actix runtime:
   - `woab::wake_from` for `await`ing to some signal somewhere.
+  - `woab::outside` for `await`ing on a future that runs outside the Actix runtime.
   - `woab::run_dialog` for as an `async` replacement for `gtk::DialogExt.run`
     that plays nice with WoAB.
 
