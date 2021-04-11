@@ -113,13 +113,11 @@ impl BuilderFactory {
 /// connected to the widgets in that builder.
 ///
 /// See [`BuilderFactory`] for usage example.
-pub struct BuilderConnector {
-    builder: gtk::Builder,
-}
+pub struct BuilderConnector(BuilderConnectorWidgetsOnly);
 
 impl From<gtk::Builder> for BuilderConnector {
     fn from(builder: gtk::Builder) -> Self {
-        Self { builder }
+        Self(BuilderConnectorWidgetsOnly { builder })
     }
 }
 
@@ -129,19 +127,7 @@ impl BuilderConnector {
     where
         W: glib::IsA<glib::Object>,
     {
-        use gtk::prelude::BuilderExtManual;
-        self.builder.get_object::<W>(id).ok_or_else(|| {
-            if let Some(object) = self.builder.get_object::<glib::Object>(id) {
-                use glib::object::ObjectExt;
-                crate::Error::IncorrectWidgetTypeInBuilder {
-                    widget_id: id.to_owned(),
-                    expected_type: <W as glib::types::StaticType>::static_type(),
-                    actual_type: object.get_type(),
-                }
-            } else {
-                crate::Error::WidgetMissingInBuilder(id.to_owned())
-            }
-        })
+        self.0.get_object(id)
     }
 
     /// Fluent interface for doing something with a particular object from the builder.
@@ -170,8 +156,10 @@ impl BuilderConnector {
     where
         W: glib::IsA<glib::Object>,
     {
-        dlg(self.get_object(id).unwrap());
+        self.0.with_object(id, dlg);
         self
+        // dlg(self.get_object(id).unwrap());
+        // self
     }
 
     /// Create a widgets struct who's fields are mapped to the builder's widgets.
@@ -179,7 +167,7 @@ impl BuilderConnector {
     where
         gtk::Builder: TryInto<W>,
     {
-        self.builder.clone().try_into()
+        self.0.widgets()
     }
 
     /// Route the builder's signals to Actix.
@@ -206,12 +194,14 @@ impl BuilderConnector {
     /// # let builder_factory: woab::BuilderFactory = panic!();
     /// builder_factory.instantiate().connect_to(MyActor.start());
     /// ```
-    pub fn connect_to(self, target: impl crate::IntoGenerateRoutingGtkHandler) {
+    pub fn connect_to(self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnectorWidgetsOnly {
         let mut generator = target.into_generate_routing_gtk_handler();
         use crate::GenerateRoutingGtkHandler;
         use gtk::prelude::BuilderExtManual;
-        self.builder
+        self.0
+            .builder
             .connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
+        self.0
     }
 
     /// Runs a closure and passes the result to [`connect_to`](BuilderConnector::connect_to).
@@ -249,8 +239,58 @@ impl BuilderConnector {
     ///     .start()
     /// });
     /// ```
-    pub fn connect_with<G: crate::IntoGenerateRoutingGtkHandler>(self, dlg: impl FnOnce(&Self) -> G) {
+    pub fn connect_with<G: crate::IntoGenerateRoutingGtkHandler>(
+        self,
+        dlg: impl FnOnce(&Self) -> G,
+    ) -> BuilderConnectorWidgetsOnly {
         let target = dlg(&self);
         self.connect_to(target)
+    }
+}
+
+/// Degraded version of [`BuilderConnector`] that can only be used to get widgets.
+///
+/// After the `BuilderConnector` connects its signals, they cannot be connected again - so the
+/// `BuilderConnector` is consumed. But the widgets are still accessible with this object.
+pub struct BuilderConnectorWidgetsOnly {
+    builder: gtk::Builder,
+}
+
+impl BuilderConnectorWidgetsOnly {
+    /// See [`BuilderConnector::get_object`].
+    pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
+    where
+        W: glib::IsA<glib::Object>,
+    {
+        use gtk::prelude::BuilderExtManual;
+        self.builder.get_object::<W>(id).ok_or_else(|| {
+            if let Some(object) = self.builder.get_object::<glib::Object>(id) {
+                use glib::object::ObjectExt;
+                crate::Error::IncorrectWidgetTypeInBuilder {
+                    widget_id: id.to_owned(),
+                    expected_type: <W as glib::types::StaticType>::static_type(),
+                    actual_type: object.get_type(),
+                }
+            } else {
+                crate::Error::WidgetMissingInBuilder(id.to_owned())
+            }
+        })
+    }
+
+    /// See [`BuilderConnector::with_object`].
+    pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
+    where
+        W: glib::IsA<glib::Object>,
+    {
+        dlg(self.get_object(id).unwrap());
+        self
+    }
+
+    /// See [`BuilderConnector::widgets`].
+    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
+    where
+        gtk::Builder: TryInto<W>,
+    {
+        self.builder.clone().try_into()
     }
 }
