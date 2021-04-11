@@ -125,3 +125,17 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(oneshot::Sender<T>)) -> Result<
     setup_dlg(tx);
     rx.await
 }
+
+pub async fn run_dialog(dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt), close_after: bool) -> gtk::ResponseType {
+    dialog.set_modal(true);
+    dialog.show();
+    wake_from(|tx| {
+        let tx = std::cell::Cell::new(Some(tx));
+        dialog.connect_response(move |dialog, response| {
+            tx.take().map(|tx| tx.send(response).unwrap());
+            if close_after {
+                dialog.close();
+            }
+        });
+    }).await.unwrap()
+}

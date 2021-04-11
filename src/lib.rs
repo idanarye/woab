@@ -256,7 +256,7 @@ pub use woab_macros::params;
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use error::Error;
-pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, schedule_outside, try_block_on, wake_from};
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, schedule_outside, try_block_on, wake_from, run_dialog};
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
