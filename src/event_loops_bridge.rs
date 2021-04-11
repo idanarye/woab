@@ -1,6 +1,8 @@
 use core::cell::RefCell;
 use core::future::Future;
 
+use tokio::sync::oneshot;
+
 type ScheudleOutsideDlgs = std::collections::VecDeque<Box<dyn FnOnce()>>;
 
 thread_local! {
@@ -116,4 +118,10 @@ fn pop_scheduled_outside_dlg() -> Option<Box<dyn FnOnce()>> {
             .unwrap();
         queue.pop_front()
     })
+}
+
+pub async fn wake_from<T>(setup_dlg: impl FnOnce(oneshot::Sender<T>)) -> Result<T, oneshot::error::RecvError> {
+    let (tx, rx) = oneshot::channel();
+    setup_dlg(tx);
+    rx.await
 }

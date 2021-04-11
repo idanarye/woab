@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - `BuilderConnectorWidgetsOnly` - a degraded version of `BuilderConnector` for
   getting widgets after the signals were connected.
+- Facilities for working with GTK inside futures that run on the Actix runtime:
+  - `woab::wake_from` for `await`ing to some signal somewhere.
 
 ## 0.3.0 - 2021-02-09
 ### Added

@@ -34,38 +34,36 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 None
             }
             "open_dialog" => {
-                self.dialog_factory
-                    .instantiate()
-                    .with_object("dialog", |dialog: gtk::Dialog| {
-                        let self_addr = ctx.address();
-                        woab::schedule_outside(move || {
-                            let actix_spinner_source = std::rc::Rc::new(std::cell::Cell::new(None));
-
-                            dialog.connect_realize({
-                                let actix_spinner_source = actix_spinner_source.clone();
-                                move |_| {
-                                    let source_id = woab::run_actix_inside_gtk_event_loop().unwrap();
-                                    let old_source = actix_spinner_source.replace(Some(source_id));
-                                    if old_source.is_some() {
-                                        panic!("`realize` called twice without unrealize");
-                                    }
-                                }
-                            });
-                            dialog.connect_unrealize(move |_| {
-                                let source_id = actix_spinner_source.take().expect("`unrealize` called without `realize`");
-                                glib::source_remove(source_id);
-                            });
-                            dialog.set_modal(false);
-                            let response = dialog.run();
-                            self_addr.do_send(DialogResponse(response));
-                        });
-                    })
-                    .connect_with(|bld| {
+                let bld = self.dialog_factory.instantiate();
+                ctx.spawn(async move {
+                    let dialog: gtk::Dialog = bld.connect_with(|bld| {
                         DialogActor {
-                            widgets: bld.widgets().unwrap(),
+                            widgets: bld.widgets().unwrap()
                         }
                         .start()
-                    });
+                    }).get_object("dialog").unwrap();
+                    dialog.set_modal(true);
+                    dialog.show();
+                    woab::wake_from(|tx| {
+                        let tx = std::cell::Cell::new(Some(tx));
+                        dialog.connect_response(move |_, response| {
+                            tx.take().map(|tx| tx.send(response).unwrap());
+                        });
+                    }).await.unwrap()
+                }.into_actor(self)
+                .map(|response, actor, _ctx| {
+                    match response {
+                        gtk::ResponseType::Yes => {
+                            actor.yes_count += 1;
+                            actor.widgets.yes_count.set_text(&actor.yes_count.to_string());
+                        }
+                        gtk::ResponseType::No => {
+                            actor.no_count += 1;
+                            actor.widgets.no_count.set_text(&actor.no_count.to_string());
+                        }
+                        _ => panic!("Cannot handle dialog response {:?}", response),
+                    }
+                }));
                 None
             }
             _ => msg.cant_handle()?,
