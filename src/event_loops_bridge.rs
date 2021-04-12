@@ -1,7 +1,7 @@
 use core::cell::RefCell;
 use core::future::Future;
 
-use tokio::sync::oneshot;
+use tokio::sync::mpsc;
 
 type ScheudleOutsideDlgs = std::collections::VecDeque<Box<dyn FnOnce()>>;
 
@@ -120,20 +120,21 @@ fn pop_scheduled_outside_dlg() -> Option<Box<dyn FnOnce()>> {
     })
 }
 
-pub async fn wake_from<T>(setup_dlg: impl FnOnce(oneshot::Sender<T>)) -> Result<T, oneshot::error::RecvError> {
-    let (tx, rx) = oneshot::channel();
+pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> {
+    let (tx, mut rx) = mpsc::channel(1);
     setup_dlg(tx);
-    rx.await
+    let result = rx.recv().await;
+    rx.close();
+    result
 }
 
-pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Result<T, oneshot::error::RecvError> {
-    wake_from(|tx| {
-        glib::MainContext::ref_thread_default().spawn_local(async move {
-            let result = fut.await;
-            tx.send(result).map_err(|_| "Unable to send future result").unwrap();
-        });
-    })
-    .await
+pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Option<T> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    glib::MainContext::ref_thread_default().spawn_local(async move {
+        let result = fut.await;
+        tx.send(result).map_err(|_| "Unable to send future result").unwrap();
+    });
+    rx.await.ok()
 }
 
 pub async fn run_dialog(
@@ -143,9 +144,8 @@ pub async fn run_dialog(
     dialog.set_modal(true);
     dialog.show();
     wake_from(|tx| {
-        let tx = std::cell::Cell::new(Some(tx));
         dialog.connect_response(move |dialog, response| {
-            tx.take().map(|tx| tx.send(response).unwrap());
+            let _ = tx.try_send(response);
             if close_after {
                 dialog.close();
             }
