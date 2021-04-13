@@ -146,6 +146,18 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> 
     result
 }
 
+pub async fn wake_from_signal<T>(
+    obj: &impl glib::ObjectExt,
+    setup_dlg: impl FnOnce(mpsc::Sender<T>) -> glib::SignalHandlerId,
+) -> Option<T> {
+    let (tx, mut rx) = mpsc::channel(1);
+    let signal_handler_id = setup_dlg(tx);
+    let result = rx.recv().await;
+    rx.close();
+    obj.disconnect(signal_handler_id);
+    result
+}
+
 /// Run a future outside the Actix runtime.
 ///
 /// Useful for GTK operations that generate synchronous signals that are handled by actors. If
