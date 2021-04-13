@@ -107,6 +107,7 @@
 //!   are registered as builder signals, WoAB will not be able to route them and panic because it
 //!   will happen while the Actix runtime is occupied. To work around this, use
 //!   [`woab::spawn_outside`](spawn_outside).
+//! * `dialog.run()` must not be used - use [`woab::run_dialog`](crate::run_dialog) instead.
 
 mod builder;
 mod builder_dissect;
