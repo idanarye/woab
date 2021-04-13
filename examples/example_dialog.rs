@@ -34,66 +34,66 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 None
             }
             "open_dialog" => {
-                self.dialog_factory
-                    .instantiate()
-                    .with_object("dialog", |dialog: gtk::Dialog| {
-                        let self_addr = ctx.address();
-                        woab::schedule_outside(move || {
-                            let actix_spinner_source = std::rc::Rc::new(std::cell::Cell::new(None));
-
-                            dialog.connect_realize({
-                                let actix_spinner_source = actix_spinner_source.clone();
-                                move |_| {
-                                    let source_id = woab::run_actix_inside_gtk_event_loop().unwrap();
-                                    let old_source = actix_spinner_source.replace(Some(source_id));
-                                    if old_source.is_some() {
-                                        panic!("`realize` called twice without unrealize");
-                                    }
+                let bld = self.dialog_factory.instantiate();
+                ctx.spawn(
+                    async move {
+                        let dialog: gtk::Dialog = bld
+                            .connect_with(|bld| {
+                                DialogActor {
+                                    widgets: bld.widgets().unwrap(),
                                 }
-                            });
-                            dialog.connect_unrealize(move |_| {
-                                let source_id = actix_spinner_source.take().expect("`unrealize` called without `realize`");
-                                glib::source_remove(source_id);
-                            });
-                            dialog.set_modal(false);
-                            let response = dialog.run();
-                            self_addr.do_send(DialogResponse(response));
-                        });
-                    })
-                    .connect_with(|bld| {
-                        DialogActor {
-                            widgets: bld.widgets().unwrap(),
+                                .start()
+                            })
+                            .get_object("dialog")
+                            .unwrap();
+                        woab::run_dialog(&dialog, false).await
+                    }
+                    .into_actor(self)
+                    .map(|response, actor, _ctx| match response {
+                        gtk::ResponseType::Yes => {
+                            actor.yes_count += 1;
+                            actor.widgets.yes_count.set_text(&actor.yes_count.to_string());
                         }
-                        .start()
-                    });
+                        gtk::ResponseType::No => {
+                            actor.no_count += 1;
+                            actor.widgets.no_count.set_text(&actor.no_count.to_string());
+                        }
+                        gtk::ResponseType::DeleteEvent => {}
+                        gtk::ResponseType::None => {}
+                        _ => panic!("Cannot handle dialog response {:?}", response),
+                    }),
+                );
+                None
+            }
+            "reset" => {
+                ctx.spawn(
+                    async move {
+                        woab::run_dialog(
+                            &gtk::MessageDialog::new::<gtk::ApplicationWindow>(
+                                None,
+                                gtk::DialogFlags::all(),
+                                gtk::MessageType::Question,
+                                gtk::ButtonsType::YesNo,
+                                "Reset the counters?",
+                            ),
+                            true,
+                        )
+                        .await
+                    }
+                    .into_actor(self)
+                    .map(|response, actor, _ctx| {
+                        if response == gtk::ResponseType::Yes {
+                            actor.yes_count = 0;
+                            actor.no_count = 0;
+                            actor.widgets.yes_count.set_text("0");
+                            actor.widgets.no_count.set_text("0");
+                        }
+                    }),
+                );
                 None
             }
             _ => msg.cant_handle()?,
         })
-    }
-}
-
-struct DialogResponse(gtk::ResponseType);
-
-impl actix::Message for DialogResponse {
-    type Result = ();
-}
-
-impl actix::Handler<DialogResponse> for WindowActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: DialogResponse, _ctx: &mut Self::Context) -> Self::Result {
-        match msg.0 {
-            gtk::ResponseType::Yes => {
-                self.yes_count += 1;
-                self.widgets.yes_count.set_text(&self.yes_count.to_string());
-            }
-            gtk::ResponseType::No => {
-                self.no_count += 1;
-                self.widgets.no_count.set_text(&self.no_count.to_string());
-            }
-            _ => panic!("Cannot handle dialog response {:?}", msg.0),
-        }
     }
 }
 

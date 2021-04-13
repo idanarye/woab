@@ -82,7 +82,6 @@
           <packing>
             <property name="left-attach">0</property>
             <property name="top-attach">2</property>
-            <property name="width">2</property>
           </packing>
         </child>
         <child>
@@ -129,6 +128,19 @@
           <packing>
             <property name="left-attach">1</property>
             <property name="top-attach">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton">
+            <property name="label" translatable="yes">Reset</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="reset" swapped="no"/>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">2</property>
           </packing>
         </child>
       </object>

@@ -1,6 +1,8 @@
 use core::cell::RefCell;
 use core::future::Future;
 
+use tokio::sync::mpsc;
+
 type ScheudleOutsideDlgs = std::collections::VecDeque<Box<dyn FnOnce()>>;
 
 thread_local! {
@@ -116,4 +118,39 @@ fn pop_scheduled_outside_dlg() -> Option<Box<dyn FnOnce()>> {
             .unwrap();
         queue.pop_front()
     })
+}
+
+pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> {
+    let (tx, mut rx) = mpsc::channel(1);
+    setup_dlg(tx);
+    let result = rx.recv().await;
+    rx.close();
+    result
+}
+
+pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Option<T> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    glib::MainContext::ref_thread_default().spawn_local(async move {
+        let result = fut.await;
+        tx.send(result).map_err(|_| "Unable to send future result").unwrap();
+    });
+    rx.await.ok()
+}
+
+pub async fn run_dialog(
+    dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt),
+    close_after: bool,
+) -> gtk::ResponseType {
+    dialog.set_modal(true);
+    dialog.show();
+    wake_from(|tx| {
+        dialog.connect_response(move |dialog, response| {
+            let _ = tx.try_send(response);
+            if close_after {
+                dialog.close();
+            }
+        });
+    })
+    .await
+    .unwrap()
 }
