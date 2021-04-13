@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `woab::run_dialog` for as an `async` replacement for `gtk::DialogExt.run`
     that plays nice with WoAB.
 
+### Changed
+- [**BREAKING**] Changed `woab::schedule_outside` to `woab::spawn_outside`. The
+  new function accepts a future, not a closure, and that future will run on GTK
+  loop outside Actix.
+
 ## 0.3.0 - 2021-02-09
 ### Added
 - `woab::block_on`, for running the Tokio runtime and Actix system WoAB is

@@ -35,7 +35,7 @@ pub fn impl_removable_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
                     let parent = parent.downcast::<gtk::Container>().unwrap();
                     let widget = widget.clone();
                     ctx.stop();
-                    woab::schedule_outside(move || {
+                    woab::spawn_outside(async move {
                         parent.remove(&widget);
                     });
                 }

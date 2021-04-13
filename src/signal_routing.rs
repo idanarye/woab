@@ -66,7 +66,7 @@ impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crat
             let result = if let Ok(result) = crate::try_block_on(recipient.send(signal)) {
                 result.unwrap().unwrap()
             } else {
-                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::schedule_outside()`", signal_name)
+                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::spawn_outside()`", signal_name)
             };
             if let Some(gtk::Inhibit(inhibit)) = result {
                 use glib::value::ToValue;
@@ -298,7 +298,7 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
             let result = if let Ok(result) = crate::try_block_on(target.recipient.send(signal)) {
                 result.unwrap().unwrap()
             } else {
-                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::schedule_outside()`", signal_name)
+                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::spawn_outside()`", signal_name)
             };
             if let Some(gtk::Inhibit(inhibit)) = result {
                 use glib::value::ToValue;

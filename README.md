@@ -28,7 +28,7 @@ demonstration.
 * Some GTK actions (like removing a widget) can fire signals synchronously. If
   these signals are registered as builder signals, WoAB will not be able to
   route them and panic because it will happen while the Actix runtime is
-  occupied. To work around this, use `woab::schedule_outside`.
+  occupied. To work around this, use `woab::spawn_outside`.
 
 ## License
 

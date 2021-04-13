@@ -3,11 +3,8 @@ use core::future::Future;
 
 use tokio::sync::mpsc;
 
-type ScheudleOutsideDlgs = std::collections::VecDeque<Box<dyn FnOnce()>>;
-
 thread_local! {
     static ACTIX_SYSTEM_RUNNER: RefCell<actix::SystemRunner> = RefCell::new(actix::System::new());
-    static SCHEDULED_OUTSIDE: core::cell::RefCell<Option<ScheudleOutsideDlgs>> = Default::default();
 }
 
 /// Run a feature inside the Actix system GTK will be spinning.
@@ -39,24 +36,18 @@ pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
 
 /// Start an Actix `System` that runs inside the GTK thread.
 pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
-    SCHEDULED_OUTSIDE.with(|scheduled_outside| {
-        scheduled_outside.borrow_mut().get_or_insert_with(&Default::default);
-    });
     let source_id = glib::idle_add_local(|| {
         try_block_on(async {
             actix::clock::sleep(core::time::Duration::new(0, 0)).await;
         })
         .map_err(|_| "`idle_add_local` called inside Actix context")
         .unwrap();
-        while let Some(dlg) = pop_scheduled_outside_dlg() {
-            dlg();
-        }
         glib::source::Continue(true)
     });
     Ok(source_id)
 }
 
-/// Run a closure outside the Actix system.
+/// Run a future outside the Actix system.
 ///
 /// Useful for GTK operations that generate synchronous signals that are handled by actors. If
 /// these operations are executed inside the Actix runtime, they'll try to rerun the Actix runtime
@@ -89,7 +80,9 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
 ///                 // Use this instead:
 ///                 let container = self.widgets.some_container.clone();
 ///                 let widget = self.widgets.some_widget.clone();
-///                 woab::schedule_outside(move || container.remove(&widget));
+///                 woab::spawn_outside(async move {
+///                     container.remove(&widget)
+///                 });
 ///
 ///                 None
 ///             }
@@ -98,26 +91,8 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
 ///     }
 /// }
 /// ```
-pub fn schedule_outside(dlg: impl FnOnce() + 'static) {
-    SCHEDULED_OUTSIDE.with(|queue| {
-        let mut queue = queue.borrow_mut();
-        let queue = queue
-            .as_mut()
-            .ok_or("`scheduled_outside` can only be called from the thread that runs the GTK loop")
-            .unwrap();
-        queue.push_back(Box::new(dlg));
-    });
-}
-
-fn pop_scheduled_outside_dlg() -> Option<Box<dyn FnOnce()>> {
-    SCHEDULED_OUTSIDE.with(|queue| {
-        let mut queue = queue.borrow_mut();
-        let queue = queue
-            .as_mut()
-            .ok_or("The scheduled-outside queue can only be accessed from the thread that runs the GTK loop")
-            .unwrap();
-        queue.pop_front()
-    })
+pub fn spawn_outside(fut: impl Future<Output = ()> + 'static) {
+    glib::MainContext::ref_thread_default().spawn_local(fut);
 }
 
 pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> {

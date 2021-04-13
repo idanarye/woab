@@ -106,7 +106,7 @@
 //! * Some GTK actions (like removing a widget) can fire signals synchronously. If these signals
 //!   are registered as builder signals, WoAB will not be able to route them and panic because it
 //!   will happen while the Actix runtime is occupied. To work around this, use
-//!   [`woab::schedule_outside`](schedule_outside).
+//!   [`woab::spawn_outside`](spawn_outside).
 
 mod builder;
 mod builder_dissect;
@@ -257,7 +257,7 @@ pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
 pub use error::Error;
 pub use event_loops_bridge::{
-    block_on, outside, run_actix_inside_gtk_event_loop, run_dialog, schedule_outside, try_block_on, wake_from,
+    block_on, outside, run_actix_inside_gtk_event_loop, run_dialog, spawn_outside, try_block_on, wake_from,
 };
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
