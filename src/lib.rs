@@ -101,8 +101,8 @@
 //!
 //! # Pitfalls
 //!
-//! * When you start Actix actors from outside Tokio/Actix, you must use
-//!   [`woab::block_on`](block_on). This is a limitation of Actix that we need to respect.
+//! * When starting Actix actors from outside Tokio/Actix, [`woab::block_on`](block_on) must be
+//!   used. This is a limitation of Actix that needs to be respected.
 //! * Some GTK actions (like removing a widget) can fire signals synchronously. If these signals
 //!   are registered as builder signals, WoAB will not be able to route them and panic because it
 //!   will happen while the Actix runtime is occupied. To work around this, use
