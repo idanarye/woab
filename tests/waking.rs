@@ -71,8 +71,19 @@ fn test_waking() -> anyhow::Result<()> {
                     action3.activate(None);
                 }
             });
-            woab::wait_for_signal(&action3, "activate").await.unwrap();
+            let () = woab::wait_for_signal(&action3, "activate").await.unwrap();
             output.borrow_mut().push("after action3");
+
+            let action4 = gio::SimpleAction::new("action4", Some(&*String::static_variant_type()));
+            woab::spawn_outside({
+                let action4 = action4.clone();
+                async move {
+                    action4.activate(Some(&"action4 param".to_variant()));
+                }
+            });
+            let action_result = woab::wait_for_signal(&action4, "activate").params_as_signal().await.unwrap();
+            assert_eq!(action_result.action_param::<String>().unwrap(), "action4 param");
+            output.borrow_mut().push("after action4");
         });
     });
 
@@ -87,6 +98,7 @@ fn test_waking() -> anyhow::Result<()> {
                 "after action2",
                 "inside action3",
                 "after action3",
+                "after action4",
             ]
     )?;
 

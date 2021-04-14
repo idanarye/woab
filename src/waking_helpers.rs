@@ -120,6 +120,7 @@ pub fn wait_for_signal<'a, O: glib::ObjectExt>(obj: &'a O, signal: &'a str) -> W
 pub struct WaitForSignal<'a, O, T>
 where
     O: glib::ObjectExt,
+    T: WaitForSignalExtractParams,
 {
     obj: &'a O,
     signal: &'a str,
@@ -131,6 +132,7 @@ where
 impl<O, T> WaitForSignal<'_, O, T>
 where
     O: glib::ObjectExt,
+    T: WaitForSignalExtractParams,
 {
     pub fn inhibit(mut self, inhibit: bool) -> Self {
         self.inhibit = Some(inhibit);
@@ -138,11 +140,34 @@ where
     }
 }
 
+impl<'a, O> WaitForSignal<'a, O, ()>
+where
+    O: glib::ObjectExt,
+{
+    pub fn params_as_signal(self) -> WaitForSignal<'a, O, crate::Signal> {
+        let Self {
+            obj,
+            signal,
+            signal_handler_id,
+            receiver: _,
+            inhibit,
+        } = self;
+        WaitForSignal {
+            obj,
+            signal,
+            signal_handler_id,
+            receiver: None,
+            inhibit,
+        }
+    }
+}
+
 impl<O, T> Future for WaitForSignal<'_, O, T>
 where
     O: glib::ObjectExt,
+    T: WaitForSignalExtractParams,
+    T: Unpin,
     T: 'static,
-    T: Default,
 {
     type Output = Option<T>;
 
@@ -159,10 +184,10 @@ where
 
                 let tx = std::rc::Rc::new(core::cell::Cell::new(Some(tx)));
                 let inhibit = self.inhibit;
-                let signal_handler_id = self.obj.connect_local(self.signal, false, move |_| {
+                let signal_handler_id = self.obj.connect_local(self.signal, false, move |params| {
                     if let Some(tx) = tx.take() {
                         // Swallow the result because the waiting future could be gone
-                        let _ = tx.send(T::default());
+                        let _ = tx.send(T::extract_params(params));
                     }
                     use glib::value::ToValue;
                     inhibit.map(|inhibit| inhibit.to_value())
@@ -179,5 +204,21 @@ where
                 }
             }
         }
+    }
+}
+
+pub trait WaitForSignalExtractParams {
+    fn extract_params(params: &[glib::Value]) -> Self;
+}
+
+impl WaitForSignalExtractParams for () {
+    fn extract_params(_: &[glib::Value]) -> Self {
+        ()
+    }
+}
+
+impl WaitForSignalExtractParams for crate::Signal {
+    fn extract_params(params: &[glib::Value]) -> Self {
+        crate::Signal::new(std::rc::Rc::new("<woab::wait_for_signal>".to_owned()), params.to_owned(), ())
     }
 }
