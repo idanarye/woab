@@ -184,20 +184,24 @@ where
 
                 let tx = std::rc::Rc::new(core::cell::Cell::new(Some(tx)));
                 let inhibit = self.inhibit;
-                let signal_handler_id = self.obj.connect_local(self.signal, false, move |params| {
-                    if let Some(tx) = tx.take() {
-                        // Swallow the result because the waiting future could be gone
-                        let _ = tx.send(T::extract_params(params));
-                    }
-                    use glib::value::ToValue;
-                    inhibit.map(|inhibit| inhibit.to_value())
-                }).unwrap();
+                let signal_handler_id = self
+                    .obj
+                    .connect_local(self.signal, false, move |params| {
+                        if let Some(tx) = tx.take() {
+                            // Swallow the result because the waiting future could be gone
+                            let _ = tx.send(T::extract_params(params));
+                        }
+                        use glib::value::ToValue;
+                        inhibit.map(|inhibit| inhibit.to_value())
+                    })
+                    .unwrap();
                 self.signal_handler_id = Some(signal_handler_id);
                 Poll::Pending
             }
             Some(receiver) => {
                 if let Poll::Ready(result) = receiver.as_mut().poll(cx) {
-                    self.obj.disconnect(self.signal_handler_id.take().expect("Signal handler should still exists"));
+                    self.obj
+                        .disconnect(self.signal_handler_id.take().expect("Signal handler should still exists"));
                     Poll::Ready(result.ok())
                 } else {
                     Poll::Pending
@@ -213,7 +217,6 @@ pub trait WaitForSignalExtractParams {
 
 impl WaitForSignalExtractParams for () {
     fn extract_params(_: &[glib::Value]) -> Self {
-        ()
     }
 }
 
