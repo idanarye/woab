@@ -1,4 +1,7 @@
-use tokio::sync::mpsc;
+use core::future::Future;
+use core::task::Poll;
+
+use tokio::sync::{mpsc, oneshot};
 
 /// Asynchronously wait for something to happen somewhere.
 ///
@@ -102,4 +105,79 @@ pub async fn run_dialog(
     })
     .await
     .unwrap()
+}
+
+pub fn wait_for_signal<'a, O: glib::ObjectExt>(obj: &'a O, signal: &'a str) -> WaitForSignal<'a, O, ()> {
+    WaitForSignal {
+        obj,
+        signal,
+        signal_handler_id: None,
+        receiver: None,
+        inhibit: None,
+    }
+}
+
+pub struct WaitForSignal<'a, O, T>
+where
+    O: glib::ObjectExt,
+{
+    obj: &'a O,
+    signal: &'a str,
+    signal_handler_id: Option<glib::SignalHandlerId>,
+    receiver: Option<core::pin::Pin<Box<oneshot::Receiver<T>>>>,
+    inhibit: Option<bool>,
+}
+
+impl<O, T> WaitForSignal<'_, O, T>
+where
+    O: glib::ObjectExt,
+{
+    pub fn inhibit(mut self, inhibit: bool) -> Self {
+        self.inhibit = Some(inhibit);
+        self
+    }
+}
+
+impl<O, T> Future for WaitForSignal<'_, O, T>
+where
+    O: glib::ObjectExt,
+    T: 'static,
+    T: Default,
+{
+    type Output = Option<T>;
+
+    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+        match &mut self.receiver {
+            None => {
+                assert!(self.signal_handler_id.is_none());
+                let (tx, rx) = oneshot::channel();
+
+                let mut receiver = Box::pin(rx);
+                let initial_poll_result = receiver.as_mut().poll(cx);
+                assert!(matches!(initial_poll_result, Poll::Pending));
+                self.receiver = Some(receiver);
+
+                let tx = std::rc::Rc::new(core::cell::Cell::new(Some(tx)));
+                let inhibit = self.inhibit;
+                let signal_handler_id = self.obj.connect_local(self.signal, false, move |_| {
+                    if let Some(tx) = tx.take() {
+                        // Swallow the result because the waiting future could be gone
+                        let _ = tx.send(T::default());
+                    }
+                    use glib::value::ToValue;
+                    inhibit.map(|inhibit| inhibit.to_value())
+                }).unwrap();
+                self.signal_handler_id = Some(signal_handler_id);
+                Poll::Pending
+            }
+            Some(receiver) => {
+                if let Poll::Ready(result) = receiver.as_mut().poll(cx) {
+                    self.obj.disconnect(self.signal_handler_id.take().expect("Signal handler should still exists"));
+                    Poll::Ready(result.ok())
+                } else {
+                    Poll::Pending
+                }
+            }
+        }
+    }
 }

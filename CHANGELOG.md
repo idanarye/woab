@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `woab::wake_from` for `await`ing to some signal somewhere.
     - `woab::wake_from_signal` variant that also disconnects the signal handler
       afterwards.
+  - `woab::wait_for_signal` for `await`ing a specific signal on a specific GLib
+    widget from inside a future.
   - `woab::outside` for `await`ing on a future that runs outside the Actix runtime.
   - `woab::run_dialog` for as an `async` replacement for `gtk::DialogExt.run`
     that plays nice with WoAB.

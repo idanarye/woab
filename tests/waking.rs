@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-// use gtk::prelude::*;
 use gio::prelude::*;
 
 #[macro_use]
@@ -58,6 +57,22 @@ fn test_waking() -> anyhow::Result<()> {
             .unwrap();
             assert_eq!(action_response, 14);
             output.borrow_mut().push("after action2");
+
+            let action3 = gio::SimpleAction::new("action3", None);
+            action3.connect_activate({
+                let output = output.clone();
+                move |_, _| {
+                    output.borrow_mut().push("inside action3");
+                }
+            });
+            woab::spawn_outside({
+                let action3 = action3.clone();
+                async move {
+                    action3.activate(None);
+                }
+            });
+            woab::wait_for_signal(&action3, "activate").await.unwrap();
+            output.borrow_mut().push("after action3");
         });
     });
 
@@ -70,6 +85,8 @@ fn test_waking() -> anyhow::Result<()> {
                 "inside action2 1",
                 "inside action2 2",
                 "after action2",
+                "inside action3",
+                "after action3",
             ]
     )?;
 

@@ -267,4 +267,4 @@ pub use signal_routing::{
     route_action, route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter,
     RawSignalCallback,
 };
-pub use waking_helpers::{wake_from, run_dialog, wake_from_signal};
+pub use waking_helpers::{wake_from, run_dialog, wake_from_signal, wait_for_signal};
