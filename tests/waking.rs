@@ -57,33 +57,6 @@ fn test_waking() -> anyhow::Result<()> {
             .unwrap();
             assert_eq!(action_response, 14);
             output.borrow_mut().push("after action2");
-
-            let action3 = gio::SimpleAction::new("action3", None);
-            action3.connect_activate({
-                let output = output.clone();
-                move |_, _| {
-                    output.borrow_mut().push("inside action3");
-                }
-            });
-            woab::spawn_outside({
-                let action3 = action3.clone();
-                async move {
-                    action3.activate(None);
-                }
-            });
-            let () = woab::wait_for_signal(&action3, "activate").await.unwrap();
-            output.borrow_mut().push("after action3");
-
-            let action4 = gio::SimpleAction::new("action4", Some(&*String::static_variant_type()));
-            woab::spawn_outside({
-                let action4 = action4.clone();
-                async move {
-                    action4.activate(Some(&"action4 param".to_variant()));
-                }
-            });
-            let action_result = woab::wait_for_signal(&action4, "activate").params_as_signal().await.unwrap();
-            assert_eq!(action_result.action_param::<String>().unwrap(), "action4 param");
-            output.borrow_mut().push("after action4");
         });
     });
 
@@ -96,9 +69,6 @@ fn test_waking() -> anyhow::Result<()> {
                 "inside action2 1",
                 "inside action2 2",
                 "after action2",
-                "inside action3",
-                "after action3",
-                "after action4",
             ]
     )?;
 
