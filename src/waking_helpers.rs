@@ -7,6 +7,10 @@ use tokio::sync::mpsc;
 /// and return the value passed to the sender. If all the senders were dropped, `wake_from` will
 /// return `None`.
 ///
+/// Note that unless explicitly removed, any signal handler registered inside the closure would
+/// remain active afterwards - just like any other signal handler registered in GTK. To wake from a
+/// signal it is better to use [`woab::wake_from_signal`](wake_from_signal).
+///
 /// ```no_run
 /// # use gtk::prelude::*;
 /// # async fn asyncfunc() {
@@ -34,13 +38,11 @@ use tokio::sync::mpsc;
 /// * The sender's `do_send` can only be called once, and will fail if called multiple times.
 ///   Because GTK signals can be called multiple times, this cannot be guaranteed by the type
 ///   system and the result of `do_send` needs to be swallowed if there is a possibility for it to
-///   be called multiple times. Note that unless explicitly removed, any signal handler registered
-///   inside the closure would remain active afterwards - just like any other signal handler
-///   registered in GTK.
+///   be called multiple times.
 /// * The closure runs inside the same runtime that `await`s the `wake_from` result. If that
 ///   runtime is the Actix runtime and the closure needs to do anything that must not be ran from
-///   the Actix runtime, it'd need to either use [`spawn_outside`] inside the closure or use
-///   [`outside`] before `wake_from` is called.
+///   the Actix runtime, it'd need to either use [`spawn_outside`](crate::spawn_outside) inside the
+///   closure or use [`outside`](crate::outside) before `wake_from` is called.
 pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> {
     let (tx, mut rx) = mpsc::channel(1);
     setup_dlg(tx);
@@ -49,6 +51,26 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> 
     result
 }
 
+/// Asynchronously wait for a signal to be called.
+///
+/// Accepts a GLib object and a closure that accepts a `Sender`. The closure must "plant" the
+/// sender inside a signal handler and return the signal handler ID - and once the sender's
+/// `do_send` is called, `wake_from_signal` will be woken, remove the signal from the object, and
+/// return the value passed to the sender. If all the senders were dropped (e.g. - the object was
+/// deleted), `wake_from` will return `None`.
+///
+/// ```no_run
+/// # use gtk::prelude::*;
+/// # async fn asyncfunc() {
+/// let button: gtk::Button;
+/// # button = panic!();
+/// let button_clicked = woab::wake_from_signal(&button, |tx| {
+///     button.connect_clicked(move |_| {
+///         let _ = tx.try_send(());
+///     })
+/// }).await.unwrap();
+/// # }
+/// ```
 pub async fn wake_from_signal<T>(
     obj: &impl glib::ObjectExt,
     setup_dlg: impl FnOnce(mpsc::Sender<T>) -> glib::SignalHandlerId,

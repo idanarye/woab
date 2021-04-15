@@ -50,7 +50,7 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
 /// Useful for GTK operations that generate synchronous signals that are handled by actors. If
 /// these operations are executed inside the Actix runtime, they'll try to rerun the Actix runtime
 /// again to handle the signal - and fail. Therefore - they must be handled outside.
-
+///
 /// Similar to [`outside`], but returns immediately without waiting for the future to finish.
 ///
 /// ```no_run
