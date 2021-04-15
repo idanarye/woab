@@ -257,7 +257,7 @@ pub use woab_macros::params;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
-pub use error::Error;
+pub use error::{Error, WakerPerished};
 pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};

@@ -2,12 +2,13 @@ use core::future::Future;
 
 use tokio::sync::mpsc;
 
+use crate::WakerPerished;
+
 /// Asynchronously wait for something to happen somewhere.
 ///
 /// Accepts a closure that accepts a `Sender`. The closure must "plant" the sender somewhere -
 /// usually inside a signal - and once the sender's `do_send` is called, `wake_from` will be woken
-/// and return the value passed to the sender. If all the senders were dropped, `wake_from` will
-/// return `None`.
+/// and return the value passed to the sender.
 ///
 /// Note that unless explicitly removed, any signal handler registered inside the closure would
 /// remain active afterwards - just like any other signal handler registered in GTK. To wake from a
@@ -45,12 +46,12 @@ use tokio::sync::mpsc;
 ///   runtime is the Actix runtime and the closure needs to do anything that must not be ran from
 ///   the Actix runtime, it'd need to either use [`spawn_outside`](crate::spawn_outside) inside the
 ///   closure or use [`outside`](crate::outside) before `wake_from` is called.
-pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> {
+pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Result<T, WakerPerished> {
     let (tx, mut rx) = mpsc::channel(1);
     setup_dlg(tx);
     let result = rx.recv().await;
     rx.close();
-    result
+    result.ok_or(WakerPerished)
 }
 
 /// Asynchronously wait for a signal to be called.
@@ -58,8 +59,7 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> 
 /// Accepts a GLib object and a closure that accepts a `Sender`. The closure must "plant" the
 /// sender inside a signal handler and return the signal handler ID - and once the sender's
 /// `do_send` is called, `wake_from_signal` will be woken, remove the signal from the object, and
-/// return the value passed to the sender. If all the senders were dropped (e.g. - the object was
-/// deleted), `wake_from` will return `None`.
+/// return the value passed to the sender.
 ///
 /// ```no_run
 /// # use gtk::prelude::*;
@@ -76,13 +76,13 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Option<T> 
 pub async fn wake_from_signal<T>(
     obj: &impl glib::ObjectExt,
     setup_dlg: impl FnOnce(mpsc::Sender<T>) -> glib::SignalHandlerId,
-) -> Option<T> {
+) -> Result<T, WakerPerished> {
     let (tx, mut rx) = mpsc::channel(1);
     let signal_handler_id = setup_dlg(tx);
     let result = rx.recv().await;
     rx.close();
     obj.disconnect(signal_handler_id);
-    result
+    result.ok_or(WakerPerished)
 }
 
 /// Run a future outside the Actix system.
@@ -185,13 +185,13 @@ pub fn spawn_outside(fut: impl Future<Output = ()> + 'static) {
 ///     }
 /// }
 /// ```
-pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Option<T> {
+pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Result<T, WakerPerished> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     glib::MainContext::ref_thread_default().spawn_local(async move {
         let result = fut.await;
         tx.send(result).map_err(|_| "Unable to send future result").unwrap();
     });
-    rx.await.ok()
+    rx.await.map_err(|_| WakerPerished)
 }
 
 /// Run a GTK dialog and get its response.
@@ -220,11 +220,16 @@ pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Opti
 /// # }
 /// ```
 pub async fn run_dialog(
-    dialog: &(impl gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt),
+    dialog: &(impl Clone + gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt + 'static),
     close_after: bool,
 ) -> gtk::ResponseType {
     dialog.set_modal(true);
-    dialog.show();
+    spawn_outside({
+        let dialog = dialog.clone();
+        async move {
+            dialog.show();
+        }
+    });
     wake_from(|tx| {
         dialog.connect_response(move |dialog, response| {
             let _ = tx.try_send(response);
