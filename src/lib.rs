@@ -116,6 +116,7 @@ mod event_loops_bridge;
 mod remove;
 mod signal;
 mod signal_routing;
+mod waking_helpers;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -256,13 +257,12 @@ pub use woab_macros::params;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
-pub use error::Error;
-pub use event_loops_bridge::{
-    block_on, outside, run_actix_inside_gtk_event_loop, run_dialog, spawn_outside, try_block_on, wake_from,
-};
+pub use error::{Error, WakerPerished};
+pub use event_loops_bridge::{block_on, run_actix_inside_gtk_event_loop, try_block_on};
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
     route_action, route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter,
     RawSignalCallback,
 };
+pub use waking_helpers::{outside, run_dialog, spawn_outside, wake_from, wake_from_signal};

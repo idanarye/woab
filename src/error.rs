@@ -64,4 +64,17 @@ pub enum Error {
         num_parameters: usize,
         num_extracted: usize,
     },
+
+    #[error(transparent)]
+    WakerPerished(#[from] WakerPerished),
 }
+
+/// When a future cannot be woken.
+///
+/// When using a function like [`woab::wake_from_signal`](crate::wake_from_signal) there is no
+/// compile-time guarantee the waker will be used. For example - the widget that holds the signal
+/// handler that can be deleted before the signal is triggered. In that scenario, the future will
+/// be return with this error instead.
+#[derive(thiserror::Error, Debug)]
+#[error("The object that was supposed to wake this future was dropped")]
+pub struct WakerPerished;

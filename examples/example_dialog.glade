@@ -5,6 +5,8 @@
   <object class="GtkDialog" id="dialog">
     <property name="can-focus">False</property>
     <property name="type-hint">dialog</property>
+    <signal name="realize" handler="dialog_realized" swapped="no"/>
+    <signal name="show" handler="dialog_shown" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can-focus">False</property>

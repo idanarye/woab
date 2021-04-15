@@ -142,6 +142,10 @@ impl actix::Handler<woab::Signal> for DialogActor {
                 ctx.stop();
                 None
             }
+            // These are here to ensure that `woab::run_dialog` does not fire them from inside the
+            // Actix runtime.
+            "dialog_realized" => None,
+            "dialog_shown" => None,
             _ => msg.cant_handle()?,
         })
     }
