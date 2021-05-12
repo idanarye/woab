@@ -117,6 +117,7 @@ mod remove;
 mod signal;
 mod signal_routing;
 mod waking_helpers;
+pub mod prop_sync;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
@@ -254,6 +255,8 @@ pub use woab_macros::Removable;
 /// Parameters with types will be converted to that type, and untyped parameters will be
 /// `&glib::Value`.
 pub use woab_macros::params;
+
+pub use woab_macros::PropSync;
 
 pub use builder::*;
 pub use builder_dissect::dissect_builder_xml;
