@@ -133,12 +133,18 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
         }
     }
 
+    let lifetime_for_trait = if let Some(lifetime) = &lifetime {
+        lifetime.clone()
+    } else {
+        syn::Lifetime::new("'static", proc_macro2::Span::call_site())
+    };
+
     Ok(quote! {
         #vis struct #setter_name <#lifetime> {
             #(#struct_fields),*
         }
 
-        impl<#lifetime> woab::prop_sync::SetProps<#lifetime> for #struct_name {
+        impl<'a> woab::prop_sync::SetProps<'a> for #struct_name {
             type SetterType = #setter_name<#lifetime>;
 
             fn set_props(&self, setter: &Self::SetterType) {
@@ -147,7 +153,7 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
         }
 
         impl #struct_name {
-            #vis fn set_props<#lifetime>(&self, setter: &#lifetime <Self as woab::prop_sync::SetProps<#lifetime>>::SetterType) {
+            #vis fn set_props<#lifetime>(&self, setter: &#lifetime <Self as woab::prop_sync::SetProps<#lifetime_for_trait>>::SetterType) {
                 <Self as woab::prop_sync::SetProps>::set_props(self, setter);
             }
         }
