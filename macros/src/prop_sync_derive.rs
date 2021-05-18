@@ -113,7 +113,7 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             prop_assignment.push(quote! {
-                self.#ident.set_property(#prop, &setter.#ident)
+                glib::ObjectExt::set_property(&self.#ident, #prop, &setter.#ident)
                     .expect(stringify!(cannot set #prop of #field_type));
             });
         } else {
@@ -182,7 +182,7 @@ fn gen_getter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             field_from_prop.push(quote! {
-                #ident: self.#ident.get_property(#prop)
+                #ident: glib::ObjectExt::get_property(&self.#ident, #prop)
                 .expect(stringify!(no property #prop for #field_type))
                     .get()
                     .expect(stringify!(wrong type for #prop of #field_type))
