@@ -41,7 +41,10 @@ impl actix::Handler<Step> for WindowActor {
     type Result = ();
 
     fn handle(&mut self, _msg: Step, _ctx: &mut Self::Context) -> Self::Result {
-        let WindowWidgetsPropGetter { adj_timer, mut txt_shortening } = self.widgets.get_props();
+        let WindowWidgetsPropGetter {
+            adj_timer,
+            mut txt_shortening,
+        } = self.widgets.get_props();
         if 0 < txt_shortening.len() {
             txt_shortening.remove(0);
         }

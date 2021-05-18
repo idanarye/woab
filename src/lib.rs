@@ -113,11 +113,11 @@ mod builder;
 mod builder_dissect;
 mod error;
 mod event_loops_bridge;
+pub mod prop_sync;
 mod remove;
 mod signal;
 mod signal_routing;
 mod waking_helpers;
-pub mod prop_sync;
 
 /// Represent a set of GTK widgets created by a GTK builder.
 ///

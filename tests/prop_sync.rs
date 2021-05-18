@@ -18,7 +18,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop()?;
 
-    let widgets: TestWidgets = factory .instantiate().widgets()?;
+    let widgets: TestWidgets = factory.instantiate().widgets()?;
 
     widgets.text_entry.set_text("one");
     widgets.spin_button.set_value(2.0);

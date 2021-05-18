@@ -1,7 +1,7 @@
 mod factories_derive;
 mod param_extraction;
-mod removable_derive;
 mod prop_sync_derive;
+mod removable_derive;
 mod util;
 mod widgets_from_builder_derive;
 

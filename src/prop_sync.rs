@@ -9,7 +9,7 @@ pub trait SetProps<'a> {
 pub trait GetProps {
     type GetterType;
 
-    fn get_props(&self) ->  Self::GetterType;
+    fn get_props(&self) -> Self::GetterType;
 }
 
 impl<'a> SetProps<'a> for gtk::Entry {
@@ -23,7 +23,7 @@ impl<'a> SetProps<'a> for gtk::Entry {
 impl GetProps for gtk::Entry {
     type GetterType = String;
 
-    fn get_props(&self) ->  Self::GetterType {
+    fn get_props(&self) -> Self::GetterType {
         self.get_text().to_string()
     }
 }

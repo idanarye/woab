@@ -1,7 +1,7 @@
 use crate::util::{iter_attrs_parts, path_to_single_string};
 use quote::{quote, quote_spanned};
-use syn::spanned::Spanned;
 use syn::parse::Error;
+use syn::spanned::Spanned;
 
 pub fn impl_prop_sync_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::TokenStream, Error> {
     let fields = if let syn::Data::Struct(syn::DataStruct {
@@ -11,10 +11,7 @@ pub fn impl_prop_sync_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
     {
         fields
     } else {
-        return Err(Error::new_spanned(
-            ast,
-            "PropSync only supports structs with named fields",
-        ));
+        return Err(Error::new_spanned(ast, "PropSync only supports structs with named fields"));
     };
     let mut fields_to_sync = Vec::new();
     for field in fields.named.iter() {
@@ -23,27 +20,29 @@ pub fn impl_prop_sync_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
         let mut field_property = None;
         iter_attrs_parts(&field.attrs, "prop_sync", |expr| {
             match expr {
-                syn::Expr::Path(path) => {
-                    match path_to_single_string(&path.path)?.as_str() {
-                        "get" => {
-                            getter = true;
-                        }
-                        "set" => {
-                            setter = true;
-                        }
-                        _ => {
-                            return Err(Error::new_spanned(path, "unknown attribute"));
-                        }
+                syn::Expr::Path(path) => match path_to_single_string(&path.path)?.as_str() {
+                    "get" => {
+                        getter = true;
                     }
-                }
-                syn::Expr::Type(syn::ExprType {expr, ty, ..}) => {
+                    "set" => {
+                        setter = true;
+                    }
+                    _ => {
+                        return Err(Error::new_spanned(path, "unknown attribute"));
+                    }
+                },
+                syn::Expr::Type(syn::ExprType { expr, ty, .. }) => {
                     if let syn::Expr::Lit(syn::ExprLit {
                         attrs: _,
                         lit: syn::Lit::Str(property),
-                    }) = *expr {
+                    }) = *expr
+                    {
                         field_property = Some((property, *ty));
                     } else {
-                        return Err(Error::new_spanned(expr, "expected a string literal (representing a GTK property)"));
+                        return Err(Error::new_spanned(
+                            expr,
+                            "expected a string literal (representing a GTK property)",
+                        ));
                     }
                 }
                 _ => {
@@ -58,7 +57,7 @@ pub fn impl_prop_sync_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
                 ty: &field.ty,
                 property: field_property,
                 getter,
-                setter
+                setter,
             });
         }
     }
@@ -103,7 +102,11 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
         if let Some((prop, ty)) = &field.property {
             if let syn::Type::Reference(ty_ref) = ty {
                 let mut ty_ref = ty_ref.clone();
-                ty_ref.lifetime = Some(lifetime.get_or_insert_with(|| syn::Lifetime::new("'a", proc_macro2::Span::call_site())).clone());
+                ty_ref.lifetime = Some(
+                    lifetime
+                        .get_or_insert_with(|| syn::Lifetime::new("'a", proc_macro2::Span::call_site()))
+                        .clone(),
+                );
                 struct_fields.push(quote! {
                     #ident: #ty_ref
                 });
