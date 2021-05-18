@@ -32,7 +32,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
 
     assert_eq!(text_entry, "one");
     assert_eq!(spin_button, 2.0);
-    assert_eq!(check_button, false);
+    assert!(!check_button);
 
     widgets.set_props(&TestWidgetsPropSetter {
         text_entry: "three",
@@ -42,7 +42,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
 
     assert_eq!(widgets.text_entry.get_text(), "three");
     assert_eq!(widgets.spin_button.get_value(), 4.0);
-    assert_eq!(widgets.check_button.get_active(), true);
+    assert!(widgets.check_button.get_active());
 
     Ok(())
 }

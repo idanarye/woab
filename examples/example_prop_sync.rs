@@ -45,7 +45,7 @@ impl actix::Handler<Step> for WindowActor {
             adj_timer,
             mut txt_shortening,
         } = self.widgets.get_props();
-        if 0 < txt_shortening.len() {
+        if !txt_shortening.is_empty() {
             txt_shortening.remove(0);
         }
         self.widgets.set_props(&WindowWidgetsPropSetter {
