@@ -24,6 +24,14 @@ pub trait GetProps {
     fn get_props(&self) -> Self::GetterType;
 }
 
+impl<'a> SetProps<'a> for gtk::Label {
+    type SetterType = &'a str;
+
+    fn set_props(&self, setter: &Self::SetterType) {
+        self.set_text(setter);
+    }
+}
+
 impl<'a> SetProps<'a> for gtk::Entry {
     type SetterType = &'a str;
 
@@ -37,5 +45,21 @@ impl GetProps for gtk::Entry {
 
     fn get_props(&self) -> Self::GetterType {
         self.get_text().to_string()
+    }
+}
+
+impl<'a> SetProps<'a> for gtk::CheckButton {
+    type SetterType = bool;
+
+    fn set_props(&self, setter: &Self::SetterType) {
+        self.set_active(*setter);
+    }
+}
+
+impl GetProps for gtk::CheckButton {
+    type GetterType = bool;
+
+    fn get_props(&self) -> Self::GetterType {
+        self.get_active()
     }
 }

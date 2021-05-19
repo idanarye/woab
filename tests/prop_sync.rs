@@ -8,6 +8,8 @@ struct TestWidgets {
     #[prop_sync(set, get)]
     #[widget(nested)]
     group2: WidgetsGroup2,
+    #[prop_sync(set)]
+    label: gtk::Label,
 }
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
@@ -20,7 +22,7 @@ struct WidgetsGroup1 {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WidgetsGroup2 {
-    #[prop_sync("active": bool, set, get)]
+    #[prop_sync(set, get)]
     check_button: gtk::CheckButton,
 }
 
@@ -36,6 +38,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
     widgets.group1.text_entry.set_text("one");
     widgets.group1.spin_button.set_value(2.0);
     widgets.group2.check_button.set_active(false);
+    widgets.label.set_text("three");
 
     let TestWidgetsPropGetter {
         group1: WidgetsGroup1PropGetter { text_entry, spin_button },
@@ -48,15 +51,17 @@ fn test_prop_sync() -> anyhow::Result<()> {
 
     widgets.set_props(&TestWidgetsPropSetter {
         group1: WidgetsGroup1PropSetter {
-            text_entry: "three",
-            spin_button: 4.0,
+            text_entry: "four",
+            spin_button: 5.0,
         },
         group2: WidgetsGroup2PropSetter { check_button: true },
+        label: "six",
     });
 
-    assert_eq!(widgets.group1.text_entry.get_text(), "three");
-    assert_eq!(widgets.group1.spin_button.get_value_as_int(), 4);
+    assert_eq!(widgets.group1.text_entry.get_text(), "four");
+    assert_eq!(widgets.group1.spin_button.get_value_as_int(), 5);
     assert!(widgets.group2.check_button.get_active());
+    assert_eq!(widgets.label.get_text(), "six");
 
     Ok(())
 }
