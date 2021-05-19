@@ -256,6 +256,69 @@ pub use woab_macros::Removable;
 /// `&glib::Value`.
 pub use woab_macros::params;
 
+/// Generate methods for setting/getting the widgets' data.
+///
+/// Useful for syncing the view with a model - use struct literals and struct destructuring on the
+/// generated getter and setter structs to make rust-analyzer complete the fields and warn about
+/// neglected fields. Usually used together with [`WidgetsFromBuilder`].
+///
+/// This derive will generate two helper structs:
+/// * `StructNamePropSetter` which can be used in
+///   [`set_props`](crate::prop_sync::SetProps::set_props) to set the widgets' data.
+/// * `StructNamePropGetter` which can be used in
+///   [`get_props`](crate::prop_sync::GetProps::get_props) to get the widgets' data.
+///
+/// The annotated struct will implement [`SetProps`](crate::prop_sync::SetProps) and
+/// [`GetProps`](crate::prop_sync::GetProps), but also implement these two methods inherently so
+/// the traits will not need to be imported in order to use them.
+///
+/// Annotate fields with `#[prop_sync(set)]` to include them in the setter and with
+/// `#[prop_sync(get)]` to include them in the getter.
+///
+/// Use `#[prop_sync("property-name": PropertyType)]` to set the property that will be used for the
+/// syncing and its type. If `PropertyType` is a reference (`&PropertyType`), the reference will be
+/// used for the setter (the macro will add a lifetime) and its
+/// [`ToOwned::Owned`](std::borrow::ToOwned::Owned) will be used for the getter.
+///
+/// There is no need to set a property for some common widgets (like `gtk::Entry`) - they already
+/// implement [`SetProps`](crate::prop_sync::SetProps) and
+/// [`GetProps`](crate::prop_sync::GetProps), so the macro will use the traits to set/get the data.
+/// Similarly, structs that use this derive implement these two traits so they can be used with
+/// [`WidgetsFromBuilder`]'s `#[widget(nested)]`.
+///
+/// ```no_run
+/// #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
+/// struct AppWidgets {
+///     // Not included in the prop-sync because we are not syncing it.
+///     main_window: gtk::ApplicationWindow,
+///
+///     #[prop_sync(set, get)]
+///     some_text: gtk::Entry,
+///
+///     // Combo boxes use the active-id property to select a row in their model.
+///     #[prop_sync("active-id": &str, set, get)]
+///     some_combo_box: gtk::ComboBox,
+///
+///     // We only want to get the value of this checkbox, not set it, so we don't generate a setter.
+///     #[prop_sync("active": bool, get)]
+///     some_check_box: gtk::CheckButton,
+/// }
+///
+/// # let widgets: AppWidgets = panic!();
+/// // Set the widgets' data
+/// widgets.set_props(&AppWidgetsPropSetter {
+///     some_text: "some test",
+///     some_combo_box: "1", // the combo box ID column is always a string
+///     // No some_check_box - it was not generated for the setter
+/// });
+///
+/// // Get the widgets' data
+/// let AppWidgetsPropGetter {
+///     some_text,
+///     some_combo_box,
+///     some_check_box,
+/// } = widgets.get_props();
+/// ```
 pub use woab_macros::PropSync;
 
 pub use builder::*;
