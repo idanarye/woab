@@ -111,6 +111,12 @@
 //!   will happen while the Actix runtime is occupied. To work around this, use
 //!   [`woab::spawn_outside`](spawn_outside).
 //! * `dialog.run()` must not be used - use [`woab::run_dialog`](crate::run_dialog) instead.
+//! * If an actor is created inside a `gtk::Application::connect_activate`, its `started` method
+//!   will run **after** the `activate` signal is done. This can be a problem for methods like
+//!   `set_application` that can segfault if they are called outside the `activate` signal. A
+//!   solution could be to either do the startup inside `connect_activate` or use
+//!   [`woab::route_signal`](crate::route_signal) to route the application's `activate` signal
+//!   to the actor and do the startup in the actor's signal handler.
 
 mod builder;
 mod builder_dissect;
