@@ -26,6 +26,9 @@
 //!
 //! To remove widget-bound actors at runtime, see [`woab::Remove`](Remove).
 //!
+//! To synchronize the widgets' data with a model (or any old Rust values), see
+//! [`woab::PropSync`](crate::PropSync).
+//!
 //! After initializing GTK and before starting the main loop,
 //! [`woab::run_actix_inside_gtk_event_loop`](run_actix_inside_gtk_event_loop) **must** be called.
 //! **Do not run the Actix system manually!**
