@@ -38,7 +38,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 Some(gtk::Inhibit(false))
             }
             "configure_draw_area" => {
-                let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
+                let event: gdk::EventConfigure = msg.event_param()?;
                 let (width, height) = event.size();
                 self.area_size = [width as f64, height as f64];
                 Some(gtk::Inhibit(false))

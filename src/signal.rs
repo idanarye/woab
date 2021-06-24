@@ -105,6 +105,20 @@ impl<T> Signal<T> {
         self.0.param(index)
     }
 
+    /// The event parameter for event signals.
+    ///
+    /// Convenience method - the parameter in event signals needs to be converted to
+    /// `gdk::Event` first before it can be converted to its concrete type. This method runs
+    /// both steps.
+    pub fn event_param<P: gdk::FromEvent + 'static>(&self) -> Result<P, crate::Error> {
+        let event: gdk::Event = self.param(1)?;
+        event.downcast().map_err(|event| crate::Error::IncorrectEventParameter {
+            signal: self.name().to_owned(),
+            expected_type: core::any::type_name::<P>(),
+            actual_type: event.event_type(),
+        })
+    }
+
     /// The action parameter for stateless action signals, or the action state for stateful action signals.
     ///
     /// Convenience method - the parameter in actions signals needs to be converted to

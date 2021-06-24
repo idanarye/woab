@@ -70,14 +70,14 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
         Ok(match msg.name() {
             "press" => {
-                let event: gdk::EventButton = msg.param::<gdk::Event>(1)?.downcast().unwrap();
+                let event: gdk::EventButton = msg.event_param()?;
                 if let Some(idx) = button_to_idx(&event) {
                     self.press_times[idx] = Some(Instant::now());
                 }
                 Some(gtk::Inhibit(false))
             }
             "release" => {
-                let event: gdk::EventButton = msg.param::<gdk::Event>(1)?.downcast().unwrap();
+                let event: gdk::EventButton = msg.event_param()?;
                 if let Some(idx) = button_to_idx(&event) {
                     if let Some(press_time) = self.press_times[idx] {
                         self.press_times[idx] = None;
@@ -112,7 +112,7 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "all_characters_entry_key_pressed" => {
-                let event: gdk::EventKey = msg.param::<gdk::Event>(1)?.downcast().unwrap();
+                let event: gdk::EventKey = msg.event_param()?;
                 if let Some(character) = event.keyval().to_unicode() {
                     if character.is_digit(10) {
                         let mut text = self.widgets.only_digits.text().as_str().to_owned();

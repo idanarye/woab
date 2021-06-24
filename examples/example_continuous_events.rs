@@ -35,7 +35,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 None
             }
             "window_configure" => {
-                let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
+                let event: gdk::EventConfigure = msg.event_param()?;
                 let (left, top) = event.position();
                 let (width, height) = event.size();
                 self.widgets

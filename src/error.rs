@@ -49,6 +49,14 @@ pub enum Error {
         num_parameters: usize,
     },
 
+    /// When an event signal's parameter is of the the wrong event type.
+    #[error("Expected the event parameter of {signal:?} to be {expected_type} - not {actual_type}")]
+    IncorrectEventParameter {
+        signal: String,
+        expected_type: &'static str,
+        actual_type: gdk::EventType,
+    },
+
     /// When an action signal's parameter is of the the wrong type.
     #[error("Expected the action parameter of {signal:?} to be {expected_type} - not {actual_type}")]
     IncorrectActionParameter {
