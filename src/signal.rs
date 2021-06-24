@@ -50,9 +50,9 @@ impl<T> SignalData<T> {
     }
 
     fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
-        where
-            P: glib::value::FromValue<'a>,
-            P: glib::types::StaticType,
+    where
+        P: glib::value::FromValue<'a>,
+        P: glib::types::StaticType,
     {
         let value = self.raw_param(index)?;
         if let Ok(value) = value.get() {
@@ -98,9 +98,9 @@ impl<T> Signal<T> {
 
     /// A parameter of the signal, converted to the appropriate type.
     pub fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
-        where
-            P: glib::value::FromValue<'a>,
-            P: glib::types::StaticType,
+    where
+        P: glib::value::FromValue<'a>,
+        P: glib::types::StaticType,
     {
         self.0.param(index)
     }
