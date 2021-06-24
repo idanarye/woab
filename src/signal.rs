@@ -49,9 +49,13 @@ impl<T> SignalData<T> {
             })
     }
 
-    fn param<'a, P: glib::value::FromValueOptional<'a>>(&'a self, index: usize) -> Result<P, crate::Error> {
+    fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
+        where
+            P: glib::value::FromValue<'a>,
+            P: glib::types::StaticType,
+    {
         let value = self.raw_param(index)?;
-        if let Ok(Some(value)) = value.get() {
+        if let Ok(value) = value.get() {
             Ok(value)
         } else {
             Err(crate::Error::IncorrectSignalParameterType {
@@ -93,7 +97,11 @@ impl<T> Signal<T> {
     }
 
     /// A parameter of the signal, converted to the appropriate type.
-    pub fn param<'a, P: glib::value::FromValueOptional<'a>>(&'a self, index: usize) -> Result<P, crate::Error> {
+    pub fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
+        where
+            P: glib::value::FromValue<'a>,
+            P: glib::types::StaticType,
+    {
         self.0.param(index)
     }
 
@@ -170,7 +178,8 @@ impl SignalParamReceiver<'_> for () {
 
 impl<'a, T, R> SignalParamReceiver<'a> for (T, core::marker::PhantomData<T>, R)
 where
-    T: glib::value::FromValueOptional<'a>,
+    T: glib::value::FromValue<'a>,
+    T: glib::types::StaticType,
     R: SignalParamReceiver<'a>,
 {
     fn fill_from_index<D>(signal: &'a SignalData<D>, from_index: usize) -> Result<Self, crate::Error> {

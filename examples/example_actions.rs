@@ -12,7 +12,7 @@ struct WindowActor {
 struct WindowWidgets {
     simple: gtk::Entry,
     parameter: gtk::Entry,
-    state: gtk::Label,
+    alignment: gtk::Label,
 }
 
 impl actix::Actor for WindowActor {
@@ -26,7 +26,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
         Ok(match msg.name() {
             "close" => {
                 let woab::params!(win_app: gtk::ApplicationWindow) = msg.params()?;
-                win_app.get_application().unwrap().quit();
+                win_app.application().unwrap().quit();
                 None
             }
             "increment" => {
@@ -45,17 +45,14 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 self.widgets.parameter.set_text(&self.parameter_data.join(""));
                 None
             }
-            "state" => {
+            "alignment" => {
                 let param: String = msg.action_param()?;
-                let color = match param.as_str() {
-                    "red" => Some(gdk::RGBA::red()),
-                    "green" => Some(gdk::RGBA::green()),
-                    "blue" => Some(gdk::RGBA::blue()),
-                    _ => panic!("Invalid color {:?}", param),
-                };
-                self.widgets
-                    .state
-                    .override_background_color(gtk::StateFlags::NORMAL, color.as_ref());
+                self.widgets.alignment.set_halign(match param.as_str() {
+                    "left" => gtk::Align::Start,
+                    "center" => gtk::Align::Center,
+                    "right" => gtk::Align::End,
+                    _ => panic!("Invalid alignment {:?}", param),
+                });
                 None
             }
             _ => msg.cant_handle()?,
@@ -68,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     gtk::init()?;
     woab::run_actix_inside_gtk_event_loop()?;
-    let app = gtk::Application::new(None, Default::default()).unwrap();
+    let app = gtk::Application::new(None, Default::default());
 
     app.connect_activate(move |app| {
         woab::block_on(async {
@@ -88,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     gio::SimpleAction::new("increment", None),
                     gio::SimpleAction::new("decrement", None),
                     gio::SimpleAction::new("parameter", Some(&String::static_variant_type())),
-                    gio::SimpleAction::new_stateful("state", Some(&String::static_variant_type()), &"".to_variant()),
+                    gio::SimpleAction::new_stateful("alignment", Some(&String::static_variant_type()), &"".to_variant()),
                 ] {
                     app.add_action(action);
                     woab::route_action(action, addr.clone()).unwrap();
@@ -99,6 +96,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    app.run(&[]);
+    app.run();
     Ok(())
 }

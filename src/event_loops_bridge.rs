@@ -34,11 +34,11 @@ pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
 
 /// Start an Actix `System` that runs inside the GTK thread.
 pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<glib::SourceId> {
-    let source_id = glib::idle_add_local(|| {
+    let source_id = glib::idle_add(|| {
         try_block_on(async {
             actix::clock::sleep(core::time::Duration::new(0, 0)).await;
         })
-        .map_err(|_| "`idle_add_local` called inside Actix context")
+        .map_err(|_| "`idle_add` function called inside Actix context")
         .unwrap();
         glib::source::Continue(true)
     });

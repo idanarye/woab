@@ -76,7 +76,7 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
             "addend_changed" => {
                 let woab::params!(buffer: gtk::TextBuffer) = msg.params()?;
                 let new_number: Option<isize> = buffer
-                    .get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true)
+                    .text(&buffer.start_iter(), &buffer.end_iter(), true)
                     .and_then(|text| text.parse().ok());
                 if let Some((_, number)) = self.addends.get_mut(msg.tag()) {
                     if new_number != *number {

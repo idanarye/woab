@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- [**BREAKING**] Upgraded gtk-rs to version 0.14. This is a breaking change
+  because gtk-rs' API was changed in this release.
 
 ## 0.5.0 - 2021-05-19
 ### Added

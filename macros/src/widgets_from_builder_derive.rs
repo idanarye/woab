@@ -79,13 +79,13 @@ pub fn impl_widgets_from_builder_derive(ast: &syn::DeriveInput) -> Result<proc_m
                 _ => return Err(Error::new_spanned(name, "`name` attribute must have a string literal value")),
             };
             Ok(quote! {
-                #field_ident: builder.get_object(#ident_as_str).ok_or_else(|| {
-                    if let Some(object) = builder.get_object::<glib::Object>(#ident_as_str) {
+                #field_ident: builder.object(#ident_as_str).ok_or_else(|| {
+                    if let Some(object) = builder.object::<glib::Object>(#ident_as_str) {
                         use glib::object::ObjectExt;
                         woab::Error::IncorrectWidgetTypeInBuilder {
                             widget_id: #ident_as_str.to_owned(),
                             expected_type: <#field_type as glib::types::StaticType>::static_type(),
-                            actual_type: object.get_type(),
+                            actual_type: object.type_(),
                         }
                     } else {
                         woab::Error::WidgetMissingInBuilder(#ident_as_str.to_owned())

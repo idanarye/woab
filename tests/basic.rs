@@ -28,7 +28,7 @@ pub struct TestWidgets {
 }
 
 fn get_text(buffer: &gtk::TextBuffer) -> String {
-    if let Some(text) = buffer.get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true) {
+    if let Some(text) = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true) {
         text.into()
     } else {
         "".to_owned()

@@ -51,7 +51,7 @@ impl actix::Handler<woab::Signal> for TestActor {
             }
             "block" => {
                 let action = msg.param::<glib::Variant>(1)?;
-                let action = action.get_str().unwrap();
+                let action = action.str().unwrap();
                 let (action, signal) = &self.actions[action];
                 action.block_signal(signal);
                 self.output.borrow_mut().push("block");
@@ -59,7 +59,7 @@ impl actix::Handler<woab::Signal> for TestActor {
             }
             "unblock" => {
                 let action = msg.param::<glib::Variant>(1)?;
-                let action = action.get_str().unwrap();
+                let action = action.str().unwrap();
                 let (action, signal) = &self.actions[action];
                 action.unblock_signal(signal);
                 self.output.borrow_mut().push("unblock");
@@ -67,7 +67,7 @@ impl actix::Handler<woab::Signal> for TestActor {
             }
             "disconnect" => {
                 let action = msg.param::<glib::Variant>(1)?;
-                let action = action.get_str().unwrap();
+                let action = action.str().unwrap();
                 let (action, signal) = self.actions.remove(action).unwrap();
                 action.disconnect(signal);
                 self.output.borrow_mut().push("disconnect");

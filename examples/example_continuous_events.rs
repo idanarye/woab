@@ -36,20 +36,20 @@ impl actix::Handler<woab::Signal> for WindowActor {
             }
             "window_configure" => {
                 let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
-                let (left, top) = event.get_position();
-                let (width, height) = event.get_size();
+                let (left, top) = event.position();
+                let (width, height) = event.size();
                 self.widgets
                     .size_descr
                     .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
                 Some(gtk::Inhibit(false))
             }
             "decrease_width" => {
-                let (width, height) = self.widgets.win_app.get_size();
+                let (width, height) = self.widgets.win_app.size();
                 self.widgets.win_app.resize(width - 10, height);
                 None
             }
             "increase_width" => {
-                let (width, height) = self.widgets.win_app.get_size();
+                let (width, height) = self.widgets.win_app.size();
                 self.widgets.win_app.resize(width + 10, height);
                 None
             }

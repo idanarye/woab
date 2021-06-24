@@ -116,7 +116,7 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             prop_assignment.push(quote! {
-                glib::ObjectExt::set_property(&self.#ident, #prop, &setter.#ident)
+                glib::object::ObjectExt::set_property(&self.#ident, #prop, &setter.#ident)
                     .expect(stringify!(cannot set #prop of #field_type));
             });
         } else {
@@ -191,11 +191,10 @@ fn gen_getter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             field_from_prop.push(quote! {
-                #ident: glib::ObjectExt::get_property(&self.#ident, #prop)
+                #ident: glib::object::ObjectExt::property(&self.#ident, #prop)
                 .expect(stringify!(no property #prop for #field_type))
                     .get()
                     .expect(stringify!(wrong type for #prop of #field_type))
-                    .expect(stringify!(#prop of #field_type is empty))
             });
         } else {
             let as_trait = quote_spanned! { field_type.span() =>

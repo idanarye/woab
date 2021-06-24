@@ -16,8 +16,8 @@ use gtk::Builder;
 ///     </interface>
 /// "#;
 /// let builder_factory: BuilderFactory = builder_xml.to_owned().into();
-/// let builder = builder_factory.instantiate();
-/// let my_button: gtk::Button = builder.get_object("my_button").unwrap();
+/// let bld = builder_factory.instantiate();
+/// let my_button: gtk::Button = bld.get_object("my_button").unwrap();
 /// ```
 ///
 /// Refer to [`#[derive(woab::Factories)]`](derive.Factories.html) for how to create instances of
@@ -263,13 +263,13 @@ impl BuilderConnectorWidgetsOnly {
         W: glib::IsA<glib::Object>,
     {
         use gtk::prelude::BuilderExtManual;
-        self.builder.get_object::<W>(id).ok_or_else(|| {
-            if let Some(object) = self.builder.get_object::<glib::Object>(id) {
+        self.builder.object::<W>(id).ok_or_else(|| {
+            if let Some(object) = self.builder.object::<glib::Object>(id) {
                 use glib::object::ObjectExt;
                 crate::Error::IncorrectWidgetTypeInBuilder {
                     widget_id: id.to_owned(),
                     expected_type: <W as glib::types::StaticType>::static_type(),
-                    actual_type: object.get_type(),
+                    actual_type: object.type_(),
                 }
             } else {
                 crate::Error::WidgetMissingInBuilder(id.to_owned())

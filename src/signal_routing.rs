@@ -15,7 +15,7 @@ pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 ///
 /// * The `actix_signal` argument is the signal name used for identifying the signal inside the actor.
 pub fn route_signal(
-    obj: &impl glib::ObjectExt,
+    obj: &impl glib::object::ObjectExt,
     gtk_signal: &str,
     actix_signal: &str,
     target: impl IntoGenerateRoutingGtkHandler,
@@ -41,15 +41,15 @@ pub fn route_signal(
 /// * To get the action parameter/state inside the handler, use the
 ///   [`action_param`](crate::Signal::action_param) method.
 pub fn route_action(
-    action: &(impl glib::ObjectExt + gio::ActionExt),
+    action: &(impl glib::object::ObjectExt + gio::prelude::ActionExt),
     target: impl IntoGenerateRoutingGtkHandler,
 ) -> Result<glib::SignalHandlerId, crate::Error> {
-    let signal = if action.get_state().is_some() {
+    let signal = if action.state().is_some() {
         "change-state"
     } else {
         "activate"
     };
-    route_signal(action, signal, action.get_name().unwrap().as_str(), target)
+    route_signal(action, signal, action.name().as_str(), target)
 }
 
 #[doc(hidden)]

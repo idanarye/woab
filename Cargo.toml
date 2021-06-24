@@ -15,8 +15,9 @@ keywords = ["gtk", "gui", "actix", "actor"]
 categories = ["gui"]
 
 [dependencies]
-gtk = "^0.9"
-glib = "^0.10"
+gtk = "^0.14"
+glib = "^0.14"
+gdk = "^0.14"
 actix = { version = "^0.11", default-features = false }
 tokio = { version = "^1", features = ["sync"] }
 woab-macros = { version = "0.5.0", path = "macros" }
@@ -24,11 +25,10 @@ quick-xml = "0.22.0"
 thiserror = "1.0.24"
 hashbrown = "0.11.2"
 send_wrapper = "0.5.0"
-gio = "^0.9"
+gio = "^0.14"
 
 [dev-dependencies]
 futures-util = "0.3.13"
-gtk-test = "0.6.1"
+# gtk-test = "0.6.1"
 anyhow = "1.0.40"
-cairo-rs = "0.9.1"
-gdk = "^0.13"
+cairo-rs = "0.14.0"

@@ -58,10 +58,10 @@ fn test_prop_sync() -> anyhow::Result<()> {
         label: "six",
     });
 
-    assert_eq!(widgets.group1.text_entry.get_text(), "four");
-    assert_eq!(widgets.group1.spin_button.get_value_as_int(), 5);
-    assert!(widgets.group2.check_button.get_active());
-    assert_eq!(widgets.label.get_text(), "six");
+    assert_eq!(widgets.group1.text_entry.text(), "four");
+    assert_eq!(widgets.group1.spin_button.value_as_int(), 5);
+    assert!(widgets.group2.check_button.is_active());
+    assert_eq!(widgets.label.text(), "six");
 
     Ok(())
 }

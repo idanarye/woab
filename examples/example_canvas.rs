@@ -34,12 +34,12 @@ impl actix::Handler<woab::Signal> for WindowActor {
                     2.0 * std::f64::consts::PI,
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
-                draw_ctx.fill();
+                draw_ctx.fill().unwrap();
                 Some(gtk::Inhibit(false))
             }
             "configure_draw_area" => {
                 let event: gdk::EventConfigure = msg.param::<gdk::Event>(1)?.downcast().unwrap();
-                let (width, height) = event.get_size();
+                let (width, height) = event.size();
                 self.area_size = [width as f64, height as f64];
                 Some(gtk::Inhibit(false))
             }

@@ -94,7 +94,7 @@
               <object class="GtkMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">State</property>
+                <property name="label" translatable="yes">Alignment</property>
                 <property name="use-underline">True</property>
                 <child type="submenu">
                   <object class="GtkMenu">
@@ -104,9 +104,9 @@
                       <object class="GtkMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="action-name">app.state</property>
-                        <property name="action-target">'red'</property>
-                        <property name="label" translatable="yes">Red</property>
+                        <property name="action-name">app.alignment</property>
+                        <property name="action-target">'left'</property>
+                        <property name="label" translatable="yes">Left</property>
                         <property name="use-underline">True</property>
                       </object>
                     </child>
@@ -114,9 +114,9 @@
                       <object class="GtkMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="action-name">app.state</property>
-                        <property name="action-target">'green'</property>
-                        <property name="label" translatable="yes">Green</property>
+                        <property name="action-name">app.alignment</property>
+                        <property name="action-target">'center'</property>
+                        <property name="label" translatable="yes">Center</property>
                         <property name="use-underline">True</property>
                       </object>
                     </child>
@@ -124,9 +124,9 @@
                       <object class="GtkMenuItem">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="action-name">app.state</property>
-                        <property name="action-target">'blue'</property>
-                        <property name="label" translatable="yes">Blue</property>
+                        <property name="action-name">app.alignment</property>
+                        <property name="action-target">'right'</property>
+                        <property name="label" translatable="yes">Right</property>
                         <property name="use-underline">True</property>
                       </object>
                     </child>
@@ -193,11 +193,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="state">
+              <object class="GtkLabel" id="alignment">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="halign">center</property>
                 <property name="hexpand">True</property>
-                <property name="label" translatable="yes">State</property>
+                <property name="label" translatable="yes">Alignment</property>
               </object>
               <packing>
                 <property name="left-attach">0</property>

@@ -61,7 +61,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         fn button_to_idx(event: &gdk::EventButton) -> Option<usize> {
-            match event.get_button() {
+            match event.button() {
                 1 => Some(0),
                 3 => Some(1),
                 _ => None,
@@ -113,9 +113,9 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
         Ok(match msg.name() {
             "all_characters_entry_key_pressed" => {
                 let event: gdk::EventKey = msg.param::<gdk::Event>(1)?.downcast().unwrap();
-                if let Some(character) = event.get_keyval().to_unicode() {
+                if let Some(character) = event.keyval().to_unicode() {
                     if character.is_digit(10) {
-                        let mut text = self.widgets.only_digits.get_text().as_str().to_owned();
+                        let mut text = self.widgets.only_digits.text().as_str().to_owned();
                         text.push(character);
                         self.widgets.only_digits.set_text(&text);
                         return Ok(Some(gtk::Inhibit(true)));

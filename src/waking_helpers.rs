@@ -74,7 +74,7 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Result<T, 
 /// # }
 /// ```
 pub async fn wake_from_signal<T>(
-    obj: &impl glib::ObjectExt,
+    obj: &impl glib::object::ObjectExt,
     setup_dlg: impl FnOnce(mpsc::Sender<T>) -> glib::SignalHandlerId,
 ) -> Result<T, WakerPerished> {
     let (tx, mut rx) = mpsc::channel(1);
@@ -220,7 +220,7 @@ pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Resu
 /// # }
 /// ```
 pub async fn run_dialog(
-    dialog: &(impl Clone + gtk::DialogExt + gtk::GtkWindowExt + gtk::WidgetExt + 'static),
+    dialog: &(impl Clone + gtk::prelude::DialogExt + gtk::prelude::GtkWindowExt + gtk::prelude::WidgetExt + 'static),
     close_after: bool,
 ) -> gtk::ResponseType {
     dialog.set_modal(true);

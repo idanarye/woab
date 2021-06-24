@@ -95,7 +95,7 @@ impl actix::Handler<woab::Signal> for AddendActor {
             "addend_changed" => {
                 let woab::params!(buffer: gtk::TextBuffer) = msg.params()?;
                 let new_number = buffer
-                    .get_text(&buffer.get_start_iter(), &buffer.get_end_iter(), true)
+                    .text(&buffer.start_iter(), &buffer.end_iter(), true)
                     .and_then(|text| text.parse().ok());
                 if new_number != self.number {
                     self.number = new_number;
