@@ -144,7 +144,7 @@ impl actix::Handler<Step> for RowActor {
         let addr = ctx.address();
         ctx.spawn(
             async move {
-                addr.do_send(Step);
+                let _ = addr.try_send(Step);
             }
             .into_actor(self),
         );
