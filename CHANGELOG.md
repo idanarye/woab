@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - [**BREAKING**] Upgraded gtk-rs to version 0.14. This is a breaking change
   because gtk-rs' API was changed in this release.
+- Updated Actix version to 0.12.
 
 ### Added
 - `event_param` method for `woab::Signal`, to easily get the concrete GDK event
