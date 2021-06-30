@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `event_param` method for `woab::Signal`, to easily get the concrete GDK event
   type from an event signal.
 
+### Fixed
+- `woab::run_actix_inside_gtk_event_loop` was making `gtk::idle_add` busy-wait.
+  Wait 10ms inside each such idle invocation to prevent that.
+
 ## 0.5.0 - 2021-05-19
 ### Added
 - `#[derive(woab::PropSync)]` for generating getter and setter for relevant
