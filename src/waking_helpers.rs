@@ -87,9 +87,18 @@ pub async fn wake_from_signal<T>(
 
 /// Run a future outside the Actix system.
 ///
-/// Useful for GTK operations that generate synchronous signals that are handled by actors. If
-/// these operations are executed inside the Actix runtime, they'll try to rerun the Actix runtime
-/// again to handle the signal - and fail. Therefore - they must be handled outside.
+/// If operation that generate GTK signals are executed inside the Actix runtime, they'll be
+/// queued to run later by the Actix event loop. This may be a problem if the signal is expecting
+/// an inhibit decision, because the handler will not be able to generate it before the signal
+/// returns. This may also be a problem for signals that use a context parameter (like `draw`),
+/// because by the time the handler is invoked the context will already expire. In such cases, the
+/// code that triggers the signal must run outside.
+///
+/// **Note**: Most GTK signals that have these requirements are already queued by GTK. This
+/// function was more useful before version 0.6 of WoAB , when signals were never queued by WoAB
+/// and all signals GTK handles immediately were required to run outside. Now it is not needed, but
+/// not deprecated either because the possibility of misbehaving custom signals cannot be ruled
+/// out.
 ///
 /// Similar to [`outside`], but returns immediately without waiting for the future to finish.
 ///
@@ -137,9 +146,18 @@ pub fn spawn_outside(fut: impl Future<Output = ()> + 'static) {
 
 /// Run a future outside the Actix runtime.
 ///
-/// Useful for GTK operations that generate synchronous signals that are handled by actors. If
-/// these operations are executed inside the Actix runtime, they'll try to rerun the Actix runtime
-/// again to handle the signal - and fail. Therefore - they must be handled outside.
+/// If operation that generate GTK signals are executed inside the Actix runtime, they'll be
+/// queued to run later by the Actix event loop. This may be a problem if the signal is expecting
+/// an inhibit decision, because the handler will not be able to generate it before the signal
+/// returns. This may also be a problem for signals that use a context parameter (like `draw`),
+/// because by the time the handler is invoked the context will already expire. In such cases, the
+/// code that triggers the signal must run outside.
+///
+/// **Note**: Most GTK signals that have these requirements are already queued by GTK. This
+/// function was more useful before version 0.6 of WoAB , when signals were never queued by WoAB
+/// and all signals GTK handles immediately were required to run outside. Now it is not needed, but
+/// not deprecated either because the possibility of misbehaving custom signals cannot be ruled
+/// out.
 ///
 /// Similar to [`spawn_outside`], but waits for the future to finish and returns its result.
 ///

@@ -52,6 +52,59 @@ pub fn route_action(
     route_signal(action, signal, action.name().as_str(), target)
 }
 
+fn panic_if_signal_cannot_be_queued(signal_name: &str, parameters: &[glib::Value]) {
+    for (i, param) in parameters.iter().enumerate() {
+        let param_type = param.type_();
+        if param_type.name().ends_with("Context") {
+            panic!(
+                concat!(
+                    "Signal {:?}'s param at position {} is a {}. ",
+                    "Signals with context params cannot be invoked from inside the Actix runtime. ",
+                    "Try running whatever triggered it with `woab::outside()` or `woab::spawn_outside()",
+                ),
+                signal_name, i, param_type,
+            );
+        }
+    }
+}
+
+fn run_signal_routing_future(
+    future: impl core::future::Future<Output = Result<Result<Option<gtk::Inhibit>, crate::Error>, actix::MailboxError>> + 'static,
+    signal_name: &Rc<String>,
+    parameters: &[glib::Value],
+) -> Option<glib::Value> {
+    match crate::try_block_on(future) {
+        Ok(result) => {
+            let result = result.unwrap().unwrap();
+            if let Some(gtk::Inhibit(inhibit)) = result {
+                use glib::value::ToValue;
+                Some(inhibit.to_value())
+            } else {
+                None
+            }
+        }
+        Err(future) => {
+            panic_if_signal_cannot_be_queued(signal_name, parameters);
+            let signal_name = signal_name.clone();
+            actix::spawn(async move {
+                let result = future.await.unwrap().unwrap();
+                if let Some(result) = result {
+                    panic!(
+                        concat!(
+                            "Signal {:?}, was invoked inside the Actix runtime and had to be queued, ",
+                            "but it returned {:?} - which is not supported for queued signals. ",
+                            "Try running whatever triggered it with `woab::outside()` or `woab::spawn_outside()",
+                        ),
+                        signal_name.as_str(),
+                        result,
+                    );
+                }
+            });
+            None
+        }
+    }
+}
+
 #[doc(hidden)]
 pub trait GenerateRoutingGtkHandler {
     fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback;
@@ -63,17 +116,7 @@ impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crat
         let (tag, recipient) = self.clone();
         Box::new(move |parameters| {
             let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-            let result = if let Ok(result) = crate::try_block_on(recipient.send(signal)) {
-                result.unwrap().unwrap()
-            } else {
-                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::spawn_outside()`", signal_name)
-            };
-            if let Some(gtk::Inhibit(inhibit)) = result {
-                use glib::value::ToValue;
-                Some(inhibit.to_value())
-            } else {
-                None
-            }
+            run_signal_routing_future(recipient.send(signal), &signal_name, parameters)
         })
     }
 }
@@ -295,17 +338,7 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
         let tag = tag.clone();
         Box::new(move |parameters| {
             let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-            let result = if let Ok(result) = crate::try_block_on(target.recipient.send(signal)) {
-                result.unwrap().unwrap()
-            } else {
-                panic!("Signal {:?} triggered from inside the Actix runtime. Try running whatever triggered it with `woab::spawn_outside()`", signal_name)
-            };
-            if let Some(gtk::Inhibit(inhibit)) = result {
-                use glib::value::ToValue;
-                Some(inhibit.to_value())
-            } else {
-                None
-            }
+            run_signal_routing_future(target.recipient.send(signal), &signal_name, parameters)
         })
     }
 }

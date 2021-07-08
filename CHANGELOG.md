@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [**BREAKING**] Upgraded gtk-rs to version 0.14. This is a breaking change
   because gtk-rs' API was changed in this release.
 - Updated Actix version to 0.12.
+- Code that triggers actor-handled signals is no longer required to trigger it
+  from outside the Actix runtime, as long as the signal does not expect an
+  inhibit decision and as long as it does not accept a context parameter.
 
 ### Added
 - `event_param` method for `woab::Signal`, to easily get the concrete GDK event
