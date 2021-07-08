@@ -70,7 +70,7 @@ fn panic_if_signal_cannot_be_queued(signal_name: &str, parameters: &[glib::Value
 
 fn run_signal_routing_future(
     future: impl core::future::Future<Output = Result<Result<Option<gtk::Inhibit>, crate::Error>, actix::MailboxError>> + 'static,
-    signal_name: &Rc::<String>,
+    signal_name: &Rc<String>,
     parameters: &[glib::Value],
 ) -> Option<glib::Value> {
     match crate::try_block_on(future) {
@@ -84,7 +84,7 @@ fn run_signal_routing_future(
             }
         }
         Err(future) => {
-            panic_if_signal_cannot_be_queued(&signal_name, parameters);
+            panic_if_signal_cannot_be_queued(signal_name, parameters);
             let signal_name = signal_name.clone();
             actix::spawn(async move {
                 let result = future.await.unwrap().unwrap();

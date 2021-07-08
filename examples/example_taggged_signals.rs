@@ -89,9 +89,7 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
             "remove_addend" => {
                 if let Some((addend, _)) = self.addends.remove(msg.tag()) {
                     let lst_addition = self.widgets.lst_addition.clone();
-                    // woab::spawn_outside(async move {
-                        lst_addition.remove(&addend);
-                    // });
+                    lst_addition.remove(&addend);
                 }
                 None
             }
