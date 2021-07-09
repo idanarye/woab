@@ -52,9 +52,7 @@ fn prepare() -> anyhow::Result<(TestWidgets, Rc<RefCell<Vec<&'static str>>>)> {
     let widgets = woab::block_on(async {
         let bld = factories.win_test.instantiate();
         let widgets = bld.widgets::<TestWidgets>().unwrap();
-        bld.connect_to(TestActor {
-            output: output.clone(),
-        }.start());
+        bld.connect_to(TestActor { output: output.clone() }.start());
         widgets
     });
     Ok((widgets, output))

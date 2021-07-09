@@ -29,7 +29,9 @@ pub fn block_on<F: Future>(fut: F) -> <F as Future>::Output {
 pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
     WOAB_RUNTIME.with(|woab_runtime| {
         if let Ok(woab_runtime) = woab_runtime.try_borrow_mut() {
-            let woab_runtime = woab_runtime.as_ref().expect("`try_block_on` called without `run_actix_inside_gtk_event_loop`");
+            let woab_runtime = woab_runtime
+                .as_ref()
+                .expect("`try_block_on` called without `run_actix_inside_gtk_event_loop`");
             let result = woab_runtime.actix_system_runner.block_on(fut);
             Ok(result)
         } else {
@@ -68,7 +70,9 @@ pub fn run_actix_inside_gtk_event_loop() {
 pub fn close_actix_runtime() -> Result<(), std::io::Error> {
     WOAB_RUNTIME.with(|woab_runtime| {
         if let Ok(mut woab_runtime) = woab_runtime.try_borrow_mut() {
-            let woab_runtime = woab_runtime.take().expect("`close_actix_runtime` called before `run_actix_inside_gtk_event_loop`");
+            let woab_runtime = woab_runtime
+                .take()
+                .expect("`close_actix_runtime` called before `run_actix_inside_gtk_event_loop`");
             woab_runtime.actix_system_runner.block_on(async {
                 actix::System::current().stop();
             });
