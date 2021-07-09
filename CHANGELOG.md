@@ -12,10 +12,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Code that triggers actor-handled signals is no longer required to trigger it
   from outside the Actix runtime, as long as the signal does not expect an
   inhibit decision and as long as it does not accept a context parameter.
+- `woab::run_actix_inside_gtk_event_loop` no longer returns the `SourceId` of
+  the idle runtime cranker. This value is unclonable as a design choice of
+  gtk-rs and `woab::close_actix_runtime` needs it.
 
 ### Added
 - `event_param` method for `woab::Signal`, to easily get the concrete GDK event
   type from an event signal.
+- `woab::close_actix_runtime` to shut down the Actix runtime.
 
 ### Fixed
 - `woab::run_actix_inside_gtk_event_loop` was making `gtk::idle_add` busy-wait.
