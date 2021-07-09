@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["GetProps","Get widgets values into some getter type. See `#[derive(woab::PropSync)]`."],["SetProps","Set widgets values from some setter type. See `#[derive(woab::PropSync)]`."]]});
