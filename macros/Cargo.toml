@@ -1,6 +1,6 @@
 [package]
 name = "woab-macros"
-version = "0.5.0"
+version = "0.6.0"
 description = "Procedural macros for the WoAB crate"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"
