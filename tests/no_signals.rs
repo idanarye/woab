@@ -45,7 +45,7 @@ pub struct TestWidgets {}
 fn test_no_signals() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("no_signals.glade") as &[u8])?;
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
     let output = Rc::new(RefCell::new(Vec::new()));
     woab::block_on(async {
         factories

@@ -39,7 +39,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 fn test_future() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/future.glade")?);
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     let output = Rc::new(RefCell::new(Vec::<&'static str>::new()));
 

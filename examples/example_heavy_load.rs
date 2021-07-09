@@ -157,7 +157,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?))?;
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
         factories.win_app.instantiate().connect_with(|bld| {

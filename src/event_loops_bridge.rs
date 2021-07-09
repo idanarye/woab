@@ -39,7 +39,7 @@ pub fn try_block_on<F: Future>(fut: F) -> Result<<F as Future>::Output, F> {
 }
 
 /// Start an Actix `System` that runs inside the GTK thread.
-pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
+pub fn run_actix_inside_gtk_event_loop() {
     WOAB_RUNTIME.with(|woab_runtime| {
         let mut woab_runtime = woab_runtime.borrow_mut();
         if woab_runtime.is_some() {
@@ -58,7 +58,6 @@ pub fn run_actix_inside_gtk_event_loop() -> std::io::Result<()> {
             runtime_cranker_source_id,
         });
     });
-    Ok(())
 }
 
 /// Shut down the Actix `System` that runs inside the GTK thread.

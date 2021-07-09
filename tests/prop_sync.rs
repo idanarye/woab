@@ -31,7 +31,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/various_widgets.glade")?);
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     let widgets: TestWidgets = factory.instantiate().widgets()?;
 

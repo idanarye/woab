@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_actions.glade")?);
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
     let app = gtk::Application::new(None, Default::default());
 
     app.connect_activate(move |app| {

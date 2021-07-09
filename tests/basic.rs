@@ -57,7 +57,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 fn test_basic() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("basic.glade") as &[u8])?;
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
     let mut put_widgets_in = None;
     woab::block_on(async {
         factories.win_test.instantiate().connect_with(|bld| {

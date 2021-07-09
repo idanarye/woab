@@ -47,7 +47,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 fn prepare() -> anyhow::Result<(TestWidgets, Rc<RefCell<Vec<&'static str>>>)> {
     let factories = Factories::read(include_bytes!("just_a_button.glade") as &[u8])?;
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
     let output = Rc::new(RefCell::new(Vec::new()));
     let widgets = woab::block_on(async {
         let bld = factories.win_test.instantiate();

@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_canvas.glade")?);
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
         factory.instantiate().connect_with(|bld| {

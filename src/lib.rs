@@ -86,7 +86,7 @@
 //! #    }
 //!     let factories = std::rc::Rc::new(Factories::read(read_builder_xml())?);
 //!     gtk::init()?;
-//!     woab::run_actix_inside_gtk_event_loop()?; // <===== IMPORTANT!!!
+//!     woab::run_actix_inside_gtk_event_loop(); // <===== IMPORTANT!!!
 //!
 //!     factories.main_window.instantiate().connect_with(|bld| {
 //!         let widgets: AppWidgets = bld.widgets().unwrap();

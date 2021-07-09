@@ -35,7 +35,7 @@ pub struct GroupB {
 fn test_recusive_widgets_from_builder() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(include_str!("four_texts.glade").to_owned());
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
     let bld = factory.instantiate();
 
     let flat_widgets: FlatWidgets = bld.widgets()?;

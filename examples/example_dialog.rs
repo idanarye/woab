@@ -155,7 +155,7 @@ fn main() -> anyhow::Result<()> {
     let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example_dialog.glade")?))?;
 
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async move {
         factories

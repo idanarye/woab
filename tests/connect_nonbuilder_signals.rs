@@ -81,7 +81,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 #[test]
 fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
     gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop()?;
+    woab::run_actix_inside_gtk_event_loop();
 
     let output = Rc::new(RefCell::new(Vec::new()));
 
