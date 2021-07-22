@@ -62,24 +62,45 @@ pub fn run_actix_inside_gtk_event_loop() {
     });
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum RuntimeStopError {
+    #[error("Cannot stop the WoAB runtime because it was not started")]
+    RuntimeNotStarted,
+    #[error("Cannot stop the WoAB runtime because it is currently in use. Try stopping it with `actix::System::current().stop();` instead")]
+    RuntimeInUse,
+}
+
 /// Shut down the Actix `System` that runs inside the GTK thread.
 ///
 /// This will close the Actix runtime and stop GTK from idly cranking it to check for new events
 /// from external sources (e.g. network) but will not disconnect the routed GTK signals. If the GTK
 /// loop is still running and these signals are fired, WoAB will panic.
-pub fn close_actix_runtime() -> Result<(), std::io::Error> {
+pub fn close_actix_runtime() -> Result<Result<(), std::io::Error>, RuntimeStopError> {
+    let woab_runtime = WOAB_RUNTIME.with(|woab_runtime| {
+        woab_runtime
+            .try_borrow_mut()
+            .map_err(|_| RuntimeStopError::RuntimeInUse)?
+            .take()
+            .ok_or(RuntimeStopError::RuntimeNotStarted)
+    })?;
+    woab_runtime.actix_system_runner.block_on(async {
+        actix::System::current().stop();
+    });
+    glib::source::source_remove(woab_runtime.runtime_cranker_source_id);
+    Ok(woab_runtime.actix_system_runner.run())
+}
+
+/// Determine if the Actix `System` that runs inside the GTK thread is running.
+///
+/// Returns `true` if and only if called after
+/// [`woab::run_actix_inside_gtk_event_loop`](run_actix_inside_gtk_event_loop) but before any
+/// successful call to [`woab::close_actix_runtime`](close_actix_runtime).
+pub fn is_runtime_running() -> bool {
     WOAB_RUNTIME.with(|woab_runtime| {
-        if let Ok(mut woab_runtime) = woab_runtime.try_borrow_mut() {
-            let woab_runtime = woab_runtime
-                .take()
-                .expect("`close_actix_runtime` called before `run_actix_inside_gtk_event_loop`");
-            woab_runtime.actix_system_runner.block_on(async {
-                actix::System::current().stop();
-            });
-            glib::source::source_remove(woab_runtime.runtime_cranker_source_id);
-            woab_runtime.actix_system_runner.run()
+        if let Ok(woab_runtime) = woab_runtime.try_borrow() {
+            woab_runtime.is_some()
         } else {
-            panic!("`close_actix_runtime` function called inside Actix context");
+            true
         }
     })
 }
