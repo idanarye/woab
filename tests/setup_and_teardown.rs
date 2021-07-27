@@ -36,6 +36,11 @@ impl actix::Handler<woab::Signal> for TestActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "button_clicked" => {
+                assert!(matches!(
+                    woab::close_actix_runtime(),
+                    Err(woab::RuntimeStopError::RuntimeInUse)
+                ));
+                assert!(woab::is_runtime_running());
                 self.output.borrow_mut().push("click");
                 None
             }
@@ -60,10 +65,18 @@ fn prepare() -> anyhow::Result<(TestWidgets, Rc<RefCell<Vec<&'static str>>>)> {
 
 #[test]
 fn test_teardown() -> anyhow::Result<()> {
+    assert!(matches!(
+        woab::close_actix_runtime(),
+        Err(woab::RuntimeStopError::RuntimeNotStarted)
+    ));
+    assert!(!woab::is_runtime_running());
+
     let (widgets, output) = prepare()?;
     widgets.btn_button.emit_clicked();
     wait_for!(*output.borrow() == ["click"])?;
-    woab::close_actix_runtime()?;
+    assert!(woab::is_runtime_running());
+    woab::close_actix_runtime()??;
+    assert!(!woab::is_runtime_running());
     wait_for!(*output.borrow() == ["click", "shutdown"])?;
     Ok(())
 }

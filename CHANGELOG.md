@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- `woab::close_actix_runtime` return an error instead of panicing if the
+  runtime is closed or in use. This is breaking because now it is returnes two
+  nested `Result`s, but it's a minor function that's not used all over the
+  place, so it's not a big break.
+
+### Added
+- `woab::is_runtime_running`.
 
 ## 0.6.0 - 2021-07-10
 ### Changed
