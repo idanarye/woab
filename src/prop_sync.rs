@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 /// Set widgets values from some setter type. See [`#[derive(woab::PropSync)]`](crate::PropSync).
 pub trait SetProps<'a> {
@@ -24,7 +24,7 @@ pub trait GetProps {
     fn get_props(&self) -> Self::GetterType;
 }
 
-impl<'a> SetProps<'a> for gtk::Label {
+impl<'a> SetProps<'a> for gtk4::Label {
     type SetterType = &'a str;
 
     fn set_props(&self, setter: &Self::SetterType) {
@@ -32,7 +32,7 @@ impl<'a> SetProps<'a> for gtk::Label {
     }
 }
 
-impl<'a> SetProps<'a> for gtk::Entry {
+impl<'a> SetProps<'a> for gtk4::Entry {
     type SetterType = &'a str;
 
     fn set_props(&self, setter: &Self::SetterType) {
@@ -40,7 +40,7 @@ impl<'a> SetProps<'a> for gtk::Entry {
     }
 }
 
-impl GetProps for gtk::Entry {
+impl GetProps for gtk4::Entry {
     type GetterType = String;
 
     fn get_props(&self) -> Self::GetterType {
@@ -48,7 +48,7 @@ impl GetProps for gtk::Entry {
     }
 }
 
-impl<'a> SetProps<'a> for gtk::CheckButton {
+impl<'a> SetProps<'a> for gtk4::CheckButton {
     type SetterType = bool;
 
     fn set_props(&self, setter: &Self::SetterType) {
@@ -56,7 +56,7 @@ impl<'a> SetProps<'a> for gtk::CheckButton {
     }
 }
 
-impl GetProps for gtk::CheckButton {
+impl GetProps for gtk4::CheckButton {
     type GetterType = bool;
 
     fn get_props(&self) -> Self::GetterType {

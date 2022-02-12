@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 struct WindowActor {
     widgets: WindowWidgets,
@@ -8,9 +8,9 @@ struct WindowActor {
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WindowWidgets {
     #[prop_sync("value": f64, get, set)]
-    adj_timer: gtk::Adjustment,
+    adj_timer: gtk4::Adjustment,
     #[prop_sync(get, set)]
-    txt_shortening: gtk::Entry,
+    txt_shortening: gtk4::Entry,
 }
 
 impl actix::Actor for WindowActor {
@@ -23,7 +23,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -58,12 +58,12 @@ impl actix::Handler<Step> for WindowActor {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_prop_sync.glade")?);
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
         factory.instantiate().connect_with(|bld| {
-            let win_app: gtk::ApplicationWindow = bld.get_object("win_app").unwrap();
+            let win_app: gtk4::ApplicationWindow = bld.get_object("win_app").unwrap();
 
             win_app.show();
             let addr = WindowActor {
@@ -89,6 +89,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk::main();
+    gtk4::main();
     Ok(())
 }

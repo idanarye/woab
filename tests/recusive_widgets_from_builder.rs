@@ -1,14 +1,14 @@
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[macro_use]
 mod util;
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct FlatWidgets {
-    text1: gtk::Entry,
-    text2: gtk::Entry,
-    text3: gtk::Entry,
-    text4: gtk::Entry,
+    text1: gtk4::Entry,
+    text2: gtk4::Entry,
+    text3: gtk4::Entry,
+    text4: gtk4::Entry,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
@@ -21,20 +21,20 @@ pub struct GroupedWidgets {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct GroupA {
-    text1: gtk::Entry,
-    text2: gtk::Entry,
+    text1: gtk4::Entry,
+    text2: gtk4::Entry,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct GroupB {
-    text3: gtk::Entry,
-    text4: gtk::Entry,
+    text3: gtk4::Entry,
+    text4: gtk4::Entry,
 }
 
 #[test]
 fn test_recusive_widgets_from_builder() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(include_str!("four_texts.glade").to_owned());
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
     let bld = factory.instantiate();
 

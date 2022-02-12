@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 struct Factories {
@@ -16,8 +16,8 @@ struct WindowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
-    yes_count: gtk::Entry,
-    no_count: gtk::Entry,
+    yes_count: gtk4::Entry,
+    no_count: gtk4::Entry,
 }
 
 impl actix::Actor for WindowActor {
@@ -30,14 +30,14 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             "open_dialog" => {
                 let bld = self.dialog_factory.instantiate();
                 ctx.spawn(
                     async move {
-                        let dialog: gtk::Dialog = bld
+                        let dialog: gtk4::Dialog = bld
                             .connect_with(|bld| {
                                 DialogActor {
                                     widgets: bld.widgets().unwrap(),
@@ -50,16 +50,16 @@ impl actix::Handler<woab::Signal> for WindowActor {
                     }
                     .into_actor(self)
                     .map(|response, actor, _ctx| match response {
-                        gtk::ResponseType::Yes => {
+                        gtk4::ResponseType::Yes => {
                             actor.yes_count += 1;
                             actor.widgets.yes_count.set_text(&actor.yes_count.to_string());
                         }
-                        gtk::ResponseType::No => {
+                        gtk4::ResponseType::No => {
                             actor.no_count += 1;
                             actor.widgets.no_count.set_text(&actor.no_count.to_string());
                         }
-                        gtk::ResponseType::DeleteEvent => {}
-                        gtk::ResponseType::None => {}
+                        gtk4::ResponseType::DeleteEvent => {}
+                        gtk4::ResponseType::None => {}
                         _ => panic!("Cannot handle dialog response {:?}", response),
                     }),
                 );
@@ -69,11 +69,11 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 ctx.spawn(
                     async move {
                         woab::run_dialog(
-                            &gtk::MessageDialog::new::<gtk::ApplicationWindow>(
+                            &gtk4::MessageDialog::new::<gtk4::ApplicationWindow>(
                                 None,
-                                gtk::DialogFlags::all(),
-                                gtk::MessageType::Question,
-                                gtk::ButtonsType::YesNo,
+                                gtk4::DialogFlags::all(),
+                                gtk4::MessageType::Question,
+                                gtk4::ButtonsType::YesNo,
                                 "Reset the counters?",
                             ),
                             true,
@@ -82,7 +82,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                     }
                     .into_actor(self)
                     .map(|response, actor, _ctx| {
-                        if response == gtk::ResponseType::Yes {
+                        if response == gtk4::ResponseType::Yes {
                             actor.yes_count = 0;
                             actor.no_count = 0;
                             actor.widgets.yes_count.set_text("0");
@@ -103,8 +103,8 @@ struct DialogActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct DialogWidgets {
-    dialog: gtk::Dialog,
-    alive_time: gtk::Label,
+    dialog: gtk4::Dialog,
+    alive_time: gtk4::Label,
 }
 
 impl actix::Actor for DialogActor {
@@ -114,7 +114,7 @@ impl actix::Actor for DialogActor {
         let alive_time = self.widgets.alive_time.clone();
         ctx.spawn(
             async move {
-                let alive_since = std::time::SystemTime::now(); //, gtk::main_level(), caption);
+                let alive_since = std::time::SystemTime::now(); //, gtk4::main_level(), caption);
                 loop {
                     alive_time.set_text(&format!("Alive for {} seconds", alive_since.elapsed().unwrap().as_secs()));
                     actix::clock::sleep(core::time::Duration::new(1, 0)).await;
@@ -131,13 +131,13 @@ impl actix::Handler<woab::Signal> for DialogActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "yes" => {
-                self.widgets.dialog.response(gtk::ResponseType::Yes);
+                self.widgets.dialog.response(gtk4::ResponseType::Yes);
                 self.widgets.dialog.close();
                 ctx.stop();
                 None
             }
             "no" => {
-                self.widgets.dialog.response(gtk::ResponseType::No);
+                self.widgets.dialog.response(gtk4::ResponseType::No);
                 self.widgets.dialog.close();
                 ctx.stop();
                 None
@@ -154,14 +154,14 @@ impl actix::Handler<woab::Signal> for DialogActor {
 fn main() -> anyhow::Result<()> {
     let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example_dialog.glade")?))?;
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async move {
         factories
             .win_app
             .instantiate()
-            .with_object("win_app", |win: gtk::ApplicationWindow| win.show())
+            .with_object("win_app", |win: gtk4::ApplicationWindow| win.show())
             .connect_with(|bld| {
                 WindowActor {
                     widgets: bld.widgets().unwrap(),
@@ -173,7 +173,7 @@ fn main() -> anyhow::Result<()> {
             })
     });
 
-    gtk::main();
+    gtk4::main();
 
     Ok(())
 }

@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 pub struct Factories {
@@ -21,7 +21,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -31,7 +31,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct PressCountingWidgets {
-    buf_count_pressed_time: gtk::TextBuffer,
+    buf_count_pressed_time: gtk4::TextBuffer,
 }
 
 struct PressCountingActor {
@@ -60,7 +60,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
     type Result = woab::SignalResult;
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
-        fn button_to_idx(event: &gdk::EventButton) -> Option<usize> {
+        fn button_to_idx(event: &gdk4::EventButton) -> Option<usize> {
             match event.button() {
                 1 => Some(0),
                 3 => Some(1),
@@ -70,14 +70,14 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
         Ok(match msg.name() {
             "press" => {
-                let event: gdk::EventButton = msg.event_param()?;
+                let event: gdk4::EventButton = msg.event_param()?;
                 if let Some(idx) = button_to_idx(&event) {
                     self.press_times[idx] = Some(Instant::now());
                 }
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             "release" => {
-                let event: gdk::EventButton = msg.event_param()?;
+                let event: gdk4::EventButton = msg.event_param()?;
                 if let Some(idx) = button_to_idx(&event) {
                     if let Some(press_time) = self.press_times[idx] {
                         self.press_times[idx] = None;
@@ -86,7 +86,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
                         self.update_pressed_time_display();
                     }
                 }
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             _ => msg.cant_handle()?,
         })
@@ -95,7 +95,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct CharacterMoverWidgets {
-    only_digits: gtk::Entry,
+    only_digits: gtk4::Entry,
 }
 
 struct CharacterMoverActor {
@@ -112,16 +112,16 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "all_characters_entry_key_pressed" => {
-                let event: gdk::EventKey = msg.event_param()?;
+                let event: gdk4::EventKey = msg.event_param()?;
                 if let Some(character) = event.keyval().to_unicode() {
                     if character.is_digit(10) {
                         let mut text = self.widgets.only_digits.text().as_str().to_owned();
                         text.push(character);
                         self.widgets.only_digits.set_text(&text);
-                        return Ok(Some(gtk::Inhibit(true)));
+                        return Ok(Some(gtk4::Inhibit(true)));
                     }
                 }
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             _ => msg.cant_handle()?,
         })
@@ -133,12 +133,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "examples/example_events.glade",
     )?))?);
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
         factories.win_app.instantiate().connect_with(|bld| {
-            bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
+            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
             woab::NamespacedSignalRouter::default()
                 .route(WindowActor.start())
                 .route(
@@ -158,6 +158,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk::main();
+    gtk4::main();
     Ok(())
 }

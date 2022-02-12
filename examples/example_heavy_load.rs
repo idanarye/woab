@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 struct Factories {
@@ -23,9 +23,9 @@ impl actix::Actor for WindowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
-    win_app: gtk::ApplicationWindow,
-    scl_num_rows: gtk::Scale,
-    lst_rows: gtk::ListBox,
+    win_app: gtk4::ApplicationWindow,
+    scl_num_rows: gtk4::Scale,
+    lst_rows: gtk4::ListBox,
 }
 
 impl actix::Handler<woab::Signal> for WindowActor {
@@ -43,7 +43,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 None
             }
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -94,8 +94,8 @@ impl Actor for RowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct RowWidgets {
-    row: gtk::ListBoxRow,
-    draw_area: gtk::DrawingArea,
+    row: gtk4::ListBoxRow,
+    draw_area: gtk4::DrawingArea,
 }
 
 impl actix::Handler<woab::Signal> for RowActor {
@@ -118,7 +118,7 @@ impl actix::Handler<woab::Signal> for RowActor {
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
                 draw_ctx.fill().unwrap();
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             _ => msg.cant_handle()?,
         })
@@ -156,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "examples/example_heavy_load.glade",
     )?))?;
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
@@ -171,6 +171,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .start()
         });
     });
-    gtk::main();
+    gtk4::main();
     Ok(())
 }

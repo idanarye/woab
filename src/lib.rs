@@ -35,7 +35,7 @@
 //!
 //! ```no_run
 //! use actix::prelude::*;
-//! use gtk::prelude::*;
+//! use gtk4::prelude::*;
 //!
 //! #[derive(woab::Factories)]
 //! struct Factories {
@@ -56,7 +56,7 @@
 //!
 //! #[derive(woab::WidgetsFromBuilder)]
 //! struct AppWidgets {
-//!     main_window: gtk::ApplicationWindow, // needed for making the window visible
+//!     main_window: gtk4::ApplicationWindow, // needed for making the window visible
 //!     // Other widgets inside the window to interact with.
 //! }
 //!
@@ -71,9 +71,9 @@
 //!                 None // GTK does not expect sig1 to return anything
 //!             },
 //!             "sig2" => {
-//!                 let woab::params!(text_buffer: gtk::TextBuffer, _) = msg.params()?;
+//!                 let woab::params!(text_buffer: gtk4::TextBuffer, _) = msg.params()?;
 //!                 // Behavior for sig2 that uses the signal parameters.
-//!                 Some(gtk::Inhibit(false)) // GTK expects sig2 to return its inhibitness decision
+//!                 Some(gtk4::Inhibit(false)) // GTK expects sig2 to return its inhibitness decision
 //!             },
 //!             _ => msg.cant_handle()?,
 //!         })
@@ -85,7 +85,7 @@
 //! #        unreachable!()
 //! #    }
 //!     let factories = std::rc::Rc::new(Factories::read(read_builder_xml())?);
-//!     gtk::init()?;
+//!     gtk4::init()?;
 //!     woab::run_actix_inside_gtk_event_loop(); // <===== IMPORTANT!!!
 //!
 //!     factories.main_window.instantiate().connect_with(|bld| {
@@ -97,7 +97,7 @@
 //!         }.start()
 //!     });
 //!
-//!     gtk::main();
+//!     gtk4::main();
 //!     Ok(())
 //! }
 //! ```
@@ -107,7 +107,7 @@
 //! * When starting Actix actors from outside Tokio/Actix, [`woab::block_on`](block_on) must be
 //!   used. This is a limitation of Actix that needs to be respected.
 //! * `dialog.run()` must not be used - use [`woab::run_dialog`](crate::run_dialog) instead.
-//! * If an actor is created inside a `gtk::Application::connect_activate`, its `started` method
+//! * If an actor is created inside a `gtk4::Application::connect_activate`, its `started` method
 //!   will run **after** the `activate` signal is done. This can be a problem for methods like
 //!   `set_application` that can segfault if they are called outside the `activate` signal. A
 //!   solution could be to either do the startup inside `connect_activate` or use
@@ -127,14 +127,14 @@ mod waking_helpers;
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
 /// This needs to be a struct, where each field is a GTK type and its name must match the ID of the
-/// widgets in the Glade XML file. This derive implements a `From<&gtk::Builder>` for the struct.
+/// widgets in the Glade XML file. This derive implements a `From<&gtk4::Builder>` for the struct.
 ///
 /// ```no_run
 /// #[derive(woab::WidgetsFromBuilder)]
 /// struct MyAppWidgets {
-///     main_window: gtk::ApplicationWindow,
-///     some_button: gtk::Button,
-///     some_label: gtk::Label,
+///     main_window: gtk4::ApplicationWindow,
+///     some_button: gtk4::Button,
+///     some_label: gtk4::Label,
 /// }
 /// ```
 ///
@@ -144,7 +144,7 @@ mod waking_helpers;
 /// - `name = "..."`: Use a different name for matching the ID of the widget.
 ///
 /// - `nested`: Instead of taking a single widget by ID, put another `WidgetsFromBuilder` derived
-///   type (or any other type that implements `TryFrom<&gtk::Builder>`) as the field's type and
+///   type (or any other type that implements `TryFrom<&gtk4::Builder>`) as the field's type and
 ///   have take all its widgets from the same builder. The name of the field is ignored, because
 ///   the nested type already names all the widgets it needs.
 pub use woab_macros::WidgetsFromBuilder;
@@ -196,7 +196,7 @@ pub use woab_macros::Factories;
 ///
 /// ```no_run
 /// # use actix::prelude::*;
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// #
 /// # #[derive(woab::Factories)]
 /// # struct Factories {
@@ -205,7 +205,7 @@ pub use woab_macros::Factories;
 /// #
 /// # #[derive(woab::WidgetsFromBuilder)]
 /// # struct RowWidgets {
-/// #     list_box_row: gtk::ListBoxRow,
+/// #     list_box_row: gtk4::ListBoxRow,
 /// # }
 /// #
 /// #[derive(woab::Removable)]
@@ -226,7 +226,7 @@ pub use woab_macros::Factories;
 /// #     }
 /// # }
 ///
-/// fn create_the_row(factories: &Factories, list_box: &gtk::ListBox) -> actix::Addr<RowActor> {
+/// fn create_the_row(factories: &Factories, list_box: &gtk4::ListBox) -> actix::Addr<RowActor> {
 ///     let bld = factories.list_box_row.instantiate();
 ///     let widgets: RowWidgets = bld.widgets().unwrap();
 ///     list_box.add(&widgets.list_box_row);
@@ -285,7 +285,7 @@ pub use woab_macros::params;
 /// used for the setter (the macro will add a lifetime) and its
 /// [`ToOwned::Owned`](std::borrow::ToOwned::Owned) will be used for the getter.
 ///
-/// There is no need to set a property for some common widgets (like `gtk::Entry`) - they already
+/// There is no need to set a property for some common widgets (like `gtk4::Entry`) - they already
 /// implement [`SetProps`](crate::prop_sync::SetProps) and
 /// [`GetProps`](crate::prop_sync::GetProps), so the macro will use the traits to set/get the data.
 /// Similarly, structs that use this derive implement these two traits so they can be used with
@@ -295,18 +295,18 @@ pub use woab_macros::params;
 /// #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 /// struct AppWidgets {
 ///     // Not included in the prop-sync because we are not syncing it.
-///     main_window: gtk::ApplicationWindow,
+///     main_window: gtk4::ApplicationWindow,
 ///
 ///     #[prop_sync(set, get)]
-///     some_text: gtk::Entry,
+///     some_text: gtk4::Entry,
 ///
 ///     // Combo boxes use the active-id property to select a row in their model.
 ///     #[prop_sync("active-id": &str, set, get)]
-///     some_combo_box: gtk::ComboBox,
+///     some_combo_box: gtk4::ComboBox,
 ///
 ///     // We only want to get the value of this checkbox, not set it, so we don't generate a setter.
 ///     #[prop_sync("active": bool, get)]
-///     some_check_box: gtk::CheckButton,
+///     some_check_box: gtk4::CheckButton,
 /// }
 ///
 /// # let widgets: AppWidgets = panic!();

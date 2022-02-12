@@ -8,7 +8,7 @@ mod util;
 
 #[test]
 fn test_waking() -> anyhow::Result<()> {
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     let output = Rc::new(RefCell::new(Vec::<&'static str>::new()));

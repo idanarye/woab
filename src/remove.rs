@@ -12,7 +12,7 @@
 ///
 /// #[derive(woab::WidgetsFromBuilder)]
 /// struct MyWidgets {
-///     main_window: gtk::ApplicationWindow,
+///     main_window: gtk4::ApplicationWindow,
 /// }
 ///
 /// let my_actor: actix::Addr<MyActor>;

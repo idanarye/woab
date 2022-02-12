@@ -6,7 +6,7 @@ pub type RawSignalCallback = Box<dyn Fn(&[glib::Value]) -> Option<glib::Value>>;
 /// Route a GTK signal to an Actix actor that can handle [`woab::Signal`](crate::Signal).
 ///
 /// ```no_run
-/// let widget: gtk::Button;
+/// let widget: gtk4::Button;
 /// let target: actix::Recipient<woab::Signal>; // `actix::Addr` is also supported
 /// # widget = panic!();
 /// # target = panic!();
@@ -23,7 +23,7 @@ pub fn route_signal(
     let handler = target
         .into_generate_routing_gtk_handler()
         .generate_routing_gtk_handler(actix_signal);
-    let handler_id = obj.connect_local(gtk_signal, false, handler)?;
+    let handler_id = obj.connect_local(gtk_signal, false, handler);
     Ok(handler_id)
 }
 
@@ -69,14 +69,14 @@ fn panic_if_signal_cannot_be_queued(signal_name: &str, parameters: &[glib::Value
 }
 
 fn run_signal_routing_future(
-    future: impl core::future::Future<Output = Result<Result<Option<gtk::Inhibit>, crate::Error>, actix::MailboxError>> + 'static,
+    future: impl core::future::Future<Output = Result<Result<Option<gtk4::Inhibit>, crate::Error>, actix::MailboxError>> + 'static,
     signal_name: &Rc<String>,
     parameters: &[glib::Value],
 ) -> Option<glib::Value> {
     match crate::try_block_on(future) {
         Ok(result) => {
             let result = result.unwrap().unwrap();
-            if let Some(gtk::Inhibit(inhibit)) = result {
+            if let Some(gtk4::Inhibit(inhibit)) = result {
                 use glib::value::ToValue;
                 Some(inhibit.to_value())
             } else {

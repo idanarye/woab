@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[macro_use]
 mod util;
@@ -17,8 +17,8 @@ impl actix::Actor for TestActor {
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {
-    rows: gtk::ListBox,
-    row: gtk::ListBoxRow,
+    rows: gtk4::ListBox,
+    row: gtk4::ListBoxRow,
 }
 
 impl actix::Handler<woab::Signal> for TestActor {
@@ -38,7 +38,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 #[test]
 fn test_future() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/future.glade")?);
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     let output = Rc::new(RefCell::new(Vec::<&'static str>::new()));

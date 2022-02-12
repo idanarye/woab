@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 pub struct Factories {
@@ -11,16 +11,16 @@ pub struct Factories {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct WindowWidgets {
-    win_app: gtk::ApplicationWindow,
-    buf_sum: gtk::TextBuffer,
-    lst_addition: gtk::ListBox,
+    win_app: gtk4::ApplicationWindow,
+    buf_sum: gtk4::TextBuffer,
+    lst_addition: gtk4::ListBox,
 }
 
 struct WindowActor {
     factories: Factories,
     widgets: WindowWidgets,
     next_addend_id: usize,
-    addends: std::collections::HashMap<usize, (gtk::ListBoxRow, Option<isize>)>,
+    addends: std::collections::HashMap<usize, (gtk4::ListBoxRow, Option<isize>)>,
 }
 
 impl actix::Actor for WindowActor {
@@ -32,7 +32,7 @@ impl actix::Actor for WindowActor {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        gtk::main_quit();
+        gtk4::main_quit();
     }
 }
 
@@ -42,7 +42,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             "click_button" => {
@@ -74,7 +74,7 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
     fn handle(&mut self, msg: woab::Signal<usize>, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "addend_changed" => {
-                let woab::params!(buffer: gtk::TextBuffer) = msg.params()?;
+                let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
                 let new_number: Option<isize> = buffer
                     .text(&buffer.start_iter(), &buffer.end_iter(), true)
                     .and_then(|text| text.parse().ok());
@@ -112,7 +112,7 @@ impl WindowActor {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.glade")?))?;
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
@@ -127,6 +127,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk::main();
+    gtk4::main();
     Ok(())
 }

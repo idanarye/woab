@@ -1,11 +1,11 @@
 use core::convert::TryInto;
 
-use gtk::Builder;
+use gtk4::Builder;
 
 /// Holds instructions for generating a GTK builder.
 ///
 /// ```no_run
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// # use woab::BuilderFactory;
 /// let builder_xml = r#"
 ///     <interface>
@@ -17,7 +17,7 @@ use gtk::Builder;
 /// "#;
 /// let builder_factory: BuilderFactory = builder_xml.to_owned().into();
 /// let bld = builder_factory.instantiate();
-/// let my_button: gtk::Button = bld.get_object("my_button").unwrap();
+/// let my_button: gtk4::Button = bld.get_object("my_button").unwrap();
 /// ```
 ///
 /// Refer to [`#[derive(woab::Factories)]`](derive.Factories.html) for how to create instances of
@@ -25,7 +25,7 @@ use gtk::Builder;
 ///
 /// ```no_run
 /// # use actix::prelude::*;
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// #[derive(woab::Factories)]
 /// struct Factories {
 ///     window: woab::BuilderFactory,
@@ -52,14 +52,14 @@ use gtk::Builder;
 ///
 /// #[derive(woab::WidgetsFromBuilder)]
 /// struct WindowWidgets {
-///     window: gtk::ApplicationWindow,
-///     list_box: gtk::ListBox,
+///     window: gtk4::ApplicationWindow,
+///     list_box: gtk4::ListBox,
 /// }
 ///
 /// #[derive(woab::WidgetsFromBuilder)]
 /// struct RowWidgets {
-///     row: gtk::ListBoxRow,
-///     label: gtk::Label,
+///     row: gtk4::ListBoxRow,
+///     label: gtk4::Label,
 /// }
 ///
 /// impl actix::Handler<woab::Signal<usize>> for WindowActor {
@@ -99,7 +99,7 @@ impl From<String> for BuilderFactory {
 }
 
 impl BuilderFactory {
-    /// Create a `gtk::Builder` from the instructions inside this factory.
+    /// Create a `gtk4::Builder` from the instructions inside this factory.
     ///
     /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
     pub fn instantiate(&self) -> BuilderConnector {
@@ -107,16 +107,16 @@ impl BuilderFactory {
     }
 }
 
-/// Context for utilizing a `gtk::Builder` and connecting it to he Actix world.
+/// Context for utilizing a `gtk4::Builder` and connecting it to he Actix world.
 ///
-/// It wraps a `gtk::Builder` instance and provides methods to create actors that are
+/// It wraps a `gtk4::Builder` instance and provides methods to create actors that are
 /// connected to the widgets in that builder.
 ///
 /// See [`BuilderFactory`] for usage example.
 pub struct BuilderConnector(BuilderConnectorWidgetsOnly);
 
-impl From<gtk::Builder> for BuilderConnector {
-    fn from(builder: gtk::Builder) -> Self {
+impl From<gtk4::Builder> for BuilderConnector {
+    fn from(builder: gtk4::Builder) -> Self {
         Self(BuilderConnectorWidgetsOnly { builder })
     }
 }
@@ -136,7 +136,7 @@ impl BuilderConnector {
     ///
     /// ```no_run
     /// # use actix::prelude::*;
-    /// # use gtk::prelude::*;
+    /// # use gtk4::prelude::*;
     /// # struct MyActor;
     /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
     /// # impl actix::Handler<woab::Signal> for MyActor {
@@ -147,7 +147,7 @@ impl BuilderConnector {
     /// # }
     /// # let builder_factory: woab::BuilderFactory = panic!();
     /// builder_factory.instantiate()
-    ///     .with_object("window", |window: gtk::ApplicationWindow| {
+    ///     .with_object("window", |window: gtk4::ApplicationWindow| {
     ///         window.show();
     ///     })
     ///     .connect_to(MyActor.start());
@@ -163,9 +163,9 @@ impl BuilderConnector {
     }
 
     /// Create a widgets struct who's fields are mapped to the builder's widgets.
-    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
+    pub fn widgets<W>(&self) -> Result<W, <gtk4::Builder as TryInto<W>>::Error>
     where
-        gtk::Builder: TryInto<W>,
+        gtk4::Builder: TryInto<W>,
     {
         self.0.widgets()
     }
@@ -182,7 +182,7 @@ impl BuilderConnector {
     ///
     /// ```no_run
     /// # use actix::prelude::*;
-    /// # use gtk::prelude::*;
+    /// # use gtk4::prelude::*;
     /// # struct MyActor;
     /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
     /// # impl actix::Handler<woab::Signal> for MyActor {
@@ -194,14 +194,15 @@ impl BuilderConnector {
     /// # let builder_factory: woab::BuilderFactory = panic!();
     /// builder_factory.instantiate().connect_to(MyActor.start());
     /// ```
-    pub fn connect_to(self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnectorWidgetsOnly {
-        let mut generator = target.into_generate_routing_gtk_handler();
-        use crate::GenerateRoutingGtkHandler;
-        use gtk::prelude::BuilderExtManual;
-        self.0
-            .builder
-            .connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
-        self.0
+    pub fn connect_to(self, _target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnectorWidgetsOnly {
+        todo!()
+        //let mut generator = target.into_generate_routing_gtk_handler();
+        //use crate::GenerateRoutingGtkHandler;
+        //use gtk4::prelude::BuilderExtManual;
+        //self.0
+            //.builder
+            //.connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
+        //self.0
     }
 
     /// Runs a closure and passes the result to [`connect_to`](BuilderConnector::connect_to).
@@ -212,16 +213,16 @@ impl BuilderConnector {
     ///
     /// ```no_run
     /// # use actix::prelude::*;
-    /// # use gtk::prelude::*;
+    /// # use gtk4::prelude::*;
     /// #[derive(woab::WidgetsFromBuilder)]
     /// struct MyWidgets {
-    ///     my_button: gtk::Button,
-    ///     my_textfield: gtk::Entry,
+    ///     my_button: gtk4::Button,
+    ///     my_textfield: gtk4::Entry,
     /// }
     ///
     /// struct MyActor {
     ///     widgets: MyWidgets,
-    ///     my_window: gtk::Window, // for whatever reason not in `MyWidgets`
+    ///     my_window: gtk4::Window, // for whatever reason not in `MyWidgets`
     /// }
     /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
     /// # impl actix::Handler<woab::Signal> for MyActor {
@@ -253,28 +254,29 @@ impl BuilderConnector {
 /// After the `BuilderConnector` connects its signals, they cannot be connected again - so the
 /// `BuilderConnector` is consumed. But the widgets are still accessible with this object.
 pub struct BuilderConnectorWidgetsOnly {
-    builder: gtk::Builder,
+    builder: gtk4::Builder,
 }
 
 impl BuilderConnectorWidgetsOnly {
     /// See [`BuilderConnector::get_object`].
-    pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
+    pub fn get_object<W>(&self, _id: &str) -> Result<W, crate::Error>
     where
         W: glib::IsA<glib::Object>,
     {
-        use gtk::prelude::BuilderExtManual;
-        self.builder.object::<W>(id).ok_or_else(|| {
-            if let Some(object) = self.builder.object::<glib::Object>(id) {
-                use glib::object::ObjectExt;
-                crate::Error::IncorrectWidgetTypeInBuilder {
-                    widget_id: id.to_owned(),
-                    expected_type: <W as glib::types::StaticType>::static_type(),
-                    actual_type: object.type_(),
-                }
-            } else {
-                crate::Error::WidgetMissingInBuilder(id.to_owned())
-            }
-        })
+        todo!()
+        //use gtk4::prelude::BuilderExtManual;
+        //self.builder.object::<W>(id).ok_or_else(|| {
+            //if let Some(object) = self.builder.object::<glib::Object>(id) {
+                //use glib::object::ObjectExt;
+                //crate::Error::IncorrectWidgetTypeInBuilder {
+                    //widget_id: id.to_owned(),
+                    //expected_type: <W as glib::types::StaticType>::static_type(),
+                    //actual_type: object.type_(),
+                //}
+            //} else {
+                //crate::Error::WidgetMissingInBuilder(id.to_owned())
+            //}
+        //})
     }
 
     /// See [`BuilderConnector::with_object`].
@@ -287,9 +289,9 @@ impl BuilderConnectorWidgetsOnly {
     }
 
     /// See [`BuilderConnector::widgets`].
-    pub fn widgets<W>(&self) -> Result<W, <gtk::Builder as TryInto<W>>::Error>
+    pub fn widgets<W>(&self) -> Result<W, <gtk4::Builder as TryInto<W>>::Error>
     where
-        gtk::Builder: TryInto<W>,
+        gtk4::Builder: TryInto<W>,
     {
         self.builder.clone().try_into()
     }

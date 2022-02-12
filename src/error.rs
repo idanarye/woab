@@ -54,7 +54,7 @@ pub enum Error {
     IncorrectEventParameter {
         signal: String,
         expected_type: &'static str,
-        actual_type: gdk::EventType,
+        actual_type: gdk4::EventType,
     },
 
     /// When an action signal's parameter is of the the wrong type.

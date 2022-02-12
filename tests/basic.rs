@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[macro_use]
 mod util;
@@ -20,14 +20,14 @@ impl actix::Actor for TestActor {
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {
-    win_test: gtk::ApplicationWindow,
-    btn_copy_right_to_left: gtk::Button,
-    btn_copy_left_to_right: gtk::Button,
-    buf_left: gtk::TextBuffer,
-    buf_right: gtk::TextBuffer,
+    win_test: gtk4::ApplicationWindow,
+    btn_copy_right_to_left: gtk4::Button,
+    btn_copy_left_to_right: gtk4::Button,
+    buf_left: gtk4::TextBuffer,
+    buf_right: gtk4::TextBuffer,
 }
 
-fn get_text(buffer: &gtk::TextBuffer) -> String {
+fn get_text(buffer: &gtk4::TextBuffer) -> String {
     if let Some(text) = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true) {
         text.into()
     } else {
@@ -56,7 +56,7 @@ impl actix::Handler<woab::Signal> for TestActor {
 #[test]
 fn test_basic() -> anyhow::Result<()> {
     let factories = Factories::read(include_bytes!("basic.glade") as &[u8])?;
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
     let mut put_widgets_in = None;
     woab::block_on(async {

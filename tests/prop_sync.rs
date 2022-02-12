@@ -1,4 +1,4 @@
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct TestWidgets {
@@ -9,28 +9,28 @@ struct TestWidgets {
     #[widget(nested)]
     group2: WidgetsGroup2,
     #[prop_sync(set)]
-    label: gtk::Label,
+    label: gtk4::Label,
 }
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WidgetsGroup1 {
     #[prop_sync(set, get)]
-    text_entry: gtk::Entry,
+    text_entry: gtk4::Entry,
     #[prop_sync("value": f64, set, get)]
-    spin_button: gtk::SpinButton,
+    spin_button: gtk4::SpinButton,
 }
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WidgetsGroup2 {
     #[prop_sync(set, get)]
-    check_button: gtk::CheckButton,
+    check_button: gtk4::CheckButton,
 }
 
 #[test]
 fn test_prop_sync() -> anyhow::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/various_widgets.glade")?);
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     let widgets: TestWidgets = factory.instantiate().widgets()?;

@@ -10,7 +10,7 @@ macro_rules! wait_for {
             } else if is_over {
                 break Err(anyhow::Error::msg(concat!("Timed out: ", stringify!($pred))));
             }
-            gtk::main_iteration();
+            gtk4::main_iteration();
         }
     }};
 }

@@ -1,13 +1,13 @@
 use core::time::Duration;
 
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 const BALL_RADIUS: f64 = 20.0;
 
 struct WindowActor {
     area_size: [f64; 2],
-    draw_area: gtk::DrawingArea,
+    draw_area: gtk4::DrawingArea,
     ball: Ball,
 }
 
@@ -21,7 +21,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             "draw" => {
@@ -35,13 +35,13 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
                 draw_ctx.fill().unwrap();
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             "configure_draw_area" => {
-                let event: gdk::EventConfigure = msg.event_param()?;
+                let event: gdk4::EventConfigure = msg.event_param()?;
                 let (width, height) = event.size();
                 self.area_size = [width as f64, height as f64];
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             _ => msg.cant_handle()?,
         })
@@ -95,12 +95,12 @@ impl Ball {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_canvas.glade")?);
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
         factory.instantiate().connect_with(|bld| {
-            bld.get_object::<gtk::ApplicationWindow>("win_app").unwrap().show();
+            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
             let addr = WindowActor {
                 area_size: [0.0, 0.0],
                 draw_area: bld.get_object("draw_area").unwrap(),
@@ -125,6 +125,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             addr
         });
     });
-    gtk::main();
+    gtk4::main();
     Ok(())
 }

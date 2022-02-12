@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 struct Factories {
@@ -9,8 +9,8 @@ struct Factories {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
-    win_app: gtk::ApplicationWindow,
-    size_descr: gtk::TextBuffer,
+    win_app: gtk4::ApplicationWindow,
+    size_descr: gtk4::TextBuffer,
 }
 
 struct WindowActor {
@@ -31,17 +31,17 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                gtk4::main_quit();
                 None
             }
             "window_configure" => {
-                let event: gdk::EventConfigure = msg.event_param()?;
+                let event: gdk4::EventConfigure = msg.event_param()?;
                 let (left, top) = event.position();
                 let (width, height) = event.size();
                 self.widgets
                     .size_descr
                     .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
-                Some(gtk::Inhibit(false))
+                Some(gtk4::Inhibit(false))
             }
             "decrease_width" => {
                 let (width, height) = self.widgets.win_app.size();
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "examples/example_continuous_events.glade",
     )?))?);
 
-    gtk::init()?;
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
     woab::block_on(async {
@@ -75,6 +75,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk::main();
+    gtk4::main();
     Ok(())
 }
