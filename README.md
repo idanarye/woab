@@ -33,6 +33,9 @@ demonstration.
   startup inside `connect_activate` or use `woab::route_signal` to route the
   application's `activate` signal to the actor and do the startup in the
   actor's signal handler.
+* `woab::close_actix_runtime` must be called after `gtk::main()`, or else Tokio
+  will panic when GTK quits. If anyone knows how to automate it I'm open to
+  suggestions.
 
 ## License
 

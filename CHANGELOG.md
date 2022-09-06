@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [**BREAKING**] Upgraded gtk-rs to version 0.15. This is a breaking change
   because gtk-rs' API had some changes in this release.
 - Updated Actix version to 0.13.
-- **BREAKING** `woab::close_actix_runtime()??;` must be called after `gtk::main()` now.
+- **BREAKING** `woab::close_actix_runtime` must be called after `gtk::main()` now.
 - `woab::close_actix_runtime` return an error instead of panicing if the
   runtime is closed or in use. This is breaking because now it is returnes two
   nested `Result`s, but it's a minor function that's not used all over the
