@@ -14,6 +14,7 @@ impl syn::parse::Parse for Input {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 enum SingleParam {
     Extract { pat: syn::Pat, ty: syn::Type },
     Ignore { pat: syn::Pat },
