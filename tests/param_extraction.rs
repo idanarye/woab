@@ -12,7 +12,7 @@ fn test_param_extraction() -> anyhow::Result<()> {
                     $param.to_value()
                 ),*],
                 ()
-            );
+            )
         }
     }
     let () = signal!().params()?;

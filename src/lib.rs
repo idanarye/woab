@@ -98,6 +98,7 @@
 //!     });
 //!
 //!     gtk::main();
+//!     woab::close_actix_runtime()??;
 //!     Ok(())
 //! }
 //! ```
@@ -301,7 +302,7 @@ pub use woab_macros::params;
 ///     some_text: gtk::Entry,
 ///
 ///     // Combo boxes use the active-id property to select a row in their model.
-///     #[prop_sync("active-id": &str, set, get)]
+///     #[prop_sync("active-id": String, set, get)]
 ///     some_combo_box: gtk::ComboBox,
 ///
 ///     // We only want to get the value of this checkbox, not set it, so we don't generate a setter.
@@ -313,7 +314,7 @@ pub use woab_macros::params;
 /// // Set the widgets' data
 /// widgets.set_props(&AppWidgetsPropSetter {
 ///     some_text: "some test",
-///     some_combo_box: "1", // the combo box ID column is always a string
+///     some_combo_box: "1".to_owned(), // the combo box ID column is always a string
 ///     // No some_check_box - it was not generated for the setter
 /// });
 ///

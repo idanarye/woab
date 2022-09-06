@@ -174,6 +174,7 @@ fn main() -> anyhow::Result<()> {
     });
 
     gtk::main();
+    woab::close_actix_runtime()??;
 
     Ok(())
 }

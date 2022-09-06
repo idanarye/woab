@@ -110,8 +110,8 @@ impl actix::Handler<woab::Signal> for RowActor {
                 } = msg.params()?;
                 let area_size = self.widgets.draw_area.allocation();
                 draw_ctx.arc(
-                    self.position * area_size.width as f64,
-                    0.5 * area_size.height as f64,
+                    self.position * area_size.width() as f64,
+                    0.5 * area_size.height() as f64,
                     10.0,
                     0.0,
                     2.0 * std::f64::consts::PI,
@@ -172,5 +172,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
     gtk::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

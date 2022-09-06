@@ -70,5 +70,6 @@ fn test_future() -> anyhow::Result<()> {
         e
     })?;
 
+    woab::close_actix_runtime()??;
     Ok(())
 }

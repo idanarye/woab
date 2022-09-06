@@ -86,7 +86,7 @@ pub fn close_actix_runtime() -> Result<Result<(), std::io::Error>, RuntimeStopEr
     woab_runtime.actix_system_runner.block_on(async {
         actix::System::current().stop();
     });
-    glib::source::source_remove(woab_runtime.runtime_cranker_source_id);
+    woab_runtime.runtime_cranker_source_id.remove();
     Ok(woab_runtime.actix_system_runner.run())
 }
 

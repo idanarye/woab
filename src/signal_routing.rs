@@ -23,7 +23,7 @@ pub fn route_signal(
     let handler = target
         .into_generate_routing_gtk_handler()
         .generate_routing_gtk_handler(actix_signal);
-    let handler_id = obj.connect_local(gtk_signal, false, handler)?;
+    let handler_id = obj.connect_local(gtk_signal, false, handler);
     Ok(handler_id)
 }
 

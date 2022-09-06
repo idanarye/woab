@@ -126,5 +126,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
     gtk::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

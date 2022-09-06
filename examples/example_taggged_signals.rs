@@ -30,10 +30,6 @@ impl actix::Actor for WindowActor {
         self.widgets.win_app.show();
         self.recalculate();
     }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        gtk::main_quit();
-    }
 }
 
 impl actix::Handler<woab::Signal> for WindowActor {
@@ -128,5 +124,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     gtk::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

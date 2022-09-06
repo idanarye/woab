@@ -97,5 +97,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     app.run();
+    woab::close_actix_runtime()??;
     Ok(())
 }
