@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "woab"
-version = "0.7.0"
+version = "0.8.0"
 description = "Widgets on Actors Bridge - a GUI microframework for combining GTK with Actix"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"
