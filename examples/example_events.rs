@@ -114,7 +114,7 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
             "all_characters_entry_key_pressed" => {
                 let event: gdk::EventKey = msg.event_param()?;
                 if let Some(character) = event.keyval().to_unicode() {
-                    if character.is_digit(10) {
+                    if character.is_ascii_digit() {
                         let mut text = self.widgets.only_digits.text().as_str().to_owned();
                         text.push(character);
                         self.widgets.only_digits.set_text(&text);

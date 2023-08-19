@@ -15,6 +15,7 @@ fn test_param_extraction() -> anyhow::Result<()> {
             )
         }
     }
+    #[allow(clippy::let_unit_value)]
     let () = signal!().params()?;
     match signal!(1i32, "two").params() {
         Err(woab::Error::NotAllParametersExtracted {
