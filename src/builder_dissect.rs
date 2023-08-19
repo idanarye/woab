@@ -43,13 +43,13 @@ pub fn dissect_builder_xml(
     }
 
     loop {
-        match reader.read_event(&mut buf)? {
+        match reader.read_event_into(&mut buf)? {
             quick_xml::events::Event::Start(e) => {
                 current_nesting += 1;
-                if e.name() == b"object" {
+                if e.name().0 == b"object" {
                     let new_idx = e.attributes().find_map(|attr| {
                         let attr = attr.ok()?;
-                        if attr.key != b"id" {
+                        if attr.key.0 != b"id" {
                             return None;
                         }
                         let id = std::str::from_utf8(&attr.value).ok()?;

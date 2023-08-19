@@ -84,7 +84,7 @@ impl<T> Signal<T> {
     /// * If the signal comes from [`woab::route_action`](crate::route_action), it is the name of
     ///   the GIO action.
     pub fn name(&self) -> &str {
-        &*self.0.name
+        &self.0.name
     }
 
     /// The tag of the signal.
