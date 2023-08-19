@@ -74,7 +74,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
                 if let Some(idx) = button_to_idx(&event) {
                     self.press_times[idx] = Some(Instant::now());
                 }
-                Some(gtk::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             "release" => {
                 let event: gdk::EventButton = msg.event_param()?;
@@ -86,7 +86,7 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
                         self.update_pressed_time_display();
                     }
                 }
-                Some(gtk::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
@@ -118,10 +118,10 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
                         let mut text = self.widgets.only_digits.text().as_str().to_owned();
                         text.push(character);
                         self.widgets.only_digits.set_text(&text);
-                        return Ok(Some(gtk::Inhibit(true)));
+                        return Ok(Some(glib::Propagation::Proceed));
                     }
                 }
-                Some(gtk::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })

@@ -12,7 +12,7 @@ use send_wrapper::SendWrapper;
 pub struct Signal<T = ()>(SendWrapper<SignalData<T>>);
 
 /// Result type for Actix handlers that handle [`woab::Signal`](Signal).
-pub type SignalResult = Result<Option<gtk::Inhibit>, crate::Error>;
+pub type SignalResult = Result<Option<glib::Propagation>, crate::Error>;
 
 impl<T> actix::Message for Signal<T> {
     type Result = SignalResult;

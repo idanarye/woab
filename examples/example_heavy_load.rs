@@ -118,7 +118,7 @@ impl actix::Handler<woab::Signal> for RowActor {
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
                 draw_ctx.fill().unwrap();
-                Some(gtk::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })

@@ -69,16 +69,16 @@ fn panic_if_signal_cannot_be_queued(signal_name: &str, parameters: &[glib::Value
 }
 
 fn run_signal_routing_future(
-    future: impl core::future::Future<Output = Result<Result<Option<gtk::Inhibit>, crate::Error>, actix::MailboxError>> + 'static,
+    future: impl core::future::Future<Output = Result<Result<Option<glib::Propagation>, crate::Error>, actix::MailboxError>> + 'static,
     signal_name: &Rc<String>,
     parameters: &[glib::Value],
 ) -> Option<glib::Value> {
     match crate::try_block_on(future) {
         Ok(result) => {
             let result = result.unwrap().unwrap();
-            if let Some(gtk::Inhibit(inhibit)) = result {
+            if let Some(propagation) = result {
                 use glib::value::ToValue;
-                Some(inhibit.to_value())
+                Some(propagation.is_proceed().to_value())
             } else {
                 None
             }

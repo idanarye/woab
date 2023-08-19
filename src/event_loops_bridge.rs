@@ -53,7 +53,7 @@ pub fn run_actix_inside_gtk_event_loop() {
             })
             .map_err(|_| "`idle_add` function called inside Actix context")
             .unwrap();
-            glib::source::Continue(true)
+            glib::ControlFlow::Continue
         });
         *woab_runtime = Some(WoabRuntime {
             actix_system_runner: actix::System::new(),

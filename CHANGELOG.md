@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- [**BREAKING**] Upgraded gtk-rs to version 0.18. This is a breaking change
+  because gtk-rs' API had some changes in this release:
+  - Instead of `gtk::Inhibit`, use `glib::Propagation`. `Inhibit(false)` should
+    become `Propagation::Stop` and `Inhibit(true)` should become
+    `Propagation::Proceed`.
 
 ## 0.7.0 - 2022-09-06
 ### Changed

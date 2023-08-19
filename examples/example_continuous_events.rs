@@ -41,7 +41,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 self.widgets
                     .size_descr
                     .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
-                Some(gtk::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             "decrease_width" => {
                 let (width, height) = self.widgets.win_app.size();
