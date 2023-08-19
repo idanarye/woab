@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"actix":[],
+"woab":[["impl&lt;T&gt; <a class=\"trait\" href=\"actix/handler/trait.Message.html\" title=\"trait actix::handler::Message\">Message</a> for <a class=\"struct\" href=\"woab/struct.Signal.html\" title=\"struct woab::Signal\">Signal</a>&lt;T&gt;"],["impl <a class=\"trait\" href=\"actix/handler/trait.Message.html\" title=\"trait actix::handler::Message\">Message</a> for <a class=\"struct\" href=\"woab/struct.Remove.html\" title=\"struct woab::Remove\">Remove</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

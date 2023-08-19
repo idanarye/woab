@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["basic","boxed","interface","object","prelude","shared","signal","types"],"struct":["ObjectImplRef","ObjectImplWeakRef"]};

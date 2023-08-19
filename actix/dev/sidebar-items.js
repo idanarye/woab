@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["channel"],"struct":["ContextFut","ContextParts","Envelope","Mailbox","OneshotSender"],"trait":["AsyncContextParts","EnvelopeProxy","MessageResponse","ToEnvelope"],"type":["RecipientRequest","Request"]};

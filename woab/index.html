@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="WoAB (Widgets on Actors Bridge) is a GUI microframework for combining the widgets toolkit GTK with the actors framework Actix. It helps with:"><title>woab - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="woab" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.1 (eb26296b5 2023-08-03)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../woab/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../woab/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">Crate woab</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.8.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li><li><a href="#derives">Derive Macros</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">woab</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/woab/lib.rs.html#1-342">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>WoAB (Widgets on Actors Bridge) is a GUI microframework for combining the widgets toolkit
+<a href="https://gtk-rs.org/">GTK</a> with the actors framework <a href="https://actix.rs/">Actix</a>. It helps with:</p>
+<ul>
+<li>Running the actors inside the GTK thread, allowing message handlers to interact with the
+widgets directly.</li>
+<li>Routing GTK signals through the asynchronous runtime, so that the code handling them can
+proceed naturally to interact with the actors.</li>
+<li>Mapping widgets and signals from <a href="https://glade.gnome.org/">Glade</a> XML files to user types.</li>
+</ul>
+<p>To use WoAB one would typically create a factories struct using
+<a href="derive.Factories.html"><code>woab::Factories</code></a> and use it dissect the Glade XML file(s). Each field
+of the factories struct will be a <a href="struct.BuilderFactory.html" title="struct woab::BuilderFactory"><code>woab::BuilderFactory</code></a> that can:</p>
+<ul>
+<li>Create a widgets struct using <a href="derive.WidgetsFromBuilder.html"><code>woab::WidgetsFromBuilder</code></a>.</li>
+<li>Route the signals defined in the builder to Actix handlers using <a href="struct.Signal.html" title="struct woab::Signal"><code>woab::Signal</code></a>
+messages.</li>
+<li>In the Actix handler, match on the signal name (<code>msg.name()</code>) and use
+<a href="macro.params.html" title="macro woab::params"><code>woab::params!</code></a> to extract the signal parameters.</li>
+</ul>
+<p>The factories can then be used to generate the GTK widgets and either connect them to a new
+actor which will receive the signals defined in the Glade GTK or connect them to an existing
+actor and tag the signals (so that multiple instances can be added - e.g. with <code>GtkListBox</code> -
+and the signal handler can know from which one the event came). The actors receive the signals
+as Actix messages, and the <code>Handler</code> returns the propagation decision (if the signal requires
+it)</p>
+<p>To remove widget-bound actors at runtime, see <a href="struct.Remove.html" title="struct woab::Remove"><code>woab::Remove</code></a>.</p>
+<p>To synchronize the widgets’ data with a model (or any old Rust values), see
+<a href="derive.PropSync.html" title="derive woab::PropSync"><code>woab::PropSync</code></a>.</p>
+<p>After initializing GTK and before starting the main loop,
+<a href="fn.run_actix_inside_gtk_event_loop.html" title="fn woab::run_actix_inside_gtk_event_loop"><code>woab::run_actix_inside_gtk_event_loop</code></a> <strong>must</strong> be called.
+<strong>Do not run the Actix system manually!</strong></p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>actix::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>gtk::prelude::<span class="kw-2">*</span>;
+
+<span class="attr">#[derive(woab::Factories)]
+</span><span class="kw">struct </span>Factories {
+    <span class="comment">// The field name must be the ID from the builder XML file:
+    </span>main_window: woab::BuilderFactory,
+    <span class="comment">// Possibly other things from the builder XML file that need to be created during the program.
+</span>}
+
+<span class="kw">struct </span>AppActor {
+    widgets: AppWidgets,
+    factories: std::rc::Rc&lt;Factories&gt;, <span class="comment">// for creating more things from inside the actor.
+    // More actor data
+</span>}
+
+<span class="kw">impl </span>actix::Actor <span class="kw">for </span>AppActor {
+    <span class="kw">type </span>Context = actix::Context&lt;<span class="self">Self</span>&gt;;
+}
+
+<span class="attr">#[derive(woab::WidgetsFromBuilder)]
+</span><span class="kw">struct </span>AppWidgets {
+    main_window: gtk::ApplicationWindow, <span class="comment">// needed for making the window visible
+    // Other widgets inside the window to interact with.
+</span>}
+
+<span class="kw">impl </span>actix::Handler&lt;woab::Signal&gt; <span class="kw">for </span>AppActor {
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= woab::SignalResult;
+
+    <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: woab::Signal, ctx: <span class="kw-2">&amp;mut </span>&lt;<span class="self">Self </span><span class="kw">as </span>actix::Actor&gt;::Context) -&gt; <span class="self">Self</span>::Result {
+        <span class="prelude-val">Ok</span>(<span class="kw">match </span>msg.name() {
+            <span class="comment">// These are custom signals defined in Glade&#39;s &quot;Signals&quot; tab.
+            </span><span class="string">&quot;sig1&quot; </span>=&gt; {
+                <span class="comment">// Behavior for sig1.
+                </span><span class="prelude-val">None </span><span class="comment">// GTK does not expect sig1 to return anything
+            </span>},
+            <span class="string">&quot;sig2&quot; </span>=&gt; {
+                <span class="kw">let </span><span class="macro">woab::params!</span>(text_buffer: gtk::TextBuffer, <span class="kw">_</span>) = msg.params()<span class="question-mark">?</span>;
+                <span class="comment">// Behavior for sig2 that uses the signal parameters.
+                </span><span class="prelude-val">Some</span>(glib::Propagation::Stop) <span class="comment">// GTK expects sig2 to return its propagation decision
+            </span>},
+            <span class="kw">_ </span>=&gt; msg.cant_handle()<span class="question-mark">?</span>,
+        })
+    }
+}
+
+<span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
+    <span class="kw">let </span>factories = std::rc::Rc::new(Factories::read(read_builder_xml())<span class="question-mark">?</span>);
+    gtk::init()<span class="question-mark">?</span>;
+    woab::run_actix_inside_gtk_event_loop(); <span class="comment">// &lt;===== IMPORTANT!!!
+
+    </span>factories.main_window.instantiate().connect_with(|bld| {
+        <span class="kw">let </span>widgets: AppWidgets = bld.widgets().unwrap();
+        widgets.main_window.show_all(); <span class="comment">// Could also be done inside the actor
+        </span>AppActor {
+            widgets,
+            factories: factories,
+        }.start()
+    });
+
+    gtk::main();
+    woab::close_actix_runtime()<span class="question-mark">??</span>;
+    <span class="prelude-val">Ok</span>(())
+}</code></pre></div>
+<h2 id="pitfalls"><a href="#pitfalls">Pitfalls</a></h2>
+<ul>
+<li>When starting Actix actors from outside Tokio/Actix, <a href="fn.block_on.html" title="fn woab::block_on"><code>woab::block_on</code></a> must be
+used. This is a limitation of Actix that needs to be respected.</li>
+<li><code>dialog.run()</code> must not be used - use <a href="fn.run_dialog.html" title="fn woab::run_dialog"><code>woab::run_dialog</code></a> instead.</li>
+<li>If an actor is created inside a <code>gtk::Application::connect_activate</code>, its <code>started</code> method
+will run <strong>after</strong> the <code>activate</code> signal is done. This can be a problem for methods like
+<code>set_application</code> that can segfault if they are called outside the <code>activate</code> signal. A
+solution could be to either do the startup inside <code>connect_activate</code> or use
+<a href="fn.route_signal.html" title="fn woab::route_signal"><code>woab::route_signal</code></a> to route the application’s <code>activate</code> signal
+to the actor and do the startup in the actor’s signal handler.</li>
+</ul>
+</div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="prop_sync/index.html" title="mod woab::prop_sync">prop_sync</a></div></li></ul><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.params.html" title="macro woab::params">params</a></div><div class="desc docblock-short">Helper macro for extracting signal parameters from <a href="struct.Signal.html" title="struct woab::Signal"><code>woab::Signal</code></a>.</div></li></ul><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.BuilderConnector.html" title="struct woab::BuilderConnector">BuilderConnector</a></div><div class="desc docblock-short">Context for utilizing a <code>gtk::Builder</code> and connecting it to he Actix world.</div></li><li><div class="item-name"><a class="struct" href="struct.BuilderConnectorWidgetsOnly.html" title="struct woab::BuilderConnectorWidgetsOnly">BuilderConnectorWidgetsOnly</a></div><div class="desc docblock-short">Degraded version of <a href="struct.BuilderConnector.html" title="struct woab::BuilderConnector"><code>BuilderConnector</code></a> that can only be used to get widgets.</div></li><li><div class="item-name"><a class="struct" href="struct.BuilderFactory.html" title="struct woab::BuilderFactory">BuilderFactory</a></div><div class="desc docblock-short">Holds instructions for generating a GTK builder.</div></li><li><div class="item-name"><a class="struct" href="struct.NamespacedSignalRouter.html" title="struct woab::NamespacedSignalRouter">NamespacedSignalRouter</a></div><div class="desc docblock-short">Signal</div></li><li><div class="item-name"><a class="struct" href="struct.Remove.html" title="struct woab::Remove">Remove</a></div><div class="desc docblock-short">A message for removing actors along with their GUI</div></li><li><div class="item-name"><a class="struct" href="struct.Signal.html" title="struct woab::Signal">Signal</a></div><div class="desc docblock-short">The generic signal WoAB uses.</div></li><li><div class="item-name"><a class="struct" href="struct.WakerPerished.html" title="struct woab::WakerPerished">WakerPerished</a></div><div class="desc docblock-short">When a future cannot be woken.</div></li></ul><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2><ul class="item-table"><li><div class="item-name"><a class="enum" href="enum.Error.html" title="enum woab::Error">Error</a></div></li><li><div class="item-name"><a class="enum" href="enum.RuntimeStopError.html" title="enum woab::RuntimeStopError">RuntimeStopError</a></div></li></ul><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="fn.block_on.html" title="fn woab::block_on">block_on</a></div><div class="desc docblock-short">Run a feature inside the Actix system GTK will be spinning.</div></li><li><div class="item-name"><a class="fn" href="fn.close_actix_runtime.html" title="fn woab::close_actix_runtime">close_actix_runtime</a></div><div class="desc docblock-short">Shut down the Actix <code>System</code> that runs inside the GTK thread.</div></li><li><div class="item-name"><a class="fn" href="fn.is_runtime_running.html" title="fn woab::is_runtime_running">is_runtime_running</a></div><div class="desc docblock-short">Determine if the Actix <code>System</code> that runs inside the GTK thread is running.</div></li><li><div class="item-name"><a class="fn" href="fn.outside.html" title="fn woab::outside">outside</a></div><div class="desc docblock-short">Run a future outside the Actix runtime.</div></li><li><div class="item-name"><a class="fn" href="fn.route_action.html" title="fn woab::route_action">route_action</a></div><div class="desc docblock-short">Route a GIO action to an Actix actor that can handle <a href="struct.Signal.html" title="struct woab::Signal"><code>woab::Signal</code></a>.</div></li><li><div class="item-name"><a class="fn" href="fn.route_signal.html" title="fn woab::route_signal">route_signal</a></div><div class="desc docblock-short">Route a GTK signal to an Actix actor that can handle <a href="struct.Signal.html" title="struct woab::Signal"><code>woab::Signal</code></a>.</div></li><li><div class="item-name"><a class="fn" href="fn.run_actix_inside_gtk_event_loop.html" title="fn woab::run_actix_inside_gtk_event_loop">run_actix_inside_gtk_event_loop</a></div><div class="desc docblock-short">Start an Actix <code>System</code> that runs inside the GTK thread.</div></li><li><div class="item-name"><a class="fn" href="fn.run_dialog.html" title="fn woab::run_dialog">run_dialog</a></div><div class="desc docblock-short">Run a GTK dialog and get its response.</div></li><li><div class="item-name"><a class="fn" href="fn.spawn_outside.html" title="fn woab::spawn_outside">spawn_outside</a></div><div class="desc docblock-short">Run a future outside the Actix system.</div></li><li><div class="item-name"><a class="fn" href="fn.try_block_on.html" title="fn woab::try_block_on">try_block_on</a></div><div class="desc docblock-short">Run a feature inside the Actix system GTK will be spinning.</div></li><li><div class="item-name"><a class="fn" href="fn.wake_from.html" title="fn woab::wake_from">wake_from</a></div><div class="desc docblock-short">Asynchronously wait for something to happen somewhere.</div></li><li><div class="item-name"><a class="fn" href="fn.wake_from_signal.html" title="fn woab::wake_from_signal">wake_from_signal</a></div><div class="desc docblock-short">Asynchronously wait for a signal to be called.</div></li></ul><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.RawSignalCallback.html" title="type woab::RawSignalCallback">RawSignalCallback</a></div><div class="desc docblock-short">Type of a gtk signal callback function that operates on uncast glib values.</div></li><li><div class="item-name"><a class="type" href="type.SignalResult.html" title="type woab::SignalResult">SignalResult</a></div><div class="desc docblock-short">Result type for Actix handlers that handle <a href="struct.Signal.html" title="struct woab::Signal"><code>woab::Signal</code></a>.</div></li></ul><h2 id="derives" class="small-section-header"><a href="#derives">Derive Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="derive" href="derive.Factories.html" title="derive woab::Factories">Factories</a></div><div class="desc docblock-short">Dissect a single Glade XML file to multiple builder factories.</div></li><li><div class="item-name"><a class="derive" href="derive.PropSync.html" title="derive woab::PropSync">PropSync</a></div><div class="desc docblock-short">Generate methods for setting/getting the widgets’ data.</div></li><li><div class="item-name"><a class="derive" href="derive.Removable.html" title="derive woab::Removable">Removable</a></div><div class="desc docblock-short">Make the actor remove itself and its widgets when it gets the <a href="struct.Remove.html" title="struct woab::Remove"><code>woab::Remove</code></a> message.</div></li><li><div class="item-name"><a class="derive" href="derive.WidgetsFromBuilder.html" title="derive woab::WidgetsFromBuilder">WidgetsFromBuilder</a></div><div class="desc docblock-short">Represent a set of GTK widgets created by a GTK builder.</div></li></ul></section></div></main></body></html>

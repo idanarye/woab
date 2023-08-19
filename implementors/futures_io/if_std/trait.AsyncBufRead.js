@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"futures_io":[],
+"gio":[["impl&lt;T: <a class=\"trait\" href=\"glib/object/trait.IsA.html\" title=\"trait glib::object::IsA\">IsA</a>&lt;<a class=\"struct\" href=\"gio/struct.InputStream.html\" title=\"struct gio::InputStream\">InputStream</a>&gt;&gt; <a class=\"trait\" href=\"futures_io/if_std/trait.AsyncBufRead.html\" title=\"trait futures_io::if_std::AsyncBufRead\">AsyncBufRead</a> for <a class=\"struct\" href=\"gio/struct.InputStreamAsyncBufRead.html\" title=\"struct gio::InputStreamAsyncBufRead\">InputStreamAsyncBufRead</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

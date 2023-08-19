@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["INIT_TYPE_DATA"],"fn":["register_type"],"struct":["InitializingObject","InitializingType","TypeData"],"trait":["ClassStruct","FromObject","InstanceStruct","InstanceStructExt","InterfaceList","IsImplementable","IsSubclassable","IsSubclassableExt","ObjectSubclass","ObjectSubclassExt","ObjectSubclassIsExt","ObjectSubclassType"]};
