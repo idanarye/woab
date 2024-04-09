@@ -72,5 +72,6 @@ fn test_waking() -> anyhow::Result<()> {
             ]
     )?;
 
+    woab::close_actix_runtime()??;
     Ok(())
 }

@@ -54,5 +54,7 @@ fn test_no_signals() -> anyhow::Result<()> {
             .connect_to(TestActor { output: output.clone() }.start());
     });
     wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
+
+    woab::close_actix_runtime()??;
     Ok(())
 }

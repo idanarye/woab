@@ -130,5 +130,6 @@ fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
             ]
     )?;
 
+    woab::close_actix_runtime()??;
     Ok(())
 }

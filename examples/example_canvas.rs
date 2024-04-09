@@ -21,7 +21,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk4::main_quit();
+                // gtk4::main_quit();
                 None
             }
             "draw" => {
@@ -35,13 +35,13 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
                 draw_ctx.fill().unwrap();
-                Some(gtk4::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             "configure_draw_area" => {
-                let event: gdk4::EventConfigure = msg.event_param()?;
-                let (width, height) = event.size();
-                self.area_size = [width as f64, height as f64];
-                Some(gtk4::Inhibit(false))
+                // let event: gdk4::EventConfigure = msg.event_param()?;
+                // let (width, height) = event.size();
+                // self.area_size = [width as f64, height as f64];
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
@@ -125,6 +125,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             addr
         });
     });
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

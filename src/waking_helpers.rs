@@ -89,7 +89,7 @@ pub async fn wake_from_signal<T>(
 ///
 /// If operation that generate GTK signals are executed inside the Actix runtime, they'll be
 /// queued to run later by the Actix event loop. This may be a problem if the signal is expecting
-/// an inhibit decision, because the handler will not be able to generate it before the signal
+/// an propagation decision, because the handler will not be able to generate it before the signal
 /// returns. This may also be a problem for signals that use a context parameter (like `draw`),
 /// because by the time the handler is invoked the context will already expire. In such cases, the
 /// code that triggers the signal must run outside.
@@ -148,7 +148,7 @@ pub fn spawn_outside(fut: impl Future<Output = ()> + 'static) {
 ///
 /// If operation that generate GTK signals are executed inside the Actix runtime, they'll be
 /// queued to run later by the Actix event loop. This may be a problem if the signal is expecting
-/// an inhibit decision, because the handler will not be able to generate it before the signal
+/// an propagation decision, because the handler will not be able to generate it before the signal
 /// returns. This may also be a problem for signals that use a context parameter (like `draw`),
 /// because by the time the handler is invoked the context will already expire. In such cases, the
 /// code that triggers the signal must run outside.

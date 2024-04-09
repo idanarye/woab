@@ -50,7 +50,7 @@ pub enum Error {
     },
 
     /// When an event signal's parameter is of the the wrong event type.
-    #[error("Expected the event parameter of {signal:?} to be {expected_type} - not {actual_type}")]
+    #[error("Expected the event parameter of {signal:?} to be {expected_type} - not {actual_type:?}")]
     IncorrectEventParameter {
         signal: String,
         expected_type: &'static str,

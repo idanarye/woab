@@ -12,7 +12,7 @@ use send_wrapper::SendWrapper;
 pub struct Signal<T = ()>(SendWrapper<SignalData<T>>);
 
 /// Result type for Actix handlers that handle [`woab::Signal`](Signal).
-pub type SignalResult = Result<Option<gtk4::Inhibit>, crate::Error>;
+pub type SignalResult = Result<Option<glib::Propagation>, crate::Error>;
 
 impl<T> actix::Message for Signal<T> {
     type Result = SignalResult;
@@ -84,7 +84,7 @@ impl<T> Signal<T> {
     /// * If the signal comes from [`woab::route_action`](crate::route_action), it is the name of
     ///   the GIO action.
     pub fn name(&self) -> &str {
-        &*self.0.name
+        &self.0.name
     }
 
     /// The tag of the signal.

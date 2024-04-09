@@ -10,6 +10,7 @@ struct Factories {
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
     win_app: gtk4::ApplicationWindow,
+    #[allow(unused)]
     size_descr: gtk4::TextBuffer,
 }
 
@@ -31,26 +32,26 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk4::main_quit();
+                // gtk4::main_quit();
                 None
             }
             "window_configure" => {
-                let event: gdk4::EventConfigure = msg.event_param()?;
-                let (left, top) = event.position();
-                let (width, height) = event.size();
-                self.widgets
-                    .size_descr
-                    .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
-                Some(gtk4::Inhibit(false))
+                // let event: gdk4::EventConfigure = msg.event_param()?;
+                // let (left, top) = event.position();
+                // let (width, height) = event.size();
+                // self.widgets
+                    // .size_descr
+                    // .set_text(&format!("Left: {}, Top: {}\rWidth: {}, Height: {}", left, top, width, height));
+                Some(glib::Propagation::Stop)
             }
             "decrease_width" => {
-                let (width, height) = self.widgets.win_app.size();
-                self.widgets.win_app.resize(width - 10, height);
+                // let (width, height) = self.widgets.win_app.size();
+                // self.widgets.win_app.resize(width - 10, height);
                 None
             }
             "increase_width" => {
-                let (width, height) = self.widgets.win_app.size();
-                self.widgets.win_app.resize(width + 10, height);
+                // let (width, height) = self.widgets.win_app.size();
+                // self.widgets.win_app.resize(width + 10, height);
                 None
             }
             _ => msg.cant_handle()?,
@@ -75,6 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

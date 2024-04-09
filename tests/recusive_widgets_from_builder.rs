@@ -61,5 +61,6 @@ fn test_recusive_widgets_from_builder() -> anyhow::Result<()> {
     assert!(grouped_widgets.group_b.text3.text() == "Text 3");
     assert!(grouped_widgets.group_b.text4.text() == "Text 4");
 
+    woab::close_actix_runtime()??;
     Ok(())
 }

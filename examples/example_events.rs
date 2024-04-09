@@ -21,7 +21,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk4::main_quit();
+                // gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -36,6 +36,7 @@ pub struct PressCountingWidgets {
 
 struct PressCountingActor {
     widgets: PressCountingWidgets,
+    #[allow(unused)]
     press_times: [Option<Instant>; 2],
     total_durations: [Duration; 2],
 }
@@ -60,33 +61,33 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
     type Result = woab::SignalResult;
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
-        fn button_to_idx(event: &gdk4::EventButton) -> Option<usize> {
-            match event.button() {
-                1 => Some(0),
-                3 => Some(1),
-                _ => None,
-            }
-        }
+        // fn button_to_idx(event: &gdk4::EventButton) -> Option<usize> {
+            // match event.button() {
+                // 1 => Some(0),
+                // 3 => Some(1),
+                // _ => None,
+            // }
+        // }
 
         Ok(match msg.name() {
             "press" => {
-                let event: gdk4::EventButton = msg.event_param()?;
-                if let Some(idx) = button_to_idx(&event) {
-                    self.press_times[idx] = Some(Instant::now());
-                }
-                Some(gtk4::Inhibit(false))
+                // let event: gdk4::EventButton = msg.event_param()?;
+                // if let Some(idx) = button_to_idx(&event) {
+                    // self.press_times[idx] = Some(Instant::now());
+                // }
+                Some(glib::Propagation::Stop)
             }
             "release" => {
-                let event: gdk4::EventButton = msg.event_param()?;
-                if let Some(idx) = button_to_idx(&event) {
-                    if let Some(press_time) = self.press_times[idx] {
-                        self.press_times[idx] = None;
-                        let duration = Instant::now() - press_time;
-                        self.total_durations[idx] += duration;
-                        self.update_pressed_time_display();
-                    }
-                }
-                Some(gtk4::Inhibit(false))
+                // let event: gdk4::EventButton = msg.event_param()?;
+                // if let Some(idx) = button_to_idx(&event) {
+                    // if let Some(press_time) = self.press_times[idx] {
+                        // self.press_times[idx] = None;
+                        // let duration = Instant::now() - press_time;
+                        // self.total_durations[idx] += duration;
+                        // self.update_pressed_time_display();
+                    // }
+                // }
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
@@ -95,10 +96,12 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct CharacterMoverWidgets {
+    #[allow(unused)]
     only_digits: gtk4::Entry,
 }
 
 struct CharacterMoverActor {
+    #[allow(unused)]
     widgets: CharacterMoverWidgets,
 }
 
@@ -112,16 +115,16 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "all_characters_entry_key_pressed" => {
-                let event: gdk4::EventKey = msg.event_param()?;
-                if let Some(character) = event.keyval().to_unicode() {
-                    if character.is_digit(10) {
-                        let mut text = self.widgets.only_digits.text().as_str().to_owned();
-                        text.push(character);
-                        self.widgets.only_digits.set_text(&text);
-                        return Ok(Some(gtk4::Inhibit(true)));
-                    }
-                }
-                Some(gtk4::Inhibit(false))
+                // let event: gdk4::EventKey = msg.event_param()?;
+                // if let Some(character) = event.keyval().to_unicode() {
+                    // if character.is_ascii_digit() {
+                        // let mut text = self.widgets.only_digits.text().as_str().to_owned();
+                        // text.push(character);
+                        // self.widgets.only_digits.set_text(&text);
+                        // return Ok(Some(glib::Propagation::Proceed));
+                    // }
+                // }
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
@@ -158,6 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

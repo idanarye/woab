@@ -124,8 +124,8 @@ impl From<gtk4::Builder> for BuilderConnector {
 impl BuilderConnector {
     /// Get a GTK object from the builder by id.
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
-    where
-        W: glib::IsA<glib::Object>,
+    //where
+        //W: glib::IsA<glib::Object>,
     {
         self.0.get_object(id)
     }
@@ -153,8 +153,8 @@ impl BuilderConnector {
     ///     .connect_to(MyActor.start());
     /// ```
     pub fn with_object<W>(self, id: &str, dlg: impl FnOnce(W)) -> Self
-    where
-        W: glib::IsA<glib::Object>,
+    // where
+        // W: glib::IsA<glib::Object>,
     {
         self.0.with_object(id, dlg);
         self
@@ -260,8 +260,8 @@ pub struct BuilderConnectorWidgetsOnly {
 impl BuilderConnectorWidgetsOnly {
     /// See [`BuilderConnector::get_object`].
     pub fn get_object<W>(&self, _id: &str) -> Result<W, crate::Error>
-    where
-        W: glib::IsA<glib::Object>,
+    // where
+        // W: glib::IsA<glib::Object>,
     {
         todo!()
         //use gtk4::prelude::BuilderExtManual;
@@ -281,8 +281,8 @@ impl BuilderConnectorWidgetsOnly {
 
     /// See [`BuilderConnector::with_object`].
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
-    where
-        W: glib::IsA<glib::Object>,
+    // where
+        // W: glib::IsA<glib::Object>,
     {
         dlg(self.get_object(id).unwrap());
         self

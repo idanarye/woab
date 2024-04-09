@@ -116,8 +116,7 @@ fn gen_setter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             prop_assignment.push(quote! {
-                glib::object::ObjectExt::set_property(&self.#ident, #prop, &setter.#ident)
-                    .expect(stringify!(cannot set #prop of #field_type));
+                glib::object::ObjectExt::set_property(&self.#ident, #prop, &setter.#ident);
             });
         } else {
             let lifetime = lifetime.get_or_insert_with(|| syn::Lifetime::new("'a", proc_macro2::Span::call_site()));
@@ -191,10 +190,7 @@ fn gen_getter(ast: &syn::DeriveInput, fields: &[FieldToSync]) -> Result<proc_mac
                 });
             }
             field_from_prop.push(quote! {
-                #ident: glib::object::ObjectExt::property(&self.#ident, #prop)
-                .expect(stringify!(no property #prop for #field_type))
-                    .get()
-                    .expect(stringify!(wrong type for #prop of #field_type))
+                #ident: glib::object::ObjectExt::property::<#ty>(&self.#ident, #prop)
             });
         } else {
             let as_trait = quote_spanned! { field_type.span() =>

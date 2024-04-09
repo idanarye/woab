@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
-    let app = gtk4::Application::new(None, Default::default());
+    let app = gtk4::Application::builder().build();
 
     app.connect_activate(move |app| {
         woab::block_on(async {
@@ -97,5 +97,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     app.run();
+    woab::close_actix_runtime()??;
     Ok(())
 }

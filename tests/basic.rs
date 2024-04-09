@@ -20,6 +20,7 @@ impl actix::Actor for TestActor {
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {
+    #[allow(unused)]
     win_test: gtk4::ApplicationWindow,
     btn_copy_right_to_left: gtk4::Button,
     btn_copy_left_to_right: gtk4::Button,
@@ -75,5 +76,7 @@ fn test_basic() -> anyhow::Result<()> {
     widgets.buf_right.set_text("test right");
     widgets.btn_copy_right_to_left.emit_clicked();
     wait_for!(get_text(&widgets.buf_left) == "test right")?;
+
+    woab::close_actix_runtime()??;
     Ok(())
 }

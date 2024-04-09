@@ -25,6 +25,7 @@ impl actix::Actor for WindowActor {
 struct WindowWidgets {
     win_app: gtk4::ApplicationWindow,
     scl_num_rows: gtk4::Scale,
+    #[allow(unused)]
     lst_rows: gtk4::ListBox,
 }
 
@@ -43,7 +44,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 None
             }
             "close" => {
-                gtk4::main_quit();
+                // gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -63,7 +64,7 @@ impl WindowActor {
         for i in self.rows.len()..num_rows {
             self.factories.row.instantiate().connect_with(|bld| {
                 let widgets: RowWidgets = bld.widgets().unwrap();
-                self.widgets.lst_rows.add(&widgets.row);
+                // self.widgets.lst_rows.add(&widgets.row);
                 let actor = RowActor {
                     widgets,
                     position: 0.0,
@@ -94,6 +95,7 @@ impl Actor for RowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct RowWidgets {
+    #[allow(unused)]
     row: gtk4::ListBoxRow,
     draw_area: gtk4::DrawingArea,
 }
@@ -110,15 +112,15 @@ impl actix::Handler<woab::Signal> for RowActor {
                 } = msg.params()?;
                 let area_size = self.widgets.draw_area.allocation();
                 draw_ctx.arc(
-                    self.position * area_size.width as f64,
-                    0.5 * area_size.height as f64,
+                    self.position * area_size.width() as f64,
+                    0.5 * area_size.height() as f64,
                     10.0,
                     0.0,
                     2.0 * std::f64::consts::PI,
                 );
                 draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
                 draw_ctx.fill().unwrap();
-                Some(gtk4::Inhibit(false))
+                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
@@ -171,6 +173,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .start()
         });
     });
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

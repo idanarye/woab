@@ -63,5 +63,6 @@ fn test_prop_sync() -> anyhow::Result<()> {
     assert!(widgets.group2.check_button.is_active());
     assert_eq!(widgets.label.text(), "six");
 
+    woab::close_actix_runtime()??;
     Ok(())
 }

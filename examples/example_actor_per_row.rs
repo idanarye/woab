@@ -13,6 +13,7 @@ pub struct Factories {
 pub struct WindowWidgets {
     win_app: gtk4::ApplicationWindow,
     buf_sum: gtk4::TextBuffer,
+    #[allow(unused)]
     lst_addition: gtk4::ListBox,
 }
 
@@ -29,10 +30,6 @@ impl actix::Actor for WindowActor {
         self.widgets.win_app.show();
         ctx.address().do_send(Recalculate);
     }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        //gtk4::main_quit();
-    }
 }
 
 impl actix::Handler<woab::Signal> for WindowActor {
@@ -47,7 +44,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
             "click_button" => {
                 self.factories.row_addend.instantiate().connect_with(|bld| {
                     let widgets: AddendWidgets = bld.widgets().unwrap();
-                    self.widgets.lst_addition.add(&widgets.row_addend);
+                    // self.widgets.lst_addition.add(&widgets.row_addend);
                     let addend = AddendActor {
                         widgets,
                         window: ctx.address(),
@@ -73,7 +70,9 @@ impl actix::Handler<woab::Signal> for WindowActor {
 #[derive(woab::Removable)]
 #[removable(self.widgets.row_addend)]
 struct AddendActor {
+    #[allow(unused)]
     widgets: AddendWidgets,
+    #[allow(unused)]
     window: actix::Addr<WindowActor>,
     number: Option<isize>,
 }
@@ -84,6 +83,7 @@ impl actix::Actor for AddendActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct AddendWidgets {
+    #[allow(unused)]
     row_addend: gtk4::ListBoxRow,
 }
 
@@ -93,14 +93,14 @@ impl actix::Handler<woab::Signal> for AddendActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "addend_changed" => {
-                let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
-                let new_number = buffer
-                    .text(&buffer.start_iter(), &buffer.end_iter(), true)
-                    .and_then(|text| text.parse().ok());
-                if new_number != self.number {
-                    self.number = new_number;
-                    self.window.do_send(Recalculate);
-                }
+                // let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
+                // let new_number = buffer
+                    // .text(&buffer.start_iter(), &buffer.end_iter(), true)
+                    // .and_then(|text| text.parse().ok());
+                // if new_number != self.number {
+                    // self.number = new_number;
+                    // self.window.do_send(Recalculate);
+                // }
                 None
             }
             "remove_addend" => {
@@ -172,6 +172,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

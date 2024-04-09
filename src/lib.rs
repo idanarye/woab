@@ -21,7 +21,7 @@
 //! actor which will receive the signals defined in the Glade GTK or connect them to an existing
 //! actor and tag the signals (so that multiple instances can be added - e.g. with `GtkListBox` -
 //! and the signal handler can know from which one the event came). The actors receive the signals
-//! as Actix messages, and the `Handler` returns the inhibitness decision (if the signal requires
+//! as Actix messages, and the `Handler` returns the propagation decision (if the signal requires
 //! it)
 //!
 //! To remove widget-bound actors at runtime, see [`woab::Remove`](Remove).
@@ -73,7 +73,7 @@
 //!             "sig2" => {
 //!                 let woab::params!(text_buffer: gtk4::TextBuffer, _) = msg.params()?;
 //!                 // Behavior for sig2 that uses the signal parameters.
-//!                 Some(gtk4::Inhibit(false)) // GTK expects sig2 to return its inhibitness decision
+//!                 Some(glib::Propagation::Stop) // GTK expects sig2 to return its propagation decision
 //!             },
 //!             _ => msg.cant_handle()?,
 //!         })
@@ -98,6 +98,7 @@
 //!     });
 //!
 //!     gtk4::main();
+//!     woab::close_actix_runtime()??;
 //!     Ok(())
 //! }
 //! ```
@@ -301,7 +302,7 @@ pub use woab_macros::params;
 ///     some_text: gtk4::Entry,
 ///
 ///     // Combo boxes use the active-id property to select a row in their model.
-///     #[prop_sync("active-id": &str, set, get)]
+///     #[prop_sync("active-id": String, set, get)]
 ///     some_combo_box: gtk4::ComboBox,
 ///
 ///     // We only want to get the value of this checkbox, not set it, so we don't generate a setter.
@@ -313,7 +314,7 @@ pub use woab_macros::params;
 /// // Set the widgets' data
 /// widgets.set_props(&AppWidgetsPropSetter {
 ///     some_text: "some test",
-///     some_combo_box: "1", // the combo box ID column is always a string
+///     some_combo_box: "1".to_owned(), // the combo box ID column is always a string
 ///     // No some_check_box - it was not generated for the setter
 /// });
 ///

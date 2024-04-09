@@ -23,7 +23,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk4::main_quit();
+                // gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -89,6 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    gtk4::main();
+    // gtk4::main();
+    woab::close_actix_runtime()??;
     Ok(())
 }

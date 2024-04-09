@@ -26,6 +26,7 @@ impl actix::Actor for TestActor {
 
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {
+    #[allow(unused)]
     win_test: gtk4::ApplicationWindow,
     btn_button: gtk4::Button,
 }
