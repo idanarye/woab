@@ -3,6 +3,10 @@
 [![Rust Documentation - Latest Version](https://img.shields.io/badge/docs-released-blue.svg)](https://docs.rs/woab)
 [![Rust Documentation - Nightly](https://img.shields.io/badge/docs-nightly-purple.svg)](https://idanarye.github.io/woab/)
 
+Note: This branch (`gtk3`) is for creating bugfix versions for 0.8.0 in case
+they'll be needed for security reasons. Otherwise, since the gtk-rs project no
+longer maintains GTK3, WoAB will fully migrate to GTK4.
+
 # WoAB
 
 WoAB (Widgets on Actors Bridge) is a GUI microframework for combining the
