@@ -1,5 +1,8 @@
 use core::convert::TryInto;
 
+use glib::object::IsA;
+use gtk4::prelude::*;
+
 use crate::GenerateRoutingGtkHandler;
 
 /// Holds instructions for generating a GTK builder.
@@ -132,7 +135,7 @@ impl BuilderFactory {
         gtk4::Builder::from_string(&self.xml).into()
     }
 
-    pub fn instantiate_with_scope(&self, scope: &impl glib::prelude::IsA<gtk4::BuilderScope>) -> BuilderConnector {
+    pub fn instantiate_with_scope(&self, scope: &impl IsA<gtk4::BuilderScope>) -> BuilderConnector {
         let builder = gtk4::Builder::new();
         builder.set_scope(Some(scope));
         builder.add_from_string(&self.xml).unwrap();
@@ -167,7 +170,7 @@ impl BuilderConnector {
     /// Get a GTK object from the builder by id.
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
     where
-        W: glib::prelude::IsA<glib::Object>,
+        W: IsA<glib::Object>,
     {
         self.0.get_object(id)
     }
@@ -196,7 +199,7 @@ impl BuilderConnector {
     /// ```
     pub fn with_object<W>(self, id: &str, dlg: impl FnOnce(W)) -> Self
     where
-        W: glib::prelude::IsA<glib::Object>,
+        W: IsA<glib::Object>,
     {
         self.0.with_object(id, dlg);
         self
@@ -303,11 +306,10 @@ impl BuilderConnectorWidgetsOnly {
     /// See [`BuilderConnector::get_object`].
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
     where
-        W: glib::prelude::IsA<glib::Object>,
+        W: IsA<glib::Object>,
     {
         self.builder.object::<W>(id).ok_or_else(|| {
             if let Some(object) = self.builder.object::<glib::Object>(id) {
-                use glib::object::ObjectExt;
                 crate::Error::IncorrectWidgetTypeInBuilder {
                     widget_id: id.to_owned(),
                     expected_type: <W as glib::types::StaticType>::static_type(),
@@ -322,7 +324,7 @@ impl BuilderConnectorWidgetsOnly {
     /// See [`BuilderConnector::with_object`].
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
     where
-        W: glib::prelude::IsA<glib::Object>,
+        W: IsA<glib::Object>,
     {
         dlg(self.get_object(id).unwrap());
         self

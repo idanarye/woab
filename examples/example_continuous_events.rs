@@ -64,29 +64,17 @@ impl actix::Handler<woab::Signal> for WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> woab::Result<()> {
     let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
         "examples/example_continuous_events.ui",
     )?))?);
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-
-    let app = gtk4::Application::builder().build();
-
-    woab::block_on(async {
+    woab::main(Default::default(), move |_| {
         WindowActor::create(|addr| {
             let bld = factories.win_app.instantiate_route_to(addr.address());
-            let widgets: WindowWidgets = bld.widgets().unwrap();
-            let window = widgets.win_app.clone();
-            app.connect_startup(move |app| {
-                window.set_application(Some(app));
-            });
-            WindowActor { widgets }
+            WindowActor {
+                widgets: bld.widgets().unwrap(),
+            }
         });
-    });
-
-    app.run();
-    woab::close_actix_runtime()??;
-    Ok(())
+    })
 }

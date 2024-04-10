@@ -1,3 +1,5 @@
+pub type Result<T> = core::result::Result<T, Error>;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
@@ -11,6 +13,9 @@ pub enum Error {
 
     #[error(transparent)]
     GtkBoolError(#[from] glib::BoolError),
+
+    #[error("GTK exited with code {0:?}")]
+    GtkBadExitCode(glib::ExitCode),
 
     /// When extracting widgets using
     /// [`BuilderConnector::widgets`](crate::BuilderConnector::widgets) and one of the widgets is
@@ -75,6 +80,9 @@ pub enum Error {
 
     #[error(transparent)]
     WakerPerished(#[from] WakerPerished),
+
+    #[error(transparent)]
+    RuntimeStopError(#[from] crate::RuntimeStopError),
 }
 
 /// When a future cannot be woken.
