@@ -113,7 +113,7 @@ impl BuilderFactory {
 /// connected to the widgets in that builder.
 ///
 /// See [`BuilderFactory`] for usage example.
-pub struct BuilderConnector(BuilderConnectorWidgetsOnly);
+pub struct BuilderConnector(pub BuilderConnectorWidgetsOnly);
 
 impl From<gtk4::Builder> for BuilderConnector {
     fn from(builder: gtk4::Builder) -> Self {
@@ -254,7 +254,7 @@ impl BuilderConnector {
 /// After the `BuilderConnector` connects its signals, they cannot be connected again - so the
 /// `BuilderConnector` is consumed. But the widgets are still accessible with this object.
 pub struct BuilderConnectorWidgetsOnly {
-    builder: gtk4::Builder,
+    pub builder: gtk4::Builder,
 }
 
 impl BuilderConnectorWidgetsOnly {

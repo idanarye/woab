@@ -109,9 +109,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         factory.instantiate().connect_with(|bld| {
             let window = bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap();
             window.show();
-            app.connect_activate(move |app| {
-                window.set_application(Some(app));
-            });
+            // app.connect_activate(move |app| {
+                // window.set_application(Some(app));
+            // });
             let addr = WindowActor {
                 area_size: [0.0, 0.0],
                 draw_area: bld.get_object("draw_area").unwrap(),

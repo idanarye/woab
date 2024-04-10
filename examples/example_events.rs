@@ -133,11 +133,12 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
-        "examples/example_events.glade",
+        "examples/example_events.ui",
     )?))?);
 
     gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
+    let app = gtk4::Application::builder().build();
 
     woab::block_on(async {
         factories.win_app.instantiate().connect_with(|bld| {
@@ -161,6 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
+    app.run();
     // gtk4::main();
     woab::close_actix_runtime()??;
     Ok(())
