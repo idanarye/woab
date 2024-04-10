@@ -62,30 +62,30 @@ impl actix::Handler<woab::Signal> for PressCountingActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         // fn button_to_idx(event: &gdk4::EventButton) -> Option<usize> {
-            // match event.button() {
-                // 1 => Some(0),
-                // 3 => Some(1),
-                // _ => None,
-            // }
+        // match event.button() {
+        // 1 => Some(0),
+        // 3 => Some(1),
+        // _ => None,
+        // }
         // }
 
         Ok(match msg.name() {
             "press" => {
                 // let event: gdk4::EventButton = msg.event_param()?;
                 // if let Some(idx) = button_to_idx(&event) {
-                    // self.press_times[idx] = Some(Instant::now());
+                // self.press_times[idx] = Some(Instant::now());
                 // }
                 Some(glib::Propagation::Stop)
             }
             "release" => {
                 // let event: gdk4::EventButton = msg.event_param()?;
                 // if let Some(idx) = button_to_idx(&event) {
-                    // if let Some(press_time) = self.press_times[idx] {
-                        // self.press_times[idx] = None;
-                        // let duration = Instant::now() - press_time;
-                        // self.total_durations[idx] += duration;
-                        // self.update_pressed_time_display();
-                    // }
+                // if let Some(press_time) = self.press_times[idx] {
+                // self.press_times[idx] = None;
+                // let duration = Instant::now() - press_time;
+                // self.total_durations[idx] += duration;
+                // self.update_pressed_time_display();
+                // }
                 // }
                 Some(glib::Propagation::Stop)
             }
@@ -117,12 +117,12 @@ impl actix::Handler<woab::Signal> for CharacterMoverActor {
             "all_characters_entry_key_pressed" => {
                 // let event: gdk4::EventKey = msg.event_param()?;
                 // if let Some(character) = event.keyval().to_unicode() {
-                    // if character.is_ascii_digit() {
-                        // let mut text = self.widgets.only_digits.text().as_str().to_owned();
-                        // text.push(character);
-                        // self.widgets.only_digits.set_text(&text);
-                        // return Ok(Some(glib::Propagation::Proceed));
-                    // }
+                // if character.is_ascii_digit() {
+                // let mut text = self.widgets.only_digits.text().as_str().to_owned();
+                // text.push(character);
+                // self.widgets.only_digits.set_text(&text);
+                // return Ok(Some(glib::Propagation::Proceed));
+                // }
                 // }
                 Some(glib::Propagation::Stop)
             }

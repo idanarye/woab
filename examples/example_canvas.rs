@@ -15,8 +15,7 @@ impl actix::Actor for WindowActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        self.draw_area.set_draw_func(|_, _, _, _| {
-        });
+        self.draw_area.set_draw_func(|_, _, _, _| {});
     }
 }
 
@@ -110,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let window = bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap();
             window.show();
             // app.connect_activate(move |app| {
-                // window.set_application(Some(app));
+            // window.set_application(Some(app));
             // });
             let addr = WindowActor {
                 area_size: [0.0, 0.0],

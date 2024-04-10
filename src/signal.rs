@@ -96,6 +96,10 @@ impl<T> Signal<T> {
         &self.0.tag
     }
 
+    pub fn raw_param(&self, index: usize) -> Result<&glib::Value, crate::Error> {
+        self.0.raw_param(index)
+    }
+
     /// A parameter of the signal, converted to the appropriate type.
     pub fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
     where
@@ -110,13 +114,13 @@ impl<T> Signal<T> {
     /// Convenience method - the parameter in event signals needs to be converted to
     /// `gdk4::Event` first before it can be converted to its concrete type. This method runs
     /// both steps.
-    pub fn event_param<P: /*gdk4::FromEvent +*/ 'static>(&self) -> Result<P, crate::Error> {
+    pub fn event_param<P: 'static>(&self) -> Result<P, crate::Error> {
         todo!()
         // let event: gdk4::Event = self.param(1)?;
         // event.downcast().map_err(|event| crate::Error::IncorrectEventParameter {
-            // signal: self.name().to_owned(),
-            // expected_type: core::any::type_name::<P>(),
-            // actual_type: event.event_type(),
+        // signal: self.name().to_owned(),
+        // expected_type: core::any::type_name::<P>(),
+        // actual_type: event.event_type(),
         // })
     }
 

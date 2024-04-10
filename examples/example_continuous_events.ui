@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name example_continuous_events.ui -->
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkApplicationWindow" id="win_app">
+    <signal name="close-request" handler="close"/>
+    <signal name="notify" handler="window_notify"/>
+    <child>
+      <object class="GtkGrid">
+        <child>
+          <object class="GtkTextView">
+            <property name="buffer">
+              <object class="GtkTextBuffer" id="size_descr"/>
+            </property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">2</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton">
+            <property name="label">Decrease Width</property>
+            <signal name="clicked" handler="decrease_width"/>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton">
+            <property name="label">Increase Width</property>
+            <signal name="clicked" handler="increase_width"/>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -67,28 +67,28 @@ impl actix::Handler<woab::Signal> for WindowActor {
             }
             "reset" => {
                 // ctx.spawn(
-                    // async move {
-                        // woab::run_dialog(
-                            // &gtk4::MessageDialog::new::<gtk4::ApplicationWindow>(
-                                // None,
-                                // gtk4::DialogFlags::all(),
-                                // gtk4::MessageType::Question,
-                                // gtk4::ButtonsType::YesNo,
-                                // "Reset the counters?",
-                            // ),
-                            // true,
-                        // )
-                        // .await
-                    // }
-                    // .into_actor(self)
-                    // .map(|response, actor, _ctx| {
-                        // if response == gtk4::ResponseType::Yes {
-                            // actor.yes_count = 0;
-                            // actor.no_count = 0;
-                            // actor.widgets.yes_count.set_text("0");
-                            // actor.widgets.no_count.set_text("0");
-                        // }
-                    // }),
+                // async move {
+                // woab::run_dialog(
+                // &gtk4::MessageDialog::new::<gtk4::ApplicationWindow>(
+                // None,
+                // gtk4::DialogFlags::all(),
+                // gtk4::MessageType::Question,
+                // gtk4::ButtonsType::YesNo,
+                // "Reset the counters?",
+                // ),
+                // true,
+                // )
+                // .await
+                // }
+                // .into_actor(self)
+                // .map(|response, actor, _ctx| {
+                // if response == gtk4::ResponseType::Yes {
+                // actor.yes_count = 0;
+                // actor.no_count = 0;
+                // actor.widgets.yes_count.set_text("0");
+                // actor.widgets.no_count.set_text("0");
+                // }
+                // }),
                 // );
                 None
             }

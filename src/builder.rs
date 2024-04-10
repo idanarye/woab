@@ -1,6 +1,6 @@
 use core::convert::TryInto;
 
-use gtk4::Builder;
+use crate::GenerateRoutingGtkHandler;
 
 /// Holds instructions for generating a GTK builder.
 ///
@@ -90,11 +90,37 @@ use gtk4::Builder;
 ///     });
 /// }
 /// ```
-pub struct BuilderFactory(String);
+pub struct BuilderFactory {
+    xml: String,
+    signals: Vec<String>,
+}
+
+fn extract_signals(xml: &str) -> Vec<String> {
+    use quick_xml::events::Event;
+    use quick_xml::Reader;
+    let mut reader = Reader::from_str(xml);
+    let mut buf = Vec::new();
+    let mut result = Vec::new();
+    loop {
+        match reader.read_event_into(&mut buf).unwrap() {
+            Event::Eof => {
+                break;
+            }
+            Event::Empty(tag) if tag.name().0 == b"signal" => {
+                if let Some(handler) = tag.try_get_attribute("handler").unwrap() {
+                    result.push(String::from_utf8(handler.value.to_vec()).unwrap());
+                }
+            }
+            _ => {}
+        }
+    }
+    result
+}
 
 impl From<String> for BuilderFactory {
     fn from(xml: String) -> Self {
-        Self(xml)
+        let signals = extract_signals(&xml);
+        Self { xml, signals }
     }
 }
 
@@ -103,7 +129,23 @@ impl BuilderFactory {
     ///
     /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
     pub fn instantiate(&self) -> BuilderConnector {
-        Builder::from_string(&self.0).into()
+        gtk4::Builder::from_string(&self.xml).into()
+    }
+
+    pub fn instantiate_with_scope(&self, scope: &impl glib::prelude::IsA<gtk4::BuilderScope>) -> BuilderConnector {
+        let builder = gtk4::Builder::new();
+        builder.set_scope(Some(scope));
+        builder.add_from_string(&self.xml).unwrap();
+        builder.into()
+    }
+
+    pub fn instantiate_route_to(&self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnector {
+        let scope = gtk4::BuilderRustScope::new();
+        let mut generator = target.into_generate_routing_gtk_handler();
+        for signal_name in self.signals.iter() {
+            scope.add_callback(signal_name, generator.generate_routing_gtk_handler(signal_name));
+        }
+        self.instantiate_with_scope(&scope)
     }
 }
 
@@ -200,8 +242,8 @@ impl BuilderConnector {
         //use crate::GenerateRoutingGtkHandler;
         //use gtk4::prelude::BuilderExtManual;
         //self.0
-            //.builder
-            //.connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
+        //.builder
+        //.connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
         self.0
     }
 
@@ -263,11 +305,6 @@ impl BuilderConnectorWidgetsOnly {
     where
         W: glib::prelude::IsA<glib::Object>,
     {
-        // println!("Tryting to get {}", id);
-        // println!("Object is {:?}", self.builder.object::<glib::Object>(id));
-        // println!("Object is {:?}", self.builder.object::<W>(id));
-        // todo!()
-        //use gtk4::prelude::BuilderExtManual;
         self.builder.object::<W>(id).ok_or_else(|| {
             if let Some(object) = self.builder.object::<glib::Object>(id) {
                 use glib::object::ObjectExt;

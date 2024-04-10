@@ -95,11 +95,11 @@ impl actix::Handler<woab::Signal> for AddendActor {
             "addend_changed" => {
                 // let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
                 // let new_number = buffer
-                    // .text(&buffer.start_iter(), &buffer.end_iter(), true)
-                    // .and_then(|text| text.parse().ok());
+                // .text(&buffer.start_iter(), &buffer.end_iter(), true)
+                // .and_then(|text| text.parse().ok());
                 // if new_number != self.number {
-                    // self.number = new_number;
-                    // self.window.do_send(Recalculate);
+                // self.number = new_number;
+                // self.window.do_send(Recalculate);
                 // }
                 None
             }
