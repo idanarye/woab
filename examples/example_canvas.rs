@@ -13,6 +13,11 @@ struct WindowActor {
 
 impl actix::Actor for WindowActor {
     type Context = actix::Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        self.draw_area.set_draw_func(|_, _, _, _| {
+        });
+    }
 }
 
 impl actix::Handler<woab::Signal> for WindowActor {
@@ -93,14 +98,20 @@ impl Ball {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_canvas.glade")?);
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_canvas.ui")?);
 
     gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
 
+    let app = gtk4::Application::builder().build();
+
     woab::block_on(async {
         factory.instantiate().connect_with(|bld| {
-            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
+            let window = bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap();
+            window.show();
+            app.connect_activate(move |app| {
+                window.set_application(Some(app));
+            });
             let addr = WindowActor {
                 area_size: [0.0, 0.0],
                 draw_area: bld.get_object("draw_area").unwrap(),
@@ -125,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             addr
         });
     });
-    // gtk4::main();
-    woab::close_actix_runtime()??;
+    app.run();
+    // woab::close_actix_runtime()??;
     Ok(())
 }

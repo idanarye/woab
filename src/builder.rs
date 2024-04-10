@@ -124,8 +124,8 @@ impl From<gtk4::Builder> for BuilderConnector {
 impl BuilderConnector {
     /// Get a GTK object from the builder by id.
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
-    //where
-        //W: glib::IsA<glib::Object>,
+    where
+        W: glib::prelude::IsA<glib::Object>,
     {
         self.0.get_object(id)
     }
@@ -153,8 +153,8 @@ impl BuilderConnector {
     ///     .connect_to(MyActor.start());
     /// ```
     pub fn with_object<W>(self, id: &str, dlg: impl FnOnce(W)) -> Self
-    // where
-        // W: glib::IsA<glib::Object>,
+    where
+        W: glib::prelude::IsA<glib::Object>,
     {
         self.0.with_object(id, dlg);
         self
@@ -195,14 +195,14 @@ impl BuilderConnector {
     /// builder_factory.instantiate().connect_to(MyActor.start());
     /// ```
     pub fn connect_to(self, _target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnectorWidgetsOnly {
-        todo!()
+        // todo!()
         //let mut generator = target.into_generate_routing_gtk_handler();
         //use crate::GenerateRoutingGtkHandler;
         //use gtk4::prelude::BuilderExtManual;
         //self.0
             //.builder
             //.connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
-        //self.0
+        self.0
     }
 
     /// Runs a closure and passes the result to [`connect_to`](BuilderConnector::connect_to).
@@ -259,30 +259,33 @@ pub struct BuilderConnectorWidgetsOnly {
 
 impl BuilderConnectorWidgetsOnly {
     /// See [`BuilderConnector::get_object`].
-    pub fn get_object<W>(&self, _id: &str) -> Result<W, crate::Error>
-    // where
-        // W: glib::IsA<glib::Object>,
+    pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
+    where
+        W: glib::prelude::IsA<glib::Object>,
     {
-        todo!()
+        // println!("Tryting to get {}", id);
+        // println!("Object is {:?}", self.builder.object::<glib::Object>(id));
+        // println!("Object is {:?}", self.builder.object::<W>(id));
+        // todo!()
         //use gtk4::prelude::BuilderExtManual;
-        //self.builder.object::<W>(id).ok_or_else(|| {
-            //if let Some(object) = self.builder.object::<glib::Object>(id) {
-                //use glib::object::ObjectExt;
-                //crate::Error::IncorrectWidgetTypeInBuilder {
-                    //widget_id: id.to_owned(),
-                    //expected_type: <W as glib::types::StaticType>::static_type(),
-                    //actual_type: object.type_(),
-                //}
-            //} else {
-                //crate::Error::WidgetMissingInBuilder(id.to_owned())
-            //}
-        //})
+        self.builder.object::<W>(id).ok_or_else(|| {
+            if let Some(object) = self.builder.object::<glib::Object>(id) {
+                use glib::object::ObjectExt;
+                crate::Error::IncorrectWidgetTypeInBuilder {
+                    widget_id: id.to_owned(),
+                    expected_type: <W as glib::types::StaticType>::static_type(),
+                    actual_type: object.type_(),
+                }
+            } else {
+                crate::Error::WidgetMissingInBuilder(id.to_owned())
+            }
+        })
     }
 
     /// See [`BuilderConnector::with_object`].
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
-    // where
-        // W: glib::IsA<glib::Object>,
+    where
+        W: glib::prelude::IsA<glib::Object>,
     {
         dlg(self.get_object(id).unwrap());
         self
