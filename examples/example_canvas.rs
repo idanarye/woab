@@ -2,6 +2,7 @@ use core::time::Duration;
 
 use actix::prelude::*;
 use gtk4::prelude::*;
+use send_wrapper::SendWrapper;
 
 const BALL_RADIUS: f64 = 20.0;
 
@@ -13,10 +14,6 @@ struct WindowActor {
 
 impl actix::Actor for WindowActor {
     type Context = actix::Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        self.draw_area.set_draw_func(|_, _, _, _| {});
-    }
 }
 
 impl actix::Handler<woab::Signal> for WindowActor {
@@ -24,31 +21,40 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
-            "close" => {
-                // gtk4::main_quit();
+            "resize" => {
+                let woab::params! {
+                    _,
+                    width: i32,
+                    height: i32,
+                } = msg.params()?;
+                self.area_size = [width as f64, height as f64];
                 None
-            }
-            "draw" => {
-                let woab::params!(_, draw_ctx: cairo::Context) = msg.params()?;
-                draw_ctx.arc(
-                    self.ball.position[0],
-                    self.ball.position[1],
-                    BALL_RADIUS,
-                    0.0,
-                    2.0 * std::f64::consts::PI,
-                );
-                draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
-                draw_ctx.fill().unwrap();
-                Some(glib::Propagation::Stop)
-            }
-            "configure_draw_area" => {
-                // let event: gdk4::EventConfigure = msg.event_param()?;
-                // let (width, height) = event.size();
-                // self.area_size = [width as f64, height as f64];
-                Some(glib::Propagation::Stop)
             }
             _ => msg.cant_handle()?,
         })
+    }
+}
+
+struct Draw(SendWrapper<cairo::Context>);
+
+impl actix::Message for Draw {
+    type Result = ();
+}
+
+impl actix::Handler<Draw> for WindowActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: Draw, _ctx: &mut Self::Context) -> Self::Result {
+        let draw_ctx = msg.0.take();
+        draw_ctx.arc(
+            self.ball.position[0],
+            self.ball.position[1],
+            BALL_RADIUS,
+            0.0,
+            2.0 * std::f64::consts::PI,
+        );
+        draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
+        draw_ctx.fill().unwrap();
     }
 }
 
@@ -96,32 +102,18 @@ impl Ball {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> woab::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_canvas.ui")?);
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factory.instantiate_route_to(ctx.address());
+            bld.set_application(app);
+            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
 
-    let app = gtk4::Application::builder().build();
-
-    woab::block_on(async {
-        factory.instantiate().connect_with(|bld| {
-            let window = bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap();
-            window.show();
-            // app.connect_activate(move |app| {
-            // window.set_application(Some(app));
-            // });
-            let addr = WindowActor {
-                area_size: [0.0, 0.0],
-                draw_area: bld.get_object("draw_area").unwrap(),
-                ball: Ball {
-                    position: [BALL_RADIUS * 2.0, BALL_RADIUS * 2.0],
-                    velocity: [100.0, 100.0],
-                },
-            }
-            .start();
             actix::spawn({
-                let addr = addr.clone();
+                let addr = ctx.address();
                 async move {
                     use actix::clock::Instant;
                     let mut last_step_time = Instant::now();
@@ -132,10 +124,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             });
-            addr
+
+            let draw_area: gtk4::DrawingArea = bld.get_object("draw_area").unwrap();
+
+            let addr = ctx.address();
+            draw_area.set_draw_func(move |_, draw_ctx, _, _| {
+                woab::block_on(addr.send(Draw(SendWrapper::new(draw_ctx.clone())))).unwrap();
+            });
+
+            WindowActor {
+                area_size: [0.0, 0.0],
+                draw_area,
+                ball: Ball {
+                    position: [BALL_RADIUS * 2.0, BALL_RADIUS * 2.0],
+                    velocity: [100.0, 100.0],
+                },
+            }
         });
-    });
-    app.run();
-    // woab::close_actix_runtime()??;
-    Ok(())
+    })
 }

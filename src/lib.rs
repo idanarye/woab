@@ -119,6 +119,7 @@ mod builder;
 mod builder_dissect;
 mod error;
 mod event_loops_bridge;
+mod gtk_app_helpers;
 pub mod prop_sync;
 mod remove;
 mod signal;
@@ -333,6 +334,7 @@ pub use error::{Error, Result, WakerPerished};
 pub use event_loops_bridge::{
     block_on, close_actix_runtime, is_runtime_running, run_actix_inside_gtk_event_loop, try_block_on, RuntimeStopError,
 };
+pub use gtk_app_helpers::*;
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
@@ -340,22 +342,3 @@ pub use signal_routing::{
     RawSignalCallback,
 };
 pub use waking_helpers::{outside, run_dialog, spawn_outside, wake_from, wake_from_signal};
-
-pub fn main(app: gtk4::Application, dlg: impl 'static + Fn(&gtk4::Application)) -> crate::Result<()> {
-    use gtk4::prelude::*;
-
-    gtk4::init()?;
-    crate::run_actix_inside_gtk_event_loop();
-
-    app.connect_activate(move |app| {
-        crate::block_on(async {
-            dlg(app);
-        })
-    });
-    let exit_code = app.run();
-    crate::close_actix_runtime()??;
-    if exit_code != glib::ExitCode::SUCCESS {
-        return Err(crate::Error::GtkBadExitCode(exit_code));
-    }
-    Ok(())
-}

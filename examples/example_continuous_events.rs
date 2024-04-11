@@ -65,13 +65,12 @@ impl actix::Handler<woab::Signal> for WindowActor {
 }
 
 fn main() -> woab::Result<()> {
-    let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
-        "examples/example_continuous_events.ui",
-    )?))?);
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_continuous_events.ui")?);
 
-    woab::main(Default::default(), move |_| {
+    woab::main(Default::default(), move |app| {
         WindowActor::create(|addr| {
-            let bld = factories.win_app.instantiate_route_to(addr.address());
+            let bld = factory.instantiate_route_to(addr.address());
+            bld.set_application(app);
             WindowActor {
                 widgets: bld.widgets().unwrap(),
             }

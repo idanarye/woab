@@ -292,6 +292,14 @@ impl BuilderConnector {
         let target = dlg(&self);
         self.connect_to(target)
     }
+
+    pub fn set_application(&self, app: &impl IsA<gtk4::Application>) {
+        for object in self.0.builder.objects() {
+            if let Some(window) = object.downcast_ref::<gtk4::Window>() {
+                window.set_application(Some(app));
+            }
+        }
+    }
 }
 
 /// Degraded version of [`BuilderConnector`] that can only be used to get widgets.
