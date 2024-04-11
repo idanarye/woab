@@ -25,7 +25,6 @@ demonstration.
 
 * When starting Actix actors from outside Tokio/Actix, `woab::block_on` must be
   used. This is a limitation of Actix that needs to be respected.
-* `dialog.run()` must not be used - use `woab::run_dialog` instead.
 * If an actor is created inside a `gtk::Application::connect_activate`, its
   `started` method will run **after** the `activate` signal is done. This can
   be a problem for methods like `set_application` that can segfault if they are

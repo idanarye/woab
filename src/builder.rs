@@ -93,6 +93,7 @@ use crate::GenerateRoutingGtkHandler;
 ///     });
 /// }
 /// ```
+#[derive(Clone)]
 pub struct BuilderFactory {
     xml: String,
     signals: Vec<String>,

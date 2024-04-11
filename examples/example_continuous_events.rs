@@ -1,12 +1,6 @@
 use actix::prelude::*;
 use gtk4::prelude::*;
 
-#[derive(woab::Factories)]
-struct Factories {
-    #[factory(extra(size_descr))]
-    win_app: woab::BuilderFactory,
-}
-
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
     win_app: gtk4::ApplicationWindow,

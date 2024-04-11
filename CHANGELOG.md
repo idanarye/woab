@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- [**BREAKING**] Upgrade to GTK4
+
+### Removed
+- `run_dialog`. It is no longer required, since dialogs fully support async now.
 
 ## 0.8.0 - 2023-08-19
 ### Changed
