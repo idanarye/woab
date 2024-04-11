@@ -55,41 +55,28 @@ impl actix::Handler<Step> for WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_prop_sync.glade")?);
+fn main() -> woab::Result<()> {
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_prop_sync.ui")?);
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factory.instantiate_route_to(ctx.address());
+            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
 
-    woab::block_on(async {
-        factory.instantiate().connect_with(|bld| {
-            let win_app: gtk4::ApplicationWindow = bld.get_object("win_app").unwrap();
-
-            win_app.show();
-            let addr = WindowActor {
-                widgets: bld.widgets().unwrap(),
-            }
-            .start();
-
-            actix::spawn({
-                use actix::clock::Instant;
-                let addr = addr.clone();
-                let mut next_step = Instant::now();
-                let step_duration = std::time::Duration::from_secs(1);
-                async move {
-                    loop {
-                        next_step += step_duration;
-                        actix::clock::sleep_until(next_step).await;
-                        addr.send(Step).await.unwrap();
-                    }
+            let addr = ctx.address();
+            let mut next_step = actix::clock::Instant::now();
+            let step_duration = std::time::Duration::from_secs(1);
+            actix::spawn(async move {
+                loop {
+                    next_step += step_duration;
+                    actix::clock::sleep_until(next_step).await;
+                    addr.send(Step).await.unwrap();
                 }
             });
-
-            addr
+            WindowActor {
+                widgets: bld.widgets().unwrap(),
+            }
         });
-    });
-
-    // gtk4::main();
-    woab::close_actix_runtime()??;
-    Ok(())
+    })
 }
