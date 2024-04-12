@@ -2,10 +2,10 @@ use std::time::Instant;
 
 use actix::prelude::*;
 use gtk4::prelude::*;
+use send_wrapper::SendWrapper;
 
 #[derive(woab::Factories)]
 struct Factories {
-    #[factory(extra(adj_num_rows))]
     win_app: woab::BuilderFactory,
     row: woab::BuilderFactory,
 }
@@ -43,10 +43,6 @@ impl actix::Handler<woab::Signal> for WindowActor {
                 }
                 None
             }
-            "close" => {
-                // gtk4::main_quit();
-                None
-            }
             _ => msg.cant_handle()?,
         })
     }
@@ -62,19 +58,22 @@ impl WindowActor {
     fn increase_rows(&mut self, num_rows: usize) {
         self.rows.reserve(num_rows);
         for i in self.rows.len()..num_rows {
-            self.factories.row.instantiate().connect_with(|bld| {
+            RowActor::create(|ctx| {
+                let bld = self.factories.row.instantiate();
                 let widgets: RowWidgets = bld.widgets().unwrap();
-                // self.widgets.lst_rows.add(&widgets.row);
-                let actor = RowActor {
+                let addr = ctx.address();
+                widgets.draw_area.set_draw_func(move |_, draw_ctx, _, _| {
+                    woab::block_on(addr.send(Draw(SendWrapper::new(draw_ctx.clone())))).unwrap();
+                });
+                self.widgets.lst_rows.append(&widgets.row);
+                self.rows.push(ctx.address().clone());
+                ctx.address().do_send(Step);
+                RowActor {
                     widgets,
                     position: 0.0,
                     velocity: 0.1 + (i as f64 * 0.001).sqrt(),
                     prev_update: Instant::now(),
                 }
-                .start();
-                self.rows.push(actor.clone());
-                actor.do_send(Step);
-                actor
             });
         }
     }
@@ -100,30 +99,27 @@ struct RowWidgets {
     draw_area: gtk4::DrawingArea,
 }
 
-impl actix::Handler<woab::Signal> for RowActor {
-    type Result = woab::SignalResult;
+struct Draw(SendWrapper<cairo::Context>);
 
-    fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
-        Ok(match msg.name() {
-            "draw" => {
-                let woab::params! {
-                    _,
-                    draw_ctx: cairo::Context,
-                } = msg.params()?;
-                let area_size = self.widgets.draw_area.allocation();
-                draw_ctx.arc(
-                    self.position * area_size.width() as f64,
-                    0.5 * area_size.height() as f64,
-                    10.0,
-                    0.0,
-                    2.0 * std::f64::consts::PI,
-                );
-                draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
-                draw_ctx.fill().unwrap();
-                Some(glib::Propagation::Stop)
-            }
-            _ => msg.cant_handle()?,
-        })
+impl actix::Message for Draw {
+    type Result = ();
+}
+
+impl actix::Handler<Draw> for RowActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: Draw, _ctx: &mut Self::Context) -> Self::Result {
+        let draw_ctx = msg.0.take();
+        let area_size = self.widgets.draw_area.allocation();
+        draw_ctx.arc(
+            self.position * area_size.width() as f64,
+            0.5 * area_size.height() as f64,
+            10.0,
+            0.0,
+            2.0 * std::f64::consts::PI,
+        );
+        draw_ctx.set_source_rgb(0.5, 0.5, 0.5);
+        draw_ctx.fill().unwrap();
     }
 }
 
@@ -153,16 +149,16 @@ impl actix::Handler<Step> for RowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factories = Factories::read(std::io::BufReader::new(std::fs::File::open(
-        "examples/example_heavy_load.glade",
-    )?))?;
+fn main() -> woab::Result<()> {
+    woab::main(Default::default(), move |app| {
+        let factories = Factories::read(std::io::BufReader::new(
+            std::fs::File::open("examples/example_heavy_load.ui").unwrap(),
+        ))
+        .unwrap();
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-
-    woab::block_on(async {
-        factories.win_app.instantiate().connect_with(|bld| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factories.win_app.instantiate_route_to(ctx.address());
             let widgets: WindowWidgets = bld.widgets().unwrap();
             widgets.win_app.show();
             WindowActor {
@@ -170,10 +166,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 widgets,
                 rows: Default::default(),
             }
-            .start()
         });
-    });
-    // gtk4::main();
-    woab::close_actix_runtime()??;
-    Ok(())
+    })
 }
