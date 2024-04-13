@@ -159,6 +159,7 @@ fn main() -> woab::Result<()> {
         woab::shutdown_when_last_window_is_closed(app);
         WindowActor::create(|ctx| {
             let bld = factories.win_app.instantiate_route_to(ctx.address());
+            bld.set_application(app);
             let widgets: WindowWidgets = bld.widgets().unwrap();
             widgets.win_app.show();
             WindowActor {

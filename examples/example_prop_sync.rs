@@ -62,6 +62,7 @@ fn main() -> woab::Result<()> {
         woab::shutdown_when_last_window_is_closed(app);
         WindowActor::create(|ctx| {
             let bld = factory.instantiate_route_to(ctx.address());
+            bld.set_application(app);
             bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
 
             let addr = ctx.address();
