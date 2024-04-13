@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 - `run_dialog`. It is no longer required, since dialogs fully support async now.
+- `event_param`. It seems like `gdk4::Event` is a low-level implementation
+  detail, unlike GTK3's `gdk::Event` which is used as the details parameter of
+  some signals.
 
 ## 0.8.0 - 2023-08-19
 ### Changed
