@@ -3,9 +3,7 @@ use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 pub struct Factories {
-    #[factory(extra(buf_sum))]
     win_app: woab::BuilderFactory,
-    #[factory(extra(buf_addend))]
     row_addend: woab::BuilderFactory,
 }
 
@@ -44,14 +42,10 @@ impl actix::Handler<woab::Signal> for WindowActor {
             "click_button" => {
                 let addend_id = self.next_addend_id;
                 self.next_addend_id += 1;
-                self.factories
-                    .row_addend
-                    .instantiate()
-                    .with_object("row_addend", |row_addend| {
-                        // self.widgets.lst_addition.add(&row_addend);
-                        self.addends.insert(addend_id, (row_addend, Some(0)));
-                    })
-                    .connect_to((addend_id, ctx.address()));
+                let bld = self.factories.row_addend.instantiate_route_to((addend_id, ctx.address()));
+                let row_addend = bld.get_object("row_addend")?;
+                self.widgets.lst_addition.append(&row_addend);
+                self.addends.insert(addend_id, (row_addend, Some(0)));
                 self.recalculate();
                 None
             }
@@ -70,22 +64,20 @@ impl actix::Handler<woab::Signal<usize>> for WindowActor {
     fn handle(&mut self, msg: woab::Signal<usize>, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "addend_changed" => {
-                // let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
-                // let new_number: Option<isize> = buffer
-                // .text(&buffer.start_iter(), &buffer.end_iter(), true)
-                // .and_then(|text| text.parse().ok());
-                // if let Some((_, number)) = self.addends.get_mut(msg.tag()) {
-                // if new_number != *number {
-                // *number = new_number;
-                // self.recalculate();
-                // }
-                // }
+                let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
+                let new_number: Option<isize> = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true).parse().ok();
+                if let Some((_, number)) = self.addends.get_mut(msg.tag()) {
+                    if new_number != *number {
+                        *number = new_number;
+                        self.recalculate();
+                    }
+                }
                 None
             }
             "remove_addend" => {
                 if let Some((addend, _)) = self.addends.remove(msg.tag()) {
-                    let lst_addition = self.widgets.lst_addition.clone();
-                    lst_addition.remove(&addend);
+                    self.widgets.lst_addition.remove(&addend);
+                    self.recalculate();
                 }
                 None
             }
@@ -105,25 +97,22 @@ impl WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.glade")?))?;
+fn main() -> woab::Result<()> {
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
+        let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.ui").unwrap())).unwrap();
 
-    woab::block_on(async {
-        factories.win_app.instantiate().connect_with(|bld| {
+        WindowActor::create(|ctx| {
+            let bld = factories.win_app.instantiate_route_to(ctx.address());
+            bld.set_application(app);
+
             WindowActor {
                 widgets: bld.widgets().unwrap(),
                 factories,
                 next_addend_id: 0,
                 addends: Default::default(),
             }
-            .start()
         });
-    });
-
-    // gtk4::main();
-    woab::close_actix_runtime()??;
-    Ok(())
+    })
 }
