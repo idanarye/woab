@@ -1,0 +1,155 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name example_actions.ui -->
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkApplicationWindow" id="win_app">
+    <child>
+      <object class="GtkGrid">
+        <child>
+          <object class="GtkLabel">
+            <property name="label">Simple:</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label">Parameter:</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="alignment">
+            <property name="label">alignment</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">2</property>
+              <property name="row">2</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.increment</property>
+                <property name="label">Increment</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.decrement</property>
+                <property name="label">Decrement</property>
+              </object>
+            </child>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="simple">
+            <property name="editable">False</property>
+            <property name="text">0</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="parameter">
+            <property name="editable">False</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.parameter</property>
+                <property name="action-target">'a'</property>
+                <property name="label">a</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.parameter</property>
+                <property name="action-target">'b'</property>
+                <property name="label">b</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.parameter</property>
+                <property name="action-target">'c'</property>
+                <property name="label">c</property>
+              </object>
+            </child>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.alignment</property>
+                <property name="action-target">'left'</property>
+                <property name="label">left</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.alignment</property>
+                <property name="action-target">'center'</property>
+                <property name="label">center</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="action-name">app.alignment</property>
+                <property name="action-target">'right'</property>
+                <property name="label">right</property>
+              </object>
+            </child>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">1</property>
+              <property name="row">2</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -10,6 +10,7 @@ struct WindowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
+    win_app: gtk4::ApplicationWindow,
     simple: gtk4::Entry,
     parameter: gtk4::Entry,
     alignment: gtk4::Label,
@@ -60,43 +61,32 @@ impl actix::Handler<woab::Signal> for WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_actions.glade")?);
+fn main() -> woab::Result<()> {
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_actions.ui")?);
 
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let app = gtk4::Application::builder().build();
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factory.instantiate_route_to(ctx.address());
+            bld.set_application(app);
 
-    app.connect_activate(move |app| {
-        woab::block_on(async {
-            factory.instantiate().connect_with(|bld| {
-                let win_app: gtk4::ApplicationWindow = bld.get_object("win_app").unwrap();
-                app.add_window(&win_app);
+            for action in &[
+                gio::SimpleAction::new("increment", None),
+                gio::SimpleAction::new("decrement", None),
+                gio::SimpleAction::new("parameter", Some(&String::static_variant_type())),
+                gio::SimpleAction::new_stateful("alignment", Some(&String::static_variant_type()), &"".to_variant()),
+            ] {
+                app.add_action(action);
+                woab::route_action(action, ctx.address()).unwrap();
+            }
 
-                win_app.show();
-                let addr = WindowActor {
-                    widgets: bld.widgets().unwrap(),
-                    simple_data: 0,
-                    parameter_data: Vec::new(),
-                }
-                .start();
-
-                for action in &[
-                    gio::SimpleAction::new("increment", None),
-                    gio::SimpleAction::new("decrement", None),
-                    gio::SimpleAction::new("parameter", Some(&String::static_variant_type())),
-                    gio::SimpleAction::new_stateful("alignment", Some(&String::static_variant_type()), &"".to_variant()),
-                ] {
-                    app.add_action(action);
-                    woab::route_action(action, addr.clone()).unwrap();
-                }
-
-                addr
-            });
+            let widgets: WindowWidgets = bld.widgets().unwrap();
+            widgets.win_app.show();
+            WindowActor {
+                widgets,
+                simple_data: 0,
+                parameter_data: Vec::new(),
+            }
         });
-    });
-
-    app.run();
-    woab::close_actix_runtime()??;
-    Ok(())
+    })
 }
