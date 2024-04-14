@@ -4,12 +4,6 @@ use gtk4::prelude::*;
 #[macro_use]
 mod util;
 
-#[derive(woab::Factories)]
-struct Factories {
-    #[factory(extra(buf_left, buf_right))]
-    win_test: woab::BuilderFactory,
-}
-
 struct TestActor {
     widgets: TestWidgets,
 }
@@ -29,11 +23,7 @@ pub struct TestWidgets {
 }
 
 fn get_text(buffer: &gtk4::TextBuffer) -> String {
-    if let Some(text) = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true) {
-        text.into()
-    } else {
-        "".to_owned()
-    }
+    buffer.text(&buffer.start_iter(), &buffer.end_iter(), true).into()
 }
 
 impl actix::Handler<woab::Signal> for TestActor {
@@ -54,29 +44,37 @@ impl actix::Handler<woab::Signal> for TestActor {
     }
 }
 
+async fn wait_for(mut pred: impl FnMut() -> bool) {
+    let timeout = std::time::Duration::from_secs(1);
+    let time_limit = std::time::Instant::now() + timeout;
+    loop {
+        let is_over = time_limit < std::time::Instant::now();
+        if pred() {
+            return;
+        } else if is_over {
+            panic!("Timed out");
+        }
+    }
+}
+
 #[test]
 fn test_basic() -> anyhow::Result<()> {
-    let factories = Factories::read(include_bytes!("basic.glade") as &[u8])?;
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let mut put_widgets_in = None;
-    woab::block_on(async {
-        factories.win_test.instantiate().connect_with(|bld| {
-            let widgets = bld.widgets::<TestWidgets>().unwrap();
-            put_widgets_in = Some(widgets.clone());
-            TestActor { widgets }.start()
+    util::test_main(async {
+        let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/basic.ui")?);
+        let ctx = Context::<TestActor>::new();
+        let bld = factory.instantiate_route_to(ctx.address());
+        let widgets: TestWidgets = bld.widgets()?;
+        ctx.run(TestActor {
+            widgets: widgets.clone(),
         });
-    });
-    let widgets = put_widgets_in.unwrap();
-    widgets.buf_left.set_text("test left");
-    wait_for!(get_text(&widgets.buf_right).is_empty())?;
-    widgets.btn_copy_left_to_right.emit_clicked();
-    wait_for!(get_text(&widgets.buf_right) == "test left")?;
-    widgets.buf_left.set_text("");
-    widgets.buf_right.set_text("test right");
-    widgets.btn_copy_right_to_left.emit_clicked();
-    wait_for!(get_text(&widgets.buf_left) == "test right")?;
-
-    woab::close_actix_runtime()??;
-    Ok(())
+        widgets.buf_left.set_text("test left");
+        wait_for!(get_text(&widgets.buf_right).is_empty())?;
+        widgets.btn_copy_left_to_right.emit_clicked();
+        wait_for!(get_text(&widgets.buf_right) == "test left")?;
+        widgets.buf_left.set_text("");
+        widgets.buf_right.set_text("test right");
+        widgets.btn_copy_right_to_left.emit_clicked();
+        wait_for!(get_text(&widgets.buf_left) == "test right")?;
+        Ok(())
+    })
 }
