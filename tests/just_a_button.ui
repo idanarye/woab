@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name just_a_button.ui -->
+  <requires lib="gtk" version="4.12"/>
+  <object class="GtkApplicationWindow" id="win_test">
+    <child>
+      <object class="GtkButton" id="btn_button">
+        <property name="label">The Button</property>
+        <signal name="clicked" handler="button_clicked"/>
+      </object>
+    </child>
+  </object>
+</interface>

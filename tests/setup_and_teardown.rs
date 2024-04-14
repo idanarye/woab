@@ -50,20 +50,6 @@ impl actix::Handler<woab::Signal> for TestActor {
     }
 }
 
-fn prepare() -> anyhow::Result<(TestWidgets, Rc<RefCell<Vec<&'static str>>>)> {
-    let factories = Factories::read(include_bytes!("just_a_button.glade") as &[u8])?;
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let output = Rc::new(RefCell::new(Vec::new()));
-    let widgets = woab::block_on(async {
-        let bld = factories.win_test.instantiate();
-        let widgets = bld.widgets::<TestWidgets>().unwrap();
-        bld.connect_to(TestActor { output: output.clone() }.start());
-        widgets
-    });
-    Ok((widgets, output))
-}
-
 #[test]
 fn test_teardown() -> anyhow::Result<()> {
     assert!(matches!(
@@ -72,12 +58,22 @@ fn test_teardown() -> anyhow::Result<()> {
     ));
     assert!(!woab::is_runtime_running());
 
-    let (widgets, output) = prepare()?;
-    widgets.btn_button.emit_clicked();
-    wait_for!(*output.borrow() == ["click"])?;
-    assert!(woab::is_runtime_running());
-    woab::close_actix_runtime()??;
+    let output = Rc::new(RefCell::new(Vec::new()));
+    util::test_main({
+        let output = output.clone();
+        async move {
+            let factories = Factories::read(include_bytes!("just_a_button.ui") as &[u8])?;
+            let bld = factories
+                .win_test
+                .instantiate_route_to(TestActor { output: output.clone() }.start());
+            let widgets = bld.widgets::<TestWidgets>().unwrap();
+            widgets.btn_button.emit_clicked();
+            wait_for!(*output.borrow() == ["click"])?;
+            assert!(woab::is_runtime_running());
+            Ok(())
+        }
+    })?;
     assert!(!woab::is_runtime_running());
-    wait_for!(*output.borrow() == ["click", "shutdown"])?;
+    assert_eq!(*output.borrow(), ["click", "shutdown"]);
     Ok(())
 }

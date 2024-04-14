@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
+<cambalache-project version="0.17.3" target_tk="gtk-4.0">
+  <ui>
+	(1,None,"just_a_button.ui","just_a_button.ui",None,None,None,None,None,None,None)
+  </ui>
+  <object>
+	(1,1,"GtkApplicationWindow","win_test",None,None,None,None,-1,None,None),
+	(1,2,"GtkButton","btn_button",1,None,None,None,-1,None,None)
+  </object>
+  <object_property>
+	(1,2,"GtkButton","label","The Button",None,None,None,None,None,None,None,None,None)
+  </object_property>
+  <object_signal>
+	(1,1,2,"GtkButton","clicked","button_clicked",None,None,None,None,None)
+  </object_signal>
+</cambalache-project>
