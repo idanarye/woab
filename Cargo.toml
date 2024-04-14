@@ -36,8 +36,8 @@ name = "prop_sync"
 [[test]]
 name = "setup_and_teardown"
 
-# [[test]]
-# name = "waking"
+[[test]]
+name = "waking"
 
 [dependencies]
 gtk4 = "^0.8"
