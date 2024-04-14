@@ -13,10 +13,8 @@ macro_rules! wait_for {
             let is_over = time_limit < std::time::Instant::now();
             if $pred {
                 break Ok(());
-                // break;
             } else if is_over {
                 break Err(anyhow::Error::msg(concat!("Timed out: ", stringify!($pred))));
-                // panic!(concat!("Timed out: ", stringify!($pred)));
             }
             actix::clock::sleep(core::time::Duration::new(0, 1_000)).await;
         }

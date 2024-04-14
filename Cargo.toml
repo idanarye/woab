@@ -13,31 +13,6 @@ documentation = "https://docs.rs/woab"
 readme = "README.md"
 keywords = ["gtk", "gui", "actix", "actor"]
 categories = ["gui"]
-autotests = false
-
-[[test]]
-name = "basic"
-
-[[test]]
-name = "connect_nonbuilder_signals"
-
-[[test]]
-name = "no_signals"
-
-[[test]]
-name = "param_extraction"
-
-[[test]]
-name = "prop_sync"
-
- [[test]]
- name = "recusive_widgets_from_builder"
-
-[[test]]
-name = "setup_and_teardown"
-
-[[test]]
-name = "waking"
 
 [dependencies]
 gtk4 = "^0.8"
