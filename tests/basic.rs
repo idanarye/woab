@@ -44,19 +44,6 @@ impl actix::Handler<woab::Signal> for TestActor {
     }
 }
 
-async fn wait_for(mut pred: impl FnMut() -> bool) {
-    let timeout = std::time::Duration::from_secs(1);
-    let time_limit = std::time::Instant::now() + timeout;
-    loop {
-        let is_over = time_limit < std::time::Instant::now();
-        if pred() {
-            return;
-        } else if is_over {
-            panic!("Timed out");
-        }
-    }
-}
-
 #[test]
 fn test_basic() -> anyhow::Result<()> {
     util::test_main(async {

@@ -80,56 +80,51 @@ impl actix::Handler<woab::Signal> for TestActor {
 
 #[test]
 fn test_connect_nonbuilder_signals() -> anyhow::Result<()> {
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
+    util::test_main(async {
+        let output = Rc::new(RefCell::new(Vec::new()));
 
-    let output = Rc::new(RefCell::new(Vec::new()));
-
-    let action_group = gio::SimpleActionGroup::new();
-    woab::block_on(async {
+        let action_group = gio::SimpleActionGroup::new();
         TestActor {
             action_group: action_group.clone(),
             output: output.clone(),
             actions: Default::default(),
         }
         .start();
-    });
 
-    wait_for!(*output.borrow() == ["init"])?;
-    action_group.activate_action("action1", None);
-    wait_for!(*output.borrow() == ["init", "action1"])?;
-    action_group.activate_action("action2", None);
-    wait_for!(*output.borrow() == ["init", "action1", "action2"])?;
-    action_group.activate_action("block", Some(&"action1".to_variant()));
-    wait_for!(*output.borrow() == ["init", "action1", "action2", "block"])?;
+        wait_for!(*output.borrow() == ["init"])?;
+        action_group.activate_action("action1", None);
+        wait_for!(*output.borrow() == ["init", "action1"])?;
+        action_group.activate_action("action2", None);
+        wait_for!(*output.borrow() == ["init", "action1", "action2"])?;
+        action_group.activate_action("block", Some(&"action1".to_variant()));
+        wait_for!(*output.borrow() == ["init", "action1", "action2", "block"])?;
 
-    // We send both action1 and action2, but action1 is blocked
-    action_group.activate_action("action1", None);
-    action_group.activate_action("action2", None);
-    wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2"])?;
+        // We send both action1 and action2, but action1 is blocked
+        action_group.activate_action("action1", None);
+        action_group.activate_action("action2", None);
+        wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2"])?;
 
-    action_group.activate_action("unblock", Some(&"action1".to_variant()));
-    wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2", "unblock"])?;
-    action_group.activate_action("disconnect", Some(&"action2".to_variant()));
-    wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2", "unblock", "disconnect"])?;
+        action_group.activate_action("unblock", Some(&"action1".to_variant()));
+        wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2", "unblock"])?;
+        action_group.activate_action("disconnect", Some(&"action2".to_variant()));
+        wait_for!(*output.borrow() == ["init", "action1", "action2", "block", "action2", "unblock", "disconnect"])?;
 
-    // We send both action2 and action1, but action2 is disconnected
-    action_group.activate_action("action2", None);
-    action_group.activate_action("action1", None);
-    wait_for!(
-        *output.borrow()
-            == [
-                "init",
-                "action1",
-                "action2",
-                "block",
-                "action2",
-                "unblock",
-                "disconnect",
-                "action1"
-            ]
-    )?;
-
-    woab::close_actix_runtime()??;
-    Ok(())
+        // We send both action2 and action1, but action2 is disconnected
+        action_group.activate_action("action2", None);
+        action_group.activate_action("action1", None);
+        wait_for!(
+            *output.borrow()
+                == [
+                    "init",
+                    "action1",
+                    "action2",
+                    "block",
+                    "action2",
+                    "unblock",
+                    "disconnect",
+                    "action1"
+                ]
+        )?;
+        Ok(())
+    })
 }
