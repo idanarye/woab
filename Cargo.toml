@@ -21,6 +21,9 @@ name = "basic"
 [[test]]
 name = "connect_nonbuilder_signals"
 
+[[test]]
+name = "no_signals"
+
 [dependencies]
 gtk4 = "^0.8"
 glib = "^0.19"

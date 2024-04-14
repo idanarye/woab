@@ -43,18 +43,13 @@ pub struct TestWidgets {}
 
 #[test]
 fn test_no_signals() -> anyhow::Result<()> {
-    let factories = Factories::read(include_bytes!("no_signals.glade") as &[u8])?;
-    gtk4::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let output = Rc::new(RefCell::new(Vec::new()));
-    woab::block_on(async {
+    util::test_main(async {
+        let factories = Factories::read(include_bytes!("no_signals.ui") as &[u8])?;
+        let output = Rc::new(RefCell::new(Vec::new()));
         factories
             .win_test
-            .instantiate()
-            .connect_to(TestActor { output: output.clone() }.start());
-    });
-    wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
-
-    woab::close_actix_runtime()??;
-    Ok(())
+            .instantiate_route_to(TestActor { output: output.clone() }.start());
+        wait_for!(*output.borrow() == ["before spawned future", "inside spawned future",])?;
+        Ok(())
+    })
 }
