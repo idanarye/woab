@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use glib::ToValue;
+use glib::prelude::ToValue;
 
 #[test]
 fn test_param_extraction() -> anyhow::Result<()> {

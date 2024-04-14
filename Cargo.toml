@@ -24,6 +24,21 @@ name = "connect_nonbuilder_signals"
 [[test]]
 name = "no_signals"
 
+[[test]]
+name = "param_extraction"
+
+# [[test]]
+# name = "prop_sync"
+
+# [[test]]
+# name = "recusive_widgets_from_builder"
+
+# [[test]]
+# name = "setup_and_teardown"
+
+# [[test]]
+# name = "waking"
+
 [dependencies]
 gtk4 = "^0.8"
 glib = "^0.19"
