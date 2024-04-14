@@ -30,8 +30,8 @@ name = "param_extraction"
 [[test]]
 name = "prop_sync"
 
-# [[test]]
-# name = "recusive_widgets_from_builder"
+ [[test]]
+ name = "recusive_widgets_from_builder"
 
 # [[test]]
 # name = "setup_and_teardown"

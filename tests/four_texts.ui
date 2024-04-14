@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name four_texts.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkApplicationWindow" id="win_test">
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkEntry" id="text1"/>
+        </child>
+        <child>
+          <object class="GtkEntry" id="text2"/>
+        </child>
+        <child>
+          <object class="GtkEntry" id="text3"/>
+        </child>
+        <child>
+          <object class="GtkEntry" id="text4"/>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
