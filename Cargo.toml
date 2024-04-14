@@ -27,8 +27,8 @@ name = "no_signals"
 [[test]]
 name = "param_extraction"
 
-# [[test]]
-# name = "prop_sync"
+[[test]]
+name = "prop_sync"
 
 # [[test]]
 # name = "recusive_widgets_from_builder"
