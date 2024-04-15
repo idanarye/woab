@@ -34,7 +34,7 @@ fn test_prop_sync() -> anyhow::Result<()> {
     util::test_main(async {
         let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/various_widgets.ui")?);
 
-        let widgets: TestWidgets = factory.instantiate().widgets()?;
+        let widgets: TestWidgets = factory.instantiate_without_routing_signals().widgets()?;
 
         widgets.group1.text_entry.set_text("one");
         widgets.group1.spin_button.set_value(2.0);

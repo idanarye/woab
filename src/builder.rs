@@ -132,7 +132,7 @@ impl BuilderFactory {
     /// Create a `gtk4::Builder` from the instructions inside this factory.
     ///
     /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
-    pub fn instantiate(&self) -> BuilderConnector {
+    pub fn instantiate_without_routing_signals(&self) -> BuilderConnector {
         gtk4::Builder::from_string(&self.xml).into()
     }
 

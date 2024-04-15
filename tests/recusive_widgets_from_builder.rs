@@ -35,7 +35,7 @@ pub struct GroupB {
 fn test_recusive_widgets_from_builder() -> anyhow::Result<()> {
     util::test_main(async {
         let factory = woab::BuilderFactory::from(include_str!("four_texts.ui").to_owned());
-        let bld = factory.instantiate();
+        let bld = factory.instantiate_without_routing_signals();
 
         let flat_widgets: FlatWidgets = bld.widgets()?;
         let grouped_widgets: GroupedWidgets = bld.widgets()?;

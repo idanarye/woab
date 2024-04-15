@@ -59,7 +59,7 @@ impl WindowActor {
         self.rows.reserve(num_rows);
         for i in self.rows.len()..num_rows {
             RowActor::create(|ctx| {
-                let bld = self.factories.row.instantiate();
+                let bld = self.factories.row.instantiate_without_routing_signals();
                 let widgets: RowWidgets = bld.widgets().unwrap();
                 let addr = ctx.address();
                 widgets.draw_area.set_draw_func(move |_, draw_ctx, _, _| {
