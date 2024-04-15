@@ -20,11 +20,9 @@ pub fn route_signal(
     actix_signal: &str,
     target: impl IntoGenerateRoutingGtkHandler,
 ) -> Result<glib::SignalHandlerId, crate::Error> {
-    let handler = target
-        .into_generate_routing_gtk_handler()
-        .generate_routing_gtk_handler(actix_signal);
-    let handler_id = obj.connect_local(gtk_signal, false, handler);
-    Ok(handler_id)
+    Ok(
+        target.into_generate_routing_gtk_handler().connect_local(obj, gtk_signal, actix_signal)
+    )
 }
 
 /// Route a GIO action to an Actix actor that can handle [`woab::Signal`](crate::Signal).
@@ -107,29 +105,27 @@ fn run_signal_routing_future(
 
 #[doc(hidden)]
 pub trait GenerateRoutingGtkHandler {
-    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback;
+    fn connect_local(&self, obj: &impl glib::object::ObjectExt, gtk_signal: &str, actix_signal: &str) -> glib::SignalHandlerId;
     fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str);
 }
 
+fn route_with_tag_generate_impl<T: Clone + 'static>(signal_name: &str, tag: T, recipient: actix::Recipient<crate::Signal<T>>) -> impl Fn(&[glib::Value]) -> Option<glib::Value>  {
+    let signal_name = Rc::new(signal_name.to_owned());
+    move |parameters| {
+        let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
+        run_signal_routing_future(recipient.send(signal), &signal_name, parameters)
+    }
+}
+
 impl<T: Clone + 'static> GenerateRoutingGtkHandler for (T, actix::Recipient<crate::Signal<T>>) {
-    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
-        let signal_name = Rc::new(signal_name.to_owned());
+    fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str) {
         let (tag, recipient) = self.clone();
-        Box::new(move |parameters| {
-            let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-            run_signal_routing_future(recipient.send(signal), &signal_name, parameters)
-        })
+        scope.add_callback(signal_name, route_with_tag_generate_impl(signal_name, tag, recipient));
     }
 
-    fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str) {
-        scope.add_callback(signal_name, {
-            let signal_name = Rc::new(signal_name.to_owned());
-            let (tag, recipient) = self.clone();
-            move |parameters| {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                run_signal_routing_future(recipient.send(signal), &signal_name, parameters)
-            }
-        });
+    fn connect_local(&self, obj: &impl glib::object::ObjectExt, gtk_signal: &str, actix_signal: &str) -> glib::SignalHandlerId {
+        let (tag, recipient) = self.clone();
+        obj.connect_local(gtk_signal, false, route_with_tag_generate_impl(actix_signal, tag, recipient))
     }
 }
 
@@ -355,14 +351,14 @@ impl<T: Clone + 'static> NamespacedSignalRouter<T> {
 }
 
 impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSignalRouter<T>) {
-    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
-        let (tag, router) = self;
-        Box::new(router.generate_impl(signal_name, tag.clone()))
-    }
-
     fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str) {
         let (tag, router) = self;
         scope.add_callback(signal_name, router.generate_impl(signal_name, tag.clone()));
+    }
+
+    fn connect_local(&self, obj: &impl glib::object::ObjectExt, gtk_signal: &str, actix_signal: &str) -> glib::SignalHandlerId {
+        let (tag, router) = self;
+        obj.connect_local(gtk_signal, false, router.generate_impl(actix_signal, tag.clone()))
     }
 }
 

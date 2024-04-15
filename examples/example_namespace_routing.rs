@@ -86,7 +86,8 @@ fn main() -> woab::Result<()> {
                             text: "From manual namespace X",
                             send_to: ctx.address().recipient(),
                         }
-                        .start().recipient(),
+                        .start()
+                        .recipient(),
                     )
                     .route_strip_ns(
                         "y",
@@ -94,7 +95,8 @@ fn main() -> woab::Result<()> {
                             text: "From manual namespace Y",
                             send_to: ctx.address().recipient(),
                         }
-                        .start().recipient(),
+                        .start()
+                        .recipient(),
                     )
             });
             bld.set_application(app);
