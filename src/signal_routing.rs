@@ -316,9 +316,8 @@ impl<T> NamespacedSignalRouter<T> {
     }
 }
 
-impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSignalRouter<T>) {
-    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
-        let (tag, router) = self;
+impl<T: Clone + 'static> NamespacedSignalRouter<T> {
+    fn generate_impl(&self, signal_name: &str, tag: T) -> impl Fn(&[glib::Value]) -> Option<glib::Value> {
         let signal_namespace = {
             let mut parts = signal_name.split("::");
             if let Some(signal_namespace) = parts.next() {
@@ -332,7 +331,7 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
             }
         };
 
-        let target = if let Some(target) = router.targets.get(signal_namespace) {
+        let target = if let Some(target) = self.targets.get(signal_namespace) {
             target.clone()
         } else {
             panic!("Unknown namespace {:?}", signal_namespace)
@@ -348,49 +347,22 @@ impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSign
             .to_owned(),
         );
         let tag = tag.clone();
-        Box::new(move |parameters| {
+        move |parameters| {
             let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
             run_signal_routing_future(target.recipient.send(signal), &signal_name, parameters)
-        })
+        }
+    }
+}
+
+impl<T: Clone + 'static> crate::GenerateRoutingGtkHandler for (T, NamespacedSignalRouter<T>) {
+    fn generate_routing_gtk_handler(&mut self, signal_name: &str) -> RawSignalCallback {
+        let (tag, router) = self;
+        Box::new(router.generate_impl(signal_name, tag.clone()))
     }
 
     fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str) {
-        scope.add_callback(signal_name, {
-            let (tag, router) = self;
-            let signal_namespace = {
-                let mut parts = signal_name.split("::");
-                if let Some(signal_namespace) = parts.next() {
-                    if parts.next().is_none() {
-                        panic!("Signal {:?} does not have a namespace", signal_name)
-                    } else {
-                        signal_namespace
-                    }
-                } else {
-                    panic!("Signal is empty")
-                }
-            };
-
-            let target = if let Some(target) = router.targets.get(signal_namespace) {
-                target.clone()
-            } else {
-                panic!("Unknown namespace {:?}", signal_namespace)
-            };
-
-            let signal_name = Rc::new(
-                if target.strip_namespace {
-                    let (_, without_namespace) = signal_name.split_at(signal_namespace.len() + 2);
-                    without_namespace
-                } else {
-                    signal_name
-                }
-                .to_owned(),
-            );
-            let tag = tag.clone();
-            move |parameters| {
-                let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
-                run_signal_routing_future(target.recipient.send(signal), &signal_name, parameters)
-            }
-        });
+        let (tag, router) = self;
+        scope.add_callback(signal_name, router.generate_impl(signal_name, tag.clone()));
     }
 }
 
