@@ -48,10 +48,31 @@ impl actix::Handler<woab::Signal> for WindowActor {
     }
 }
 
+struct Remove;
+
+impl Message for Remove {
+    type Result = ();
+}
+
+impl Handler<Remove> for RowActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: Remove, ctx: &mut Self::Context) -> Self::Result {
+        self.widgets
+            .row
+            .parent()
+            .unwrap()
+            .downcast::<gtk4::ListBox>()
+            .unwrap()
+            .remove(&self.widgets.row);
+        ctx.stop();
+    }
+}
+
 impl WindowActor {
     fn reduce_rows(&mut self, num_rows: usize) {
         for row in self.rows.drain(num_rows..) {
-            row.do_send(woab::Remove);
+            row.do_send(Remove);
         }
     }
 
@@ -79,8 +100,6 @@ impl WindowActor {
     }
 }
 
-#[derive(woab::Removable)]
-#[removable(self.widgets.row)]
 struct RowActor {
     widgets: RowWidgets,
     position: f64,
@@ -140,12 +159,9 @@ impl actix::Handler<Step> for RowActor {
         self.position = new_position % 1.0;
         self.widgets.draw_area.queue_draw();
         let addr = ctx.address();
-        ctx.spawn(
-            async move {
-                let _ = addr.try_send(Step);
-            }
-            .into_actor(self),
-        );
+        actix::spawn(async move {
+            addr.do_send(Step);
+        });
     }
 }
 

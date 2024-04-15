@@ -121,7 +121,6 @@ mod error;
 mod event_loops_bridge;
 mod gtk_app_helpers;
 pub mod prop_sync;
-mod remove;
 mod signal;
 mod signal_routing;
 mod waking_helpers;
@@ -189,61 +188,6 @@ pub use woab_macros::WidgetsFromBuilder;
 /// }
 /// ```
 pub use woab_macros::Factories;
-
-/// Make the actor remove itself and its widgets when it gets the [`woab::Remove`](Remove) message.
-///
-/// The mandatory attribute `removable` must be an expression that resolves to a GTK widget that
-/// has a parent. When the `woab::Remove` message is received, this actor will remove that widget
-/// from its parent and close itself.
-///
-/// ```no_run
-/// # use actix::prelude::*;
-/// # use gtk4::prelude::*;
-/// #
-/// # #[derive(woab::Factories)]
-/// # struct Factories {
-/// #     list_box_row: woab::BuilderFactory,
-/// # }
-/// #
-/// # #[derive(woab::WidgetsFromBuilder)]
-/// # struct RowWidgets {
-/// #     list_box_row: gtk4::ListBoxRow,
-/// # }
-/// #
-/// #[derive(woab::Removable)]
-/// #[removable(self.widgets.list_box_row)]
-/// struct RowActor {
-///     widgets: RowWidgets,
-/// }
-/// #
-/// # impl actix::Actor for RowActor {
-/// #     type Context = actix::Context<Self>;
-/// # }
-/// #
-/// # impl actix::Handler<woab::Signal> for RowActor {
-/// #     type Result = woab::SignalResult;
-/// #
-/// #     fn handle(&mut self, msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
-/// #         Ok(None)
-/// #     }
-/// # }
-///
-/// fn create_the_row(factories: &Factories, list_box: &gtk4::ListBox) -> actix::Addr<RowActor> {
-///     let bld = factories.list_box_row.instantiate();
-///     let widgets: RowWidgets = bld.widgets().unwrap();
-///     list_box.add(&widgets.list_box_row);
-///     let addr = RowActor {
-///         widgets,
-///     }.start();
-///     bld.connect_to(addr.clone());
-///     addr
-/// }
-///
-/// fn remove_the_row(row: &actix::Addr<RowActor>) {
-///     row.do_send(woab::Remove);
-/// }
-/// ```
-pub use woab_macros::Removable;
 
 /// Helper macro for extracting signal parameters from [`woab::Signal`](crate::Signal).
 ///
@@ -335,7 +279,6 @@ pub use event_loops_bridge::{
     block_on, close_actix_runtime, is_runtime_running, run_actix_inside_gtk_event_loop, try_block_on, RuntimeStopError,
 };
 pub use gtk_app_helpers::{main, shutdown_when_last_window_is_closed};
-pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
     route_action, route_signal, GenerateRoutingGtkHandler, IntoGenerateRoutingGtkHandler, NamespacedSignalRouter,
