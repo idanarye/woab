@@ -145,9 +145,9 @@ impl BuilderFactory {
 
     pub fn instantiate_route_to(&self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnector {
         let scope = gtk4::BuilderRustScope::new();
-        let mut generator = target.into_generate_routing_gtk_handler();
+        let generator = target.into_generate_routing_gtk_handler();
         for signal_name in self.signals.iter() {
-            scope.add_callback(signal_name, generator.generate_routing_gtk_handler(signal_name));
+            generator.register_into_builder_rust_scope(&scope, signal_name);
         }
         self.instantiate_with_scope(&scope)
     }
