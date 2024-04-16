@@ -107,7 +107,6 @@
 //!
 //! * When starting Actix actors from outside Tokio/Actix, [`woab::block_on`](block_on) must be
 //!   used. This is a limitation of Actix that needs to be respected.
-//! * `dialog.run()` must not be used - use [`woab::run_dialog`](crate::run_dialog) instead.
 //! * If an actor is created inside a `gtk4::Application::connect_activate`, its `started` method
 //!   will run **after** the `activate` signal is done. This can be a problem for methods like
 //!   `set_application` that can segfault if they are called outside the `activate` signal. A
@@ -282,10 +281,10 @@ pub use woab_macros::params;
 /// Annotate fields with `#[prop_sync(set)]` to include them in the setter and with
 /// `#[prop_sync(get)]` to include them in the getter.
 ///
-/// Use `#[prop_sync("property-name" as PropertyType)]` to set the property that will be used for the
-/// syncing and its type. If `PropertyType` is a reference (`&PropertyType`), the reference will be
-/// used for the setter (the macro will add a lifetime) and its
-/// [`ToOwned::Owned`](std::borrow::ToOwned::Owned) will be used for the getter.
+/// Use `#[prop_sync("property-name" as PropertyType)]` to set the property that will be used for
+/// the syncing and its type. If `PropertyType` is a reference (`&PropertyType`), the reference
+/// will be used for the setter (the macro will add a lifetime) and its [`ToOwned::Owned`] will be
+/// used for the getter.
 ///
 /// There is no need to set a property for some common widgets (like `gtk4::Entry`) - they already
 /// implement [`SetProps`](crate::prop_sync::SetProps) and

@@ -5,7 +5,8 @@ use send_wrapper::SendWrapper;
 /// The generic signal WoAB uses.
 ///
 /// The signal contains a name, list of parameters, and an optional tag. Route the signals from GTK
-/// to Actix actors using [`BuilderConnector`](crate::BuilderConnector),
+/// to Actix actors using
+/// [`BuilderFactory::instantiate_route_to`](crate::BuilderFactory::instantiate_route_to),
 /// [`woab::route_signal`](crate::route_signal) or [`woab::route_action`](crate::route_action) and
 /// handle them as actix messages, matching on their [`name`](Signal::name) and using
 /// [`woab::params!`](crate::params!) to get their parameters.

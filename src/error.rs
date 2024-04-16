@@ -18,14 +18,14 @@ pub enum Error {
     GtkBadExitCode(glib::ExitCode),
 
     /// When extracting widgets using
-    /// [`BuilderConnector::widgets`](crate::BuilderConnector::widgets) and one of the widgets is
+    /// [`BuilderWidgets::widgets`](crate::BuilderWidgets::widgets) and one of the widgets is
     /// missing.
     #[error("Builder is missing widget with ID {0:?}")]
     WidgetMissingInBuilder(String),
 
     /// When extracting widgets using
-    /// [`BuilderConnector::widgets`](crate::BuilderConnector::widgets) and one of the widgets has
-    /// the wrong type.
+    /// [`BuilderWidgets::widgets`](crate::BuilderWidgets::widgets) and one of the widgets has the
+    /// wrong type.
     #[error("Expected widget {widget_id:?} to be {expected_type} - not {actual_type}")]
     IncorrectWidgetTypeInBuilder {
         widget_id: String,

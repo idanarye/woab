@@ -197,8 +197,8 @@ struct NamespacedSignalRouterTarget<T> {
 
 /// Split signals from the same builder to multiple actors, based on namespaces.
 ///
-/// To be passed to [`connect_to`](crate::BuilderConnector::connect_to) instead of an
-/// `Addr`/`Recipient`. The namespace format is `"namespace::signal"`. The
+/// To be passed to [`instantiate_route_to`](crate::BuilderFactory::instantiate_route_to) instead
+/// of an `Addr`/`Recipient`. The namespace format is `"namespace::signal"`. The
 /// [`route`](NamespacedSignalRouter::route) method will automatically detect the namespace based
 /// on the actor type, and will strip it from the signals passed to that actor.
 ///

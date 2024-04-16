@@ -132,18 +132,36 @@ impl BuilderFactory {
     /// Create a `gtk4::Builder` from the instructions inside this factory.
     ///
     /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
-    pub fn instantiate_without_routing_signals(&self) -> BuilderConnector {
+    ///
+    /// This will panic if the builder declares any signals. To connect the signals, use
+    /// [`Self::instantiate_route_to`] (or the lower level [`Self::instantiate_with_scope`])
+    pub fn instantiate_without_routing_signals(&self) -> BuilderWidgets {
         gtk4::Builder::from_string(&self.xml).into()
     }
 
-    pub fn instantiate_with_scope(&self, scope: &impl IsA<gtk4::BuilderScope>) -> BuilderConnector {
+    /// Create a `gtk4::Builder` from the instructions inside this factory, routing its signals
+    /// using the provided scope.
+    ///
+    /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
+    pub fn instantiate_with_scope(&self, scope: &impl IsA<gtk4::BuilderScope>) -> BuilderWidgets {
         let builder = gtk4::Builder::new();
         builder.set_scope(Some(scope));
         builder.add_from_string(&self.xml).unwrap();
         builder.into()
     }
 
-    pub fn instantiate_route_to(&self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnector {
+    /// Create a `gtk4::Builder` from the instructions inside this factory, routing its signals
+    /// using WoAB's signal routing mechanism.
+    ///
+    /// Note that "creating a builder" means that the GTK widgets are created (but not yet shown)
+    ///
+    /// The target can be:
+    /// * `Addr` or `Recipient` of an Actix actor that can handle [`woab::Signal`](crate::Signal).
+    /// * A [`NamespacedSignalRouter`](crate::NamespacedSignalRouter) (which can be used to route
+    ///   to different actors based on the signal's namespace)
+    /// * A tuple of a tag object and an `Addr`/`Recipient`/`NamespacedSignalRouter` that can
+    ///   handle signals parametrized with the tag's type.
+    pub fn instantiate_route_to(&self, target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderWidgets {
         let scope = gtk4::BuilderRustScope::new();
         let generator = target.into_generate_routing_gtk_handler();
         for signal_name in self.signals.iter() {
@@ -153,27 +171,45 @@ impl BuilderFactory {
     }
 }
 
-/// Context for utilizing a `gtk4::Builder` and connecting it to he Actix world.
-///
-/// It wraps a `gtk4::Builder` instance and provides methods to create actors that are
-/// connected to the widgets in that builder.
+/// Context for utilizing a `gtk4::Builder`.
 ///
 /// See [`BuilderFactory`] for usage example.
-pub struct BuilderConnector(pub BuilderConnectorWidgetsOnly);
+pub struct BuilderWidgets {
+    pub builder: gtk4::Builder,
+}
 
-impl From<gtk4::Builder> for BuilderConnector {
+impl From<gtk4::Builder> for BuilderWidgets {
     fn from(builder: gtk4::Builder) -> Self {
-        Self(BuilderConnectorWidgetsOnly { builder })
+        Self { builder }
     }
 }
 
-impl BuilderConnector {
+impl BuilderWidgets {
+    /// Set the [`gtk4::Application`] to all the windows defined in the builder.
+    pub fn set_application(&self, app: &impl IsA<gtk4::Application>) {
+        for object in self.builder.objects() {
+            if let Some(window) = object.downcast_ref::<gtk4::Window>() {
+                window.set_application(Some(app));
+            }
+        }
+    }
+
     /// Get a GTK object from the builder by id.
     pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
     where
         W: IsA<glib::Object>,
     {
-        self.0.get_object(id)
+        self.builder.object::<W>(id).ok_or_else(|| {
+            if let Some(object) = self.builder.object::<glib::Object>(id) {
+                crate::Error::IncorrectWidgetTypeInBuilder {
+                    widget_id: id.to_owned(),
+                    expected_type: <W as glib::types::StaticType>::static_type(),
+                    actual_type: object.type_(),
+                }
+            } else {
+                crate::Error::WidgetMissingInBuilder(id.to_owned())
+            }
+        })
     }
 
     /// Fluent interface for doing something with a particular object from the builder.
@@ -198,139 +234,6 @@ impl BuilderConnector {
     ///     })
     ///     .connect_to(MyActor.start());
     /// ```
-    pub fn with_object<W>(self, id: &str, dlg: impl FnOnce(W)) -> Self
-    where
-        W: IsA<glib::Object>,
-    {
-        self.0.with_object(id, dlg);
-        self
-        // dlg(self.get_object(id).unwrap());
-        // self
-    }
-
-    /// Create a widgets struct who's fields are mapped to the builder's widgets.
-    pub fn widgets<W>(&self) -> Result<W, <gtk4::Builder as TryInto<W>>::Error>
-    where
-        gtk4::Builder: TryInto<W>,
-    {
-        self.0.widgets()
-    }
-
-    /// Route the builder's signals to Actix.
-    ///
-    /// * `bld.connect_to(target)` will connect all the signals defined in the Glade XML to
-    ///   `target`, which can be an `actix::Recipient<woab::Signal>`, an `actix::Addr<A>` for A
-    ///   that handles `woab::Signal`, or a
-    ///   [`woab::NamespacedSignalRouter`](crate::NamespacedSignalRouter).
-    /// * `bld.connect_to((tag, target))` will connect all the signals to `target` and add a tag.
-    ///   The tag must be `Clone`, and will be sent along with the signal. The signal type will be
-    ///   `woab::Signal<T>` where `T` is the type of the tag.
-    ///
-    /// ```no_run
-    /// # use actix::prelude::*;
-    /// # use gtk4::prelude::*;
-    /// # struct MyActor;
-    /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
-    /// # impl actix::Handler<woab::Signal> for MyActor {
-    /// #     type Result = woab::SignalResult;
-    /// #     fn handle(&mut self, _msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
-    /// #         Ok(None)
-    /// #     }
-    /// # }
-    /// # let builder_factory: woab::BuilderFactory = panic!();
-    /// builder_factory.instantiate().connect_to(MyActor.start());
-    /// ```
-    pub fn connect_to(self, _target: impl crate::IntoGenerateRoutingGtkHandler) -> BuilderConnectorWidgetsOnly {
-        // todo!()
-        //let mut generator = target.into_generate_routing_gtk_handler();
-        //use crate::GenerateRoutingGtkHandler;
-        //use gtk4::prelude::BuilderExtManual;
-        //self.0
-        //.builder
-        //.connect_signals(move |_, signal_name| generator.generate_routing_gtk_handler(signal_name));
-        self.0
-    }
-
-    /// Runs a closure and passes the result to [`connect_to`](BuilderConnector::connect_to).
-    ///
-    /// This is mostly a convenience method. The closure receives the `&BuilderConnector` and can
-    /// be use it to retrieve widgets from the builder instantiation and use them in the creation
-    /// of the actor.
-    ///
-    /// ```no_run
-    /// # use actix::prelude::*;
-    /// # use gtk4::prelude::*;
-    /// #[derive(woab::WidgetsFromBuilder)]
-    /// struct MyWidgets {
-    ///     my_button: gtk4::Button,
-    ///     my_textfield: gtk4::Entry,
-    /// }
-    ///
-    /// struct MyActor {
-    ///     widgets: MyWidgets,
-    ///     my_window: gtk4::Window, // for whatever reason not in `MyWidgets`
-    /// }
-    /// # impl actix::Actor for MyActor { type Context = actix::Context<Self>; }
-    /// # impl actix::Handler<woab::Signal> for MyActor {
-    /// #     type Result = woab::SignalResult;
-    /// #     fn handle(&mut self, _msg: woab::Signal, _ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
-    /// #         Ok(None)
-    /// #     }
-    /// # }
-    /// # let builder_factory: woab::BuilderFactory = panic!();
-    /// builder_factory.instantiate().connect_with(|bld| {
-    ///     MyActor {
-    ///         widgets: bld.widgets().unwrap(),
-    ///         my_window: bld.get_object("my_window").unwrap(),
-    ///     }
-    ///     .start()
-    /// });
-    /// ```
-    pub fn connect_with<G: crate::IntoGenerateRoutingGtkHandler>(
-        self,
-        dlg: impl FnOnce(&Self) -> G,
-    ) -> BuilderConnectorWidgetsOnly {
-        let target = dlg(&self);
-        self.connect_to(target)
-    }
-
-    pub fn set_application(&self, app: &impl IsA<gtk4::Application>) {
-        for object in self.0.builder.objects() {
-            if let Some(window) = object.downcast_ref::<gtk4::Window>() {
-                window.set_application(Some(app));
-            }
-        }
-    }
-}
-
-/// Degraded version of [`BuilderConnector`] that can only be used to get widgets.
-///
-/// After the `BuilderConnector` connects its signals, they cannot be connected again - so the
-/// `BuilderConnector` is consumed. But the widgets are still accessible with this object.
-pub struct BuilderConnectorWidgetsOnly {
-    pub builder: gtk4::Builder,
-}
-
-impl BuilderConnectorWidgetsOnly {
-    /// See [`BuilderConnector::get_object`].
-    pub fn get_object<W>(&self, id: &str) -> Result<W, crate::Error>
-    where
-        W: IsA<glib::Object>,
-    {
-        self.builder.object::<W>(id).ok_or_else(|| {
-            if let Some(object) = self.builder.object::<glib::Object>(id) {
-                crate::Error::IncorrectWidgetTypeInBuilder {
-                    widget_id: id.to_owned(),
-                    expected_type: <W as glib::types::StaticType>::static_type(),
-                    actual_type: object.type_(),
-                }
-            } else {
-                crate::Error::WidgetMissingInBuilder(id.to_owned())
-            }
-        })
-    }
-
-    /// See [`BuilderConnector::with_object`].
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
     where
         W: IsA<glib::Object>,
@@ -339,7 +242,7 @@ impl BuilderConnectorWidgetsOnly {
         self
     }
 
-    /// See [`BuilderConnector::widgets`].
+    /// Create a widgets struct who's fields are mapped to the builder's widgets.
     pub fn widgets<W>(&self) -> Result<W, <gtk4::Builder as TryInto<W>>::Error>
     where
         gtk4::Builder: TryInto<W>,
