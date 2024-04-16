@@ -19,7 +19,7 @@ use crate::GenerateRoutingGtkHandler;
 ///     </interface>
 /// "#;
 /// let builder_factory: BuilderFactory = builder_xml.to_owned().into();
-/// let bld = builder_factory.instantiate();
+/// let bld = builder_factory.instantiate_without_routing_signals();
 /// let my_button: gtk4::Button = bld.get_object("my_button").unwrap();
 /// ```
 ///
@@ -78,18 +78,16 @@ use crate::GenerateRoutingGtkHandler;
 /// }
 ///
 /// fn create_window_with_rows(factory: &Factories) {
-///     factory.window.instantiate().connect_with(|bld| {
+///     WindowActor::create(|ctx| {
+///         let bld = factory.window.instantiate_route_to(ctx.address());
 ///         let widgets: WindowWidgets = bld.widgets().unwrap();
-///         let list_box = widgets.list_box.clone();
-///         let window_actor = WindowActor { widgets }.start();
 ///         for row_number in 0..10 {
-///             let row_bld = factory.row.instantiate();
+///             let row_bld = factory.row.instantiate_route_to((row_number, ctx.address()));
 ///             let row_widgets: RowWidgets = row_bld.widgets().unwrap();
 ///             row_widgets.label.set_text(&format!("Row number {}", row_number));
-///             list_box.add(&row_widgets.row);
-///             row_bld.connect_to((row_number, window_actor.clone()));
+///             widgets.list_box.append(&row_widgets.row);
 ///         }
-///         window_actor
+///         WindowActor { widgets }
 ///     });
 /// }
 /// ```
@@ -228,11 +226,10 @@ impl BuilderWidgets {
     /// #     }
     /// # }
     /// # let builder_factory: woab::BuilderFactory = panic!();
-    /// builder_factory.instantiate()
+    /// builder_factory.instantiate_route_to(MyActor.start())
     ///     .with_object("window", |window: gtk4::ApplicationWindow| {
     ///         window.show();
-    ///     })
-    ///     .connect_to(MyActor.start());
+    ///     });
     /// ```
     pub fn with_object<W>(&self, id: &str, dlg: impl FnOnce(W)) -> &Self
     where

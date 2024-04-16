@@ -29,9 +29,7 @@
 //! To synchronize the widgets' data with a model (or any old Rust values), see
 //! [`woab::PropSync`](crate::PropSync).
 //!
-//! After initializing GTK and before starting the main loop,
-//! [`woab::run_actix_inside_gtk_event_loop`](run_actix_inside_gtk_event_loop) **must** be called.
-//! **Do not run the Actix system manually!**
+//! Do not run the Actix system or GTK manually - use [`woab::main`](crate::main) instead.
 //!
 //! ```no_run
 //! use actix::prelude::*;
@@ -80,26 +78,24 @@
 //!     }
 //! }
 //!
-//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! fn main() -> woab::Result<()> {
 //! #    fn read_builder_xml() -> std::io::BufReader<std::fs::File> {
 //! #        unreachable!()
 //! #    }
-//!     let factories = std::rc::Rc::new(Factories::read(read_builder_xml())?);
-//!     gtk4::init()?;
-//!     woab::run_actix_inside_gtk_event_loop(); // <===== IMPORTANT!!!
+//!     woab::main(Default::default(), |app| {
+//!         woab::shutdown_when_last_window_is_closed(app);
+//!         let factories = std::rc::Rc::new(Factories::read(read_builder_xml()).unwrap());
 //!
-//!     factories.main_window.instantiate().connect_with(|bld| {
-//!         let widgets: AppWidgets = bld.widgets().unwrap();
-//!         widgets.main_window.show_all(); // Could also be done inside the actor
-//!         AppActor {
-//!             widgets,
-//!             factories: factories,
-//!         }.start()
-//!     });
-//!
-//!     gtk4::main();
-//!     woab::close_actix_runtime()??;
-//!     Ok(())
+//!         AppActor::create(|ctx| {
+//!             let bld = factories.main_window.instantiate_route_to(ctx.address());
+//!             let widgets: AppWidgets = bld.widgets().unwrap();
+//!             widgets.main_window.show(); // Could also be done inside the actor
+//!             AppActor {
+//!                 widgets,
+//!                 factories,
+//!             }
+//!         });
+//!     })
 //! }
 //! ```
 //!
@@ -161,7 +157,9 @@ pub use woab_macros::WidgetsFromBuilder;
 /// `String`s are also okay, if they are needed.
 ///
 /// If a widget needs to be accompanied by some root level resource (like `GtkTextBuffer` or
-/// `GtkListStore`) these resources should be listed inside a `#[factory(extra(...))]` attribute.
+/// `GtkListStore`) these resources should be listed inside a `#[factory(extra(...))]` attribute
+/// (this is leftover from GTK3 and less likely needed in GTK4 where said resources can be placed
+/// under the widget in the UI XML)
 ///
 /// ```no_run
 /// # type MainWindowActor = ();
@@ -191,8 +189,13 @@ pub use woab_macros::Factories;
 
 /// Make the actor remove itself and its widgets when it gets the [`woab::Remove`](Remove) message.
 ///
-/// The mandatory attribute `removable` must be an expression that resolves to a GTK widget that
-/// has a parent. When the `woab::Remove` message is received, this actor will remove that widget
+/// The mandatory attribute `removable` must contain the syntax `<widget> in <ParentType>` where:
+///
+/// * `<widget>` is an expression (typically a path starting with `self`) that resolves to a GTK
+///   widget that has a parent.
+/// * `<ParentType>` is the GTK type of the parent. That type must have a `remove` method.
+///
+/// When the `woab::Remove` message is received, this actor will remove that widget
 /// from its parent and close itself.
 ///
 /// ```no_run
@@ -210,7 +213,7 @@ pub use woab_macros::Factories;
 /// # }
 /// #
 /// #[derive(woab::Removable)]
-/// #[removable(self.widgets.list_box_row)]
+/// #[removable(self.widgets.list_box_row in gtk4::ListBox)]
 /// struct RowActor {
 ///     widgets: RowWidgets,
 /// }
@@ -228,14 +231,14 @@ pub use woab_macros::Factories;
 /// # }
 ///
 /// fn create_the_row(factories: &Factories, list_box: &gtk4::ListBox) -> actix::Addr<RowActor> {
-///     let bld = factories.list_box_row.instantiate();
-///     let widgets: RowWidgets = bld.widgets().unwrap();
-///     list_box.add(&widgets.list_box_row);
-///     let addr = RowActor {
-///         widgets,
-///     }.start();
-///     bld.connect_to(addr.clone());
-///     addr
+///     RowActor::create(|ctx| {
+///         let bld = factories.list_box_row.instantiate_route_to(ctx.address());
+///         let widgets: RowWidgets = bld.widgets().unwrap();
+///         list_box.append(&widgets.list_box_row);
+///         RowActor {
+///             widgets,
+///         }
+///     })
 /// }
 ///
 /// fn remove_the_row(row: &actix::Addr<RowActor>) {

@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   ```rust
   #[removable(self.path.to.widget.field in gtk4::TypeOfContainer)]
   ```
+- Signal connection is now done at builder instantiation. `BuilderConnector`
+  and `BuilderConnectorWidgetsOnly` are replaced `BuilderWidgets`.
 
 ### Removed
 - `run_dialog`. It is no longer required, since dialogs fully support async now.

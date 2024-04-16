@@ -247,7 +247,7 @@ struct NamespacedSignalRouterTarget<T> {
 /// }
 ///
 /// # let factory: woab::BuilderFactory = panic!();
-/// factory.instantiate().connect_to(
+/// factory.instantiate_route_to(
 ///     woab::NamespacedSignalRouter::default()
 ///     .route(Actor1.start())
 ///     .route(Actor2.start())
