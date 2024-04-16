@@ -80,7 +80,7 @@ impl WindowActor {
 }
 
 #[derive(woab::Removable)]
-#[removable(self.widgets.row)]
+#[removable(self.widgets.row in gtk4::ListBox)]
 struct RowActor {
     widgets: RowWidgets,
     position: f64,

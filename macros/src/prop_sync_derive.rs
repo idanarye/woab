@@ -40,8 +40,8 @@ pub fn impl_prop_sync_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
                         field_property = Some((property, *ty));
                     } else {
                         return Err(Error::new_spanned(
-                                expr,
-                                "expected a string literal (representing a GTK property)",
+                            expr,
+                            "expected a string literal (representing a GTK property)",
                         ));
                     }
                 }

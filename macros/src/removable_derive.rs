@@ -18,28 +18,30 @@ pub fn impl_removable_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
         }
     }
 
-    let _removable_attr =
-        removable_attr.ok_or_else(|| Error::new_spanned(ast, "#[removable(...)] is mandatory when deriving Removable"))?;
-    // let _widget_to_remove = &removable_attr.tokens;
+    let (widget_to_remove, container_type) = removable_attr
+        .ok_or_else(|| Error::new_spanned(ast, "#[removable(...)] is mandatory when deriving Removable"))?
+        .parse_args_with(|p: syn::parse::ParseStream| {
+            let widget_to_remove: syn::Expr = p.parse()?;
+            p.parse::<syn::token::In>()?;
+            let container_type: syn::Type = p.parse()?;
+            Ok((widget_to_remove, container_type))
+        })?;
 
     Ok(quote! {
         impl actix::Handler<woab::Remove> for #type_ident {
             type Result = ();
 
             fn handle(&mut self, _: woab::Remove, ctx: &mut Self::Context) -> Self::Result {
-                todo!()
-                // use gtk4::prelude::*;
-                // use actix::prelude::*;
+                use gtk4::prelude::*;
+                use actix::prelude::*;
 
-                // let widget = &#widget_to_remove;
-                // if let Some(parent) = widget.parent() {
-                    // let parent = parent.downcast::<gtk4::Container>().unwrap();
-                    // let widget = widget.clone();
-                    // ctx.stop();
-                    // woab::spawn_outside(async move {
-                        // parent.remove(&widget);
-                    // });
-                // }
+                let widget = &#widget_to_remove;
+                if let Some(parent) = widget.parent() {
+                    let parent = parent.downcast::<#container_type>().unwrap();
+                    let widget = widget.clone();
+                    parent.remove(&widget);
+                    ctx.stop();
+                }
             }
         }
     })

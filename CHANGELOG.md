@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Changed
 - [**BREAKING**] Upgrade to GTK4
+- Change the syntax of the `PropSync` derive's attribute from
+  ```rust
+  `#[prop_sync("value": Type, ...)]
+  ```
+  to
+  ```rust
+  #[prop_sync("value" as Type, ...)]
+  ```
+- `Removable` derive's attribute now needs to specify, in addition to the field
+  that needs to be removed, the type of the container. The syntax is:
+  ```rust
+  #[removable(self.path.to.widget.field in gtk4::TypeOfContainer)]
+  ```
 
 ### Removed
 - `run_dialog`. It is no longer required, since dialogs fully support async now.

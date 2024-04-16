@@ -71,7 +71,7 @@ impl actix::Handler<CheckForRemovedAddends> for WindowActor {
 }
 
 #[derive(woab::Removable)]
-#[removable(self.widgets.row_addend)]
+#[removable(self.widgets.row_addend in gtk4::ListBox)]
 struct AddendActor {
     #[allow(unused)]
     widgets: AddendWidgets,
