@@ -7,7 +7,7 @@ struct WoabRuntime {
 }
 
 thread_local! {
-    static WOAB_RUNTIME: RefCell<Option<WoabRuntime>> = RefCell::new(None);
+    static WOAB_RUNTIME: RefCell<Option<WoabRuntime>> = const { RefCell::new(None) };
 }
 
 /// Run a feature inside the Actix system GTK will be spinning.
