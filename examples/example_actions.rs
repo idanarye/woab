@@ -88,5 +88,6 @@ fn main() -> woab::Result<()> {
                 parameter_data: Vec::new(),
             }
         });
+        Ok(())
     })
 }

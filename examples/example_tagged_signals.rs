@@ -114,5 +114,6 @@ fn main() -> woab::Result<()> {
                 addends: Default::default(),
             }
         });
+        Ok(())
     })
 }

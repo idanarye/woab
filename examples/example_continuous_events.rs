@@ -69,5 +69,6 @@ fn main() -> woab::Result<()> {
                 widgets: bld.widgets().unwrap(),
             }
         });
+        Ok(())
     })
 }

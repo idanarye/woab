@@ -179,5 +179,6 @@ fn main() -> woab::Result<()> {
                 addends: Vec::new(),
             }
         });
+        Ok(())
     })
 }

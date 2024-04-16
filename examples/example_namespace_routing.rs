@@ -104,5 +104,6 @@ fn main() -> woab::Result<()> {
             widgets.win_app.show();
             WindowActor { widgets }
         });
+        Ok(())
     })
 }

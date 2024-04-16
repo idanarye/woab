@@ -83,6 +83,9 @@ pub enum Error {
 
     #[error(transparent)]
     RuntimeStopError(#[from] crate::RuntimeStopError),
+
+    #[error(transparent)]
+    GenericError(#[from] Box<dyn 'static + Send + Sync + std::error::Error>),
 }
 
 /// When a future cannot be woken.
