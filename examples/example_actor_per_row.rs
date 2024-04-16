@@ -70,6 +70,8 @@ impl actix::Handler<CheckForRemovedAddends> for WindowActor {
     }
 }
 
+#[derive(woab::Removable)]
+#[removable(self.widgets.row_addend)]
 struct AddendActor {
     #[allow(unused)]
     widgets: AddendWidgets,

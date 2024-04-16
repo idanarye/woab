@@ -13,9 +13,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `event_param`. It seems like `gdk4::Event` is a low-level implementation
   detail, unlike GTK3's `gdk::Event` which is used as the details parameter of
   some signals.
-- `Remove` message and `Removable` derive macro. Since GTK4 no longer has a
-  `Container` interface which can be used to generically remove a child widget,
-  it no longer provides much benefit over a manual implementation.
 
 ## 0.8.0 - 2023-08-19
 ### Changed
