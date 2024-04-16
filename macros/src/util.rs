@@ -22,22 +22,13 @@ pub fn iter_attrs_parts(
     mut dlg: impl FnMut(syn::Expr) -> Result<(), Error>,
 ) -> Result<(), Error> {
     for attr in attrs.iter() {
-        if !attr.path.get_ident().map_or(false, |ident| ident == look_for) {
+        if !attr.path().get_ident().map_or(false, |ident| ident == look_for) {
             continue;
         }
-        let as_expr: syn::Expr = syn::parse2(attr.tokens.clone())?;
-        match as_expr {
-            syn::Expr::Paren(body) => {
-                dlg(*body.expr)?;
-            }
-            syn::Expr::Tuple(body) => {
-                for expr in body.elems.into_iter() {
-                    dlg(expr)?;
-                }
-            }
-            _ => {
-                return Err(Error::new_spanned(attr.tokens.clone(), "Expected (<...>)"));
-            }
+        for expr in attr.parse_args_with(|p: syn::parse::ParseStream| {
+            syn::punctuated::Punctuated::<syn::Expr, syn::token::Comma>::parse_terminated(p)
+        })? {
+            dlg(expr)?;
         }
     }
     Ok(())

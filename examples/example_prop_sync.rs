@@ -7,7 +7,7 @@ struct WindowActor {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WindowWidgets {
-    #[prop_sync("value": f64, get, set)]
+    #[prop_sync("value" as f64, get, set)]
     adj_timer: gtk4::Adjustment,
     #[prop_sync(get, set)]
     txt_shortening: gtk4::Entry,

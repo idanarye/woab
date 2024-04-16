@@ -19,7 +19,7 @@ struct TestWidgets {
 struct WidgetsGroup1 {
     #[prop_sync(set, get)]
     text_entry: gtk4::Entry,
-    #[prop_sync("value": f64, set, get)]
+    #[prop_sync("value" as f64, set, get)]
     spin_button: gtk4::SpinButton,
 }
 

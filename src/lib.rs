@@ -282,7 +282,7 @@ pub use woab_macros::params;
 /// Annotate fields with `#[prop_sync(set)]` to include them in the setter and with
 /// `#[prop_sync(get)]` to include them in the getter.
 ///
-/// Use `#[prop_sync("property-name": PropertyType)]` to set the property that will be used for the
+/// Use `#[prop_sync("property-name" as PropertyType)]` to set the property that will be used for the
 /// syncing and its type. If `PropertyType` is a reference (`&PropertyType`), the reference will be
 /// used for the setter (the macro will add a lifetime) and its
 /// [`ToOwned::Owned`](std::borrow::ToOwned::Owned) will be used for the getter.
@@ -303,11 +303,11 @@ pub use woab_macros::params;
 ///     some_text: gtk4::Entry,
 ///
 ///     // Combo boxes use the active-id property to select a row in their model.
-///     #[prop_sync("active-id": String, set, get)]
+///     #[prop_sync("active-id" as String, set, get)]
 ///     some_combo_box: gtk4::ComboBox,
 ///
 ///     // We only want to get the value of this checkbox, not set it, so we don't generate a setter.
-///     #[prop_sync("active": bool, get)]
+///     #[prop_sync("active" as bool, get)]
 ///     some_check_box: gtk4::CheckButton,
 /// }
 ///

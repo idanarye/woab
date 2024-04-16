@@ -20,9 +20,9 @@ pub fn route_signal(
     actix_signal: &str,
     target: impl IntoGenerateRoutingGtkHandler,
 ) -> Result<glib::SignalHandlerId, crate::Error> {
-    Ok(
-        target.into_generate_routing_gtk_handler().connect_local(obj, gtk_signal, actix_signal)
-    )
+    Ok(target
+        .into_generate_routing_gtk_handler()
+        .connect_local(obj, gtk_signal, actix_signal))
 }
 
 /// Route a GIO action to an Actix actor that can handle [`woab::Signal`](crate::Signal).
@@ -109,7 +109,11 @@ pub trait GenerateRoutingGtkHandler {
     fn register_into_builder_rust_scope(&self, scope: &gtk4::BuilderRustScope, signal_name: &str);
 }
 
-fn route_with_tag_generate_impl<T: Clone + 'static>(signal_name: &str, tag: T, recipient: actix::Recipient<crate::Signal<T>>) -> impl Fn(&[glib::Value]) -> Option<glib::Value>  {
+fn route_with_tag_generate_impl<T: Clone + 'static>(
+    signal_name: &str,
+    tag: T,
+    recipient: actix::Recipient<crate::Signal<T>>,
+) -> impl Fn(&[glib::Value]) -> Option<glib::Value> {
     let signal_name = Rc::new(signal_name.to_owned());
     move |parameters| {
         let signal = crate::Signal::new(signal_name.clone(), parameters.to_owned(), tag.clone());
