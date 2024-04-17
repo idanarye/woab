@@ -74,6 +74,7 @@ impl Handler<woab::Signal> for ManualNamespaceActor {
 
 fn main() -> woab::Result<()> {
     let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_namespace_routing.ui")?);
+
     woab::main(Default::default(), move |app| {
         woab::shutdown_when_last_window_is_closed(app);
         WindowActor::create(|ctx| {

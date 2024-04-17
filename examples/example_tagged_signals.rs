@@ -98,10 +98,10 @@ impl WindowActor {
 }
 
 fn main() -> woab::Result<()> {
+    let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.ui").unwrap())).unwrap();
+
     woab::main(Default::default(), move |app| {
         woab::shutdown_when_last_window_is_closed(app);
-
-        let factories = Factories::read(std::io::BufReader::new(std::fs::File::open("examples/example.ui").unwrap())).unwrap();
 
         WindowActor::create(|ctx| {
             let bld = factories.win_app.instantiate_route_to(ctx.address());

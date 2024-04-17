@@ -22,7 +22,7 @@ macro_rules! wait_for {
 }
 
 pub fn test_main(fut: impl 'static + Future<Output = anyhow::Result<()>>) -> anyhow::Result<()> {
-    gtk4::init().unwrap();
+    gtk4::init()?;
     woab::run_actix_inside_gtk_event_loop();
     let app = gtk4::Application::default();
 
@@ -37,6 +37,6 @@ pub fn test_main(fut: impl 'static + Future<Output = anyhow::Result<()>>) -> any
         }
     });
     app.run();
-    woab::close_actix_runtime().unwrap().unwrap();
+    woab::close_actix_runtime()??;
     res.replace(Ok(()))
 }

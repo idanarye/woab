@@ -150,11 +150,11 @@ impl actix::Handler<Step> for RowActor {
 }
 
 fn main() -> woab::Result<()> {
-    woab::main(Default::default(), move |app| {
-        let factories = Factories::read(std::io::BufReader::new(
-            std::fs::File::open("examples/example_heavy_load.ui")?,
-        ))?;
+    let factories = Factories::read(std::io::BufReader::new(std::fs::File::open(
+        "examples/example_heavy_load.ui",
+    )?))?;
 
+    woab::main(Default::default(), move |app| {
         woab::shutdown_when_last_window_is_closed(app);
         WindowActor::create(|ctx| {
             let bld = factories.win_app.instantiate_route_to(ctx.address());
