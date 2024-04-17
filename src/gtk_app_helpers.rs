@@ -59,6 +59,19 @@ impl<S, F: 'static + FnOnce(&gtk4::Application) -> crate::Result<S>> ActivationS
 /// to setup the application: build and run the initial window and launch any actors that need to
 /// run at bootstrap.
 pub fn main(app: gtk4::Application, dlg: impl 'static + FnOnce(&gtk4::Application) -> crate::Result<()>) -> crate::Result<()> {
+    if app.application_id().is_some() && !app.flags().contains(gio::ApplicationFlags::NON_UNIQUE) {
+        return Err(crate::Error::IncorrectMain {
+            method_used: "woab::main",
+            should_have_used: "woab::main_shared",
+            reason: concat!(
+                "Application ID is set and the NON_UNIQUE flag was not passed",
+                " - ",
+                "GTK will make all invocations share a single process.",
+                " ",
+                "This needs to be addressed."
+            ),
+        });
+    }
     gtk4::init()?;
     crate::run_actix_inside_gtk_event_loop();
 
@@ -90,6 +103,69 @@ pub fn main(app: gtk4::Application, dlg: impl 'static + FnOnce(&gtk4::Applicatio
         .take_activation_result()
         .expect("activate signal was not called");
     result
+}
+
+pub fn main_shared<T: 'static>(
+    app: gtk4::Application,
+    initial_dlg: impl 'static + FnOnce(&gtk4::Application) -> crate::Result<T>,
+    activation_dlg: impl 'static + Fn(&mut T, &gtk4::Application),
+) -> crate::Result<()> {
+    if app.application_id().is_none() {
+        return Err(crate::Error::IncorrectMain {
+            method_used: "woab::main_shared",
+            should_have_used: "woab::main",
+            reason: "Application ID is not set - GTK will not make invocation share a process.",
+        });
+    }
+    if app.flags().contains(gio::ApplicationFlags::NON_UNIQUE) {
+        return Err(crate::Error::IncorrectMain {
+            method_used: "woab::main_shared",
+            should_have_used: "woab::main",
+            reason: "Application has the NON_UNIQUE flag - GTK will not make invocation share a process.",
+        });
+    }
+
+    gtk4::init()?;
+    crate::run_actix_inside_gtk_event_loop();
+
+    let activation_state = Rc::new(RefCell::new(ActivationState::BeforeActivation(initial_dlg)));
+
+    app.connect_activate({
+        let activation_state = activation_state.clone();
+        move |app| {
+            crate::block_on(async {
+                let initial_dlg = activation_state.borrow_mut().take_activation_dlg();
+                if let Some(initial_dlg) = initial_dlg {
+                    let result = initial_dlg(app);
+                    let failed = result.is_err();
+                    activation_state.borrow_mut().set_activation_result(result);
+                    if failed {
+                        app.quit();
+                        return;
+                    }
+                }
+                match &mut *activation_state.borrow_mut() {
+                    ActivationState::BeforeActivation(_) => panic!("We've already called take_activation_dlg"),
+                    ActivationState::WaitingForActivationResult => panic!("should have already called set_activation_result"),
+                    ActivationState::ActivationSucceeded(state) => {
+                        activation_dlg(state, app);
+                    }
+                    ActivationState::ActivationFailed(_) => panic!("Application should have already quit due to the activation failure"),
+                    ActivationState::ResultTakenOut => panic!("Main application already exited"),
+                }
+            });
+        }
+    });
+    let exit_code = app.run();
+    crate::close_actix_runtime()??;
+    if exit_code != glib::ExitCode::SUCCESS {
+        return Err(crate::Error::GtkBadExitCode(exit_code));
+    }
+    activation_state
+        .borrow_mut()
+        .take_activation_result()
+        .expect("activate signal was not called")?;
+    Ok(())
 }
 
 /// Helper function to configure the application so that when the last window is closed, the

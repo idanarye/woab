@@ -86,6 +86,13 @@ pub enum Error {
 
     #[error(transparent)]
     GenericError(#[from] Box<dyn 'static + Send + Sync + std::error::Error>),
+
+    #[error("Do not use {method_used} - use {should_have_used} instead: {reason}")]
+    IncorrectMain {
+        method_used: &'static str,
+        should_have_used: &'static str,
+        reason: &'static str,
+    },
 }
 
 /// When a future cannot be woken.

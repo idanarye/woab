@@ -337,7 +337,7 @@ pub use error::{Error, Result, WakerPerished};
 pub use event_loops_bridge::{
     block_on, close_actix_runtime, is_runtime_running, run_actix_inside_gtk_event_loop, try_block_on, RuntimeStopError,
 };
-pub use gtk_app_helpers::{main, shutdown_when_last_window_is_closed};
+pub use gtk_app_helpers::{main, main_shared, shutdown_when_last_window_is_closed};
 pub use remove::Remove;
 pub use signal::{Signal, SignalResult};
 pub use signal_routing::{
