@@ -4,50 +4,50 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 
 enum ActivationState<S, F: 'static + FnOnce(&gtk4::Application) -> crate::Result<S>> {
-    BeforeActivation(F),
-    WaitingForActivationResult,
-    ActivationSucceeded(S),
-    ActivationFailed(crate::Error),
+    BeforeStartup(F),
+    WaitingForStartupResult,
+    StartupSucceeded(S),
+    StartupFailed(crate::Error),
     ResultTakenOut,
 }
 
 impl<S, F: 'static + FnOnce(&gtk4::Application) -> crate::Result<S>> ActivationState<S, F> {
-    fn take_activation_dlg(&mut self) -> Option<F> {
+    fn take_startup_dlg(&mut self) -> Option<F> {
         match self {
-            Self::BeforeActivation(_) => {
-                let Self::BeforeActivation(dlg) = std::mem::replace(self, Self::WaitingForActivationResult) else {
+            Self::BeforeStartup(_) => {
+                let Self::BeforeStartup(dlg) = std::mem::replace(self, Self::WaitingForStartupResult) else {
                     panic!("We just checked that the variant is BeforeActivation...");
                 };
                 Some(dlg)
             }
-            Self::WaitingForActivationResult => panic!(),
-            Self::ActivationSucceeded(_) => None,
-            Self::ActivationFailed(_) => None,
+            Self::WaitingForStartupResult => panic!(),
+            Self::StartupSucceeded(_) => None,
+            Self::StartupFailed(_) => None,
             Self::ResultTakenOut => panic!(),
         }
     }
 
-    fn set_activation_result(&mut self, result: crate::Result<S>) {
+    fn set_startup_result(&mut self, result: crate::Result<S>) {
         match self {
-            Self::BeforeActivation(_) => panic!("Trying to set result before running the activation delegate"),
-            Self::WaitingForActivationResult => {
+            Self::BeforeStartup(_) => panic!("Trying to set result before running the startup delegate"),
+            Self::WaitingForStartupResult => {
                 *self = match result {
-                    Ok(ok) => Self::ActivationSucceeded(ok),
-                    Err(err) => Self::ActivationFailed(err),
+                    Ok(ok) => Self::StartupSucceeded(ok),
+                    Err(err) => Self::StartupFailed(err),
                 };
             }
-            Self::ActivationSucceeded(_) | Self::ActivationFailed(_) | Self::ResultTakenOut => {
+            Self::StartupSucceeded(_) | Self::StartupFailed(_) | Self::ResultTakenOut => {
                 panic!("Trying to set result more than once")
             }
         }
     }
 
-    fn take_activation_result(&mut self) -> Option<crate::Result<S>> {
+    fn take_startup_result(&mut self) -> Option<crate::Result<S>> {
         match std::mem::replace(self, Self::ResultTakenOut) {
-            Self::BeforeActivation(_) => None,
-            Self::WaitingForActivationResult => panic!("Trying to take the activation result when activation is still running"),
-            Self::ActivationSucceeded(ok) => Some(Ok(ok)),
-            Self::ActivationFailed(err) => Some(Err(err)),
+            Self::BeforeStartup(_) => None,
+            Self::WaitingForStartupResult => panic!("Trying to take the startup result when startup is still running"),
+            Self::StartupSucceeded(ok) => Some(Ok(ok)),
+            Self::StartupFailed(err) => Some(Err(err)),
             Self::ResultTakenOut => panic!(),
         }
     }
@@ -55,25 +55,25 @@ impl<S, F: 'static + FnOnce(&gtk4::Application) -> crate::Result<S>> ActivationS
 
 /// Run GTK and Actix.
 ///
-/// The closure passed to this function will run inside the application's `connect` signal. Use it
+/// The closure passed to this function will run inside the application's `startup` signal. Use it
 /// to setup the application: build and run the initial window and launch any actors that need to
 /// run at bootstrap.
 pub fn main(app: gtk4::Application, dlg: impl 'static + FnOnce(&gtk4::Application) -> crate::Result<()>) -> crate::Result<()> {
     gtk4::init()?;
-    crate::run_actix_inside_gtk_event_loop();
 
-    let activation_state = Rc::new(RefCell::new(ActivationState::BeforeActivation(dlg)));
+    let startup_state = Rc::new(RefCell::new(ActivationState::BeforeStartup(dlg)));
 
-    app.connect_activate({
-        let activation_state = activation_state.clone();
+    app.connect_startup({
+        let startup_state = startup_state.clone();
         move |app| {
+            crate::run_actix_inside_gtk_event_loop();
             crate::block_on(async {
-                let Some(dlg) = activation_state.borrow_mut().take_activation_dlg() else {
-                    panic!("woab::main was used, but the `activate` signal was invoked more than once");
+                let Some(dlg) = startup_state.borrow_mut().take_startup_dlg() else {
+                    panic!("woab::main was used, but the `startup` signal was invoked more than once");
                 };
                 let result = dlg(app);
                 let failed = result.is_err();
-                activation_state.borrow_mut().set_activation_result(result);
+                startup_state.borrow_mut().set_startup_result(result);
                 if failed {
                     app.quit();
                 }
@@ -81,14 +81,21 @@ pub fn main(app: gtk4::Application, dlg: impl 'static + FnOnce(&gtk4::Applicatio
         }
     });
     let exit_code = app.run();
+    if matches!(*startup_state.borrow(), ActivationState::BeforeStartup(_)) {
+        return if exit_code != glib::ExitCode::SUCCESS {
+            Err(crate::Error::GtkBadExitCode(exit_code))
+        } else {
+            Ok(())
+        };
+    }
     crate::close_actix_runtime()??;
     if exit_code != glib::ExitCode::SUCCESS {
         return Err(crate::Error::GtkBadExitCode(exit_code));
     }
-    let result = activation_state
+    let result = startup_state
         .borrow_mut()
-        .take_activation_result()
-        .expect("activate signal was not called");
+        .take_startup_result()
+        .expect("startup signal was not called");
     result
 }
 
