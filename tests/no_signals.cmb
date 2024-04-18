@@ -4,6 +4,9 @@
   <ui>
 	(1,None,"no_signals.ui","no_signals.ui",None,None,None,None,None,None,None)
   </ui>
+  <ui_library>
+	(1,"gtk","4.0",None)
+  </ui_library>
   <object>
 	(1,1,"GtkApplicationWindow","win_test",None,None,None,None,-1,None,None)
   </object>

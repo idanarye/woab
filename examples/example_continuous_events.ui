@@ -2,7 +2,7 @@
 <!-- Created with Cambalache 0.90.1 -->
 <interface>
   <!-- interface-name example_continuous_events.ui -->
-  <requires lib="gtk" version="4.12"/>
+  <requires lib="gtk" version="4.0"/>
   <object class="GtkApplicationWindow" id="win_app">
     <signal name="close-request" handler="close"/>
     <signal name="notify" handler="window_notify"/>

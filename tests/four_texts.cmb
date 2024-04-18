@@ -4,6 +4,9 @@
   <ui>
 	(1,None,"four_texts.ui","four_texts.ui",None,None,None,None,None,None,None)
   </ui>
+  <ui_library>
+	(1,"gtk","4.0",None)
+  </ui_library>
   <object>
 	(1,1,"GtkApplicationWindow","win_test",None,None,None,None,-1,None,None),
 	(1,2,"GtkBox",None,1,None,None,None,-1,None,None),

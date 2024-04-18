@@ -4,6 +4,9 @@
   <ui>
 	(1,None,"example_actions.ui","example_actions.ui",None,None,None,None,None,None,None)
   </ui>
+  <ui_library>
+	(1,"gtk","4.0",None)
+  </ui_library>
   <object>
 	(1,1,"GtkApplicationWindow","win_app",None,None,None,None,-1,None,None),
 	(1,2,"GtkGrid",None,1,None,None,None,-1,None,None),
