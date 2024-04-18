@@ -34,67 +34,95 @@
 //! ```no_run
 //! use actix::prelude::*;
 //! use gtk4::prelude::*;
-//!
-//! #[derive(woab::Factories)]
-//! struct Factories {
-//!     // The field name must be the ID from the builder XML file:
-//!     main_window: woab::BuilderFactory,
-//!     // Possibly other things from the builder XML file that need to be created during the program.
+//! 
+//! struct MyActor {
+//!     widgets: MyWidgets,
 //! }
-//!
-//! struct AppActor {
-//!     widgets: AppWidgets,
-//!     factories: std::rc::Rc<Factories>, // for creating more things from inside the actor.
-//!     // More actor data
+//! 
+//! impl Actor for MyActor {
+//!     type Context = Context<Self>;
 //! }
-//!
-//! impl actix::Actor for AppActor {
-//!     type Context = actix::Context<Self>;
-//! }
-//!
+//! 
+//! // Use this derive to automatically populate a struct with GTK objects from a builder using their
+//! // object IDs.
 //! #[derive(woab::WidgetsFromBuilder)]
-//! struct AppWidgets {
-//!     main_window: gtk4::ApplicationWindow, // needed for making the window visible
-//!     // Other widgets inside the window to interact with.
+//! struct MyWidgets {
+//!     window: gtk4::ApplicationWindow,
+//!     button: gtk4::Button,
 //! }
-//!
-//! impl actix::Handler<woab::Signal> for AppActor {
+//! 
+//! // WoAB converts GTK signals (defined) to Actix messages, which the user defined actors need handle.
+//! impl Handler<woab::Signal> for MyActor {
 //!     type Result = woab::SignalResult;
-//!
-//!     fn handle(&mut self, msg: woab::Signal, ctx: &mut <Self as actix::Actor>::Context) -> Self::Result {
+//! 
+//!     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
+//!         // All the signals get the same message type (`woab::Signal`), and need to be matched by
+//!         // the handler name.
 //!         Ok(match msg.name() {
-//!             // These are custom signals defined in Glade's "Signals" tab.
-//!             "sig1" => {
-//!                 // Behavior for sig1.
-//!                 None // GTK does not expect sig1 to return anything
-//!             },
-//!             "sig2" => {
-//!                 let woab::params!(text_buffer: gtk4::TextBuffer, _) = msg.params()?;
-//!                 // Behavior for sig2 that uses the signal parameters.
-//!                 Some(glib::Propagation::Stop) // GTK expects sig2 to return its propagation decision
-//!             },
+//!             "button_clicked" => {
+//!                 // Handlers can freely use the GTK widget handles stored inside the actor to
+//!                 // interact with the UI.
+//!                 self.widgets.button.set_label("Hello World");
+//!                 // Some GTK signals require a `glib::Propagation` decision. Others, like
+//!                 // `GtkButton::clicked` here, don't. It is up to the signal handler to return the
+//!                 // correct type.
+//!                 None
+//!             }
 //!             _ => msg.cant_handle()?,
 //!         })
 //!     }
 //! }
-//!
+//! 
 //! fn main() -> woab::Result<()> {
-//! #    fn read_builder_xml() -> std::io::BufReader<std::fs::File> {
-//! #        unreachable!()
-//! #    }
-//!     woab::main(Default::default(), |app| {
+//!     // Factories can be used to create the GUI and connect the signals.
+//!     let factory = woab::BuilderFactory::from(
+//!         // Typically the UI XML will be generated with Cambalache and loaded from a file, but for
+//!         // the sake of this simple example it is inlined here.
+//!         r#"
+//!         <interface>
+//!           <object class="GtkApplicationWindow" id="window">
+//!             <child>
+//!               <object class="GtkButton" id="button">
+//!                 <property name="label">Click Me!</property>
+//!                 <signal name="clicked" handler="button_clicked"/>
+//!               </object>
+//!             </child>
+//!           </object>
+//!         </interface>
+//!         "#
+//!         .to_owned(),
+//!     );
+//! 
+//!     // Setup the application inside `woab::main`. This handles starting/stopping GTK and Actix, and
+//!     // making them work together. The actual closure is run inside the application's `startup`
+//!     // signal.
+//!     woab::main(gtk4::Application::default(), move |app| {
+//!         // A useful helper so that when the last window is closed, the application will exit.
 //!         woab::shutdown_when_last_window_is_closed(app);
-//!         let factories = std::rc::Rc::new(Factories::read(read_builder_xml()).unwrap());
-//!
-//!         AppActor::create(|ctx| {
-//!             let bld = factories.main_window.instantiate_route_to(ctx.address());
-//!             let widgets: AppWidgets = bld.widgets().unwrap();
-//!             widgets.main_window.show(); // Could also be done inside the actor
-//!             AppActor {
-//!                 widgets,
-//!                 factories,
-//!             }
-//!         });
+//! 
+//!         // We need the actor's address when instantiating the builder (because we need to connect
+//!         // the signals) and we need the builder result when we create the actor (because we want to
+//!         // provide it with the widgets). Thus, we usually want to use Actix's two-steps actor
+//!         // initialization.
+//!         let ctx = Context::new();
+//! 
+//!         // This will create the UI widgets from the XML and route the signals to the actor.
+//!         let bld = factory.instantiate_route_to(ctx.address());
+//! 
+//!         // Automatically assign all the windows inside the builder to the application. Without
+//!         // this, `woab::shutdown_when_last_window_is_closed` will be meaningless.
+//!         bld.set_application(app);
+//! 
+//!         // Extract the newly created widgets from the builder.
+//!         let widgets: MyWidgets = bld.widgets()?;
+//! 
+//!         // When the builder loads the window, it starts as hidden. We can use the extracted widgets
+//!         // to show it.
+//!         widgets.window.show();
+//! 
+//!         // This is where the actor is actually launched.
+//!         ctx.run(MyActor { widgets });
+//! 
 //!         Ok(())
 //!     })
 //! }
