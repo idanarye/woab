@@ -30,44 +30,24 @@ pub fn impl_factories_derive(ast: &syn::DeriveInput) -> Result<proc_macro2::Toke
         let mut strings_that_match = vec![syn::LitStr::new(&field_ident.to_string(), field_ident.span())];
 
         for attr in field.attrs.iter() {
-            if !attr.path.get_ident().map_or(false, |ident| ident == "factory") {
+            if !attr.path().get_ident().map_or(false, |ident| ident == "factory") {
                 continue;
             }
-            let meta = if let syn::Meta::List(meta) = attr.parse_meta()? {
-                meta
-            } else {
-                return Err(Error::new_spanned(attr, "Only list style (`#[factory(...)]`) is supported"));
-            };
-
-            for list_item in meta.nested.iter() {
-                let meta = if let syn::NestedMeta::Meta(meta) = list_item {
-                    meta
-                } else {
-                    return Err(Error::new_spanned(
-                        list_item,
-                        "Literals are not supported directly inside factory attribute",
-                    ));
-                };
-                let meta_name = meta.path().get_ident().map(|ident| ident.to_string());
+            attr.parse_nested_meta(|meta| {
+                let meta_name = meta.path.get_ident().map(|ident| ident.to_string());
                 match meta_name.as_deref() {
                     Some("extra") => {
-                        if let syn::Meta::List(extra) = meta {
-                            for extra_item in extra.nested.iter() {
-                                if let syn::NestedMeta::Meta(syn::Meta::Path(extra_path)) = extra_item {
-                                    if let Some(ident) = extra_path.get_ident() {
-                                        strings_that_match.push(syn::LitStr::new(&ident.to_string(), ident.span()));
-                                        continue;
-                                    }
-                                }
-                                return Err(Error::new_spanned(extra_item, "extra items must be identifiers"));
+                        meta.parse_nested_meta(|extra_item| {
+                            if let Some(ident) = extra_item.path.get_ident() {
+                                strings_that_match.push(syn::LitStr::new(&ident.to_string(), ident.span()));
                             }
-                        } else {
-                            return Err(Error::new_spanned(meta, "extra must be list (`#[factory(extra(...))]`)"));
-                        }
+                            Ok(())
+                        })?;
                     }
-                    _ => return Err(Error::new_spanned(meta.path(), "Unsupported parameter")),
+                    _ => return Err(Error::new_spanned(meta.path, "Unsupported parameter")),
                 }
-            }
+                Ok(())
+            })?;
         }
         match_arms.push(quote! {
             #(#strings_that_match)|* => Some(#i),

@@ -1,19 +1,18 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[derive(woab::Factories)]
 pub struct Factories {
-    #[factory(extra(buf_sum))]
     win_app: woab::BuilderFactory,
-    #[factory(extra(buf_addend))]
     row_addend: woab::BuilderFactory,
 }
 
 #[derive(woab::WidgetsFromBuilder)]
 pub struct WindowWidgets {
-    win_app: gtk::ApplicationWindow,
-    buf_sum: gtk::TextBuffer,
-    lst_addition: gtk::ListBox,
+    win_app: gtk4::ApplicationWindow,
+    buf_sum: gtk4::TextBuffer,
+    #[allow(unused)]
+    lst_addition: gtk4::ListBox,
 }
 
 struct WindowActor {
@@ -36,28 +35,18 @@ impl actix::Handler<woab::Signal> for WindowActor {
 
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
-            "close" => {
-                gtk::main_quit();
-                None
-            }
             "click_button" => {
-                self.factories.row_addend.instantiate().connect_with(|bld| {
+                AddendActor::create(|addend_ctx| {
+                    let bld = self.factories.row_addend.instantiate_route_to(addend_ctx.address());
+                    self.addends.push(addend_ctx.address());
                     let widgets: AddendWidgets = bld.widgets().unwrap();
-                    self.widgets.lst_addition.add(&widgets.row_addend);
-                    let addend = AddendActor {
+                    self.widgets.lst_addition.append(&widgets.row_addend);
+                    AddendActor {
                         widgets,
                         window: ctx.address(),
                         number: Some(0),
                     }
-                    .start();
-                    self.addends.push(addend.clone());
-                    addend
                 });
-                ctx.address().do_send(Recalculate);
-                None
-            }
-            "addend_removed" => {
-                self.addends.retain(|a| a.connected());
                 ctx.address().do_send(Recalculate);
                 None
             }
@@ -66,10 +55,27 @@ impl actix::Handler<woab::Signal> for WindowActor {
     }
 }
 
+struct CheckForRemovedAddends;
+
+impl actix::Message for CheckForRemovedAddends {
+    type Result = ();
+}
+
+impl actix::Handler<CheckForRemovedAddends> for WindowActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: CheckForRemovedAddends, ctx: &mut Self::Context) -> Self::Result {
+        self.addends.retain(|a| a.connected());
+        ctx.address().do_send(Recalculate);
+    }
+}
+
 #[derive(woab::Removable)]
-#[removable(self.widgets.row_addend)]
+#[removable(self.widgets.row_addend in gtk4::ListBox)]
 struct AddendActor {
+    #[allow(unused)]
     widgets: AddendWidgets,
+    #[allow(unused)]
     window: actix::Addr<WindowActor>,
     number: Option<isize>,
 }
@@ -80,7 +86,8 @@ impl actix::Actor for AddendActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct AddendWidgets {
-    row_addend: gtk::ListBoxRow,
+    #[allow(unused)]
+    row_addend: gtk4::ListBoxRow,
 }
 
 impl actix::Handler<woab::Signal> for AddendActor {
@@ -89,10 +96,8 @@ impl actix::Handler<woab::Signal> for AddendActor {
     fn handle(&mut self, msg: woab::Signal, ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "addend_changed" => {
-                let woab::params!(buffer: gtk::TextBuffer) = msg.params()?;
-                let new_number = buffer
-                    .text(&buffer.start_iter(), &buffer.end_iter(), true)
-                    .and_then(|text| text.parse().ok());
+                let woab::params!(buffer: gtk4::TextBuffer) = msg.params()?;
+                let new_number = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true).parse().ok();
                 if new_number != self.number {
                     self.number = new_number;
                     self.window.do_send(Recalculate);
@@ -100,7 +105,15 @@ impl actix::Handler<woab::Signal> for AddendActor {
                 None
             }
             "remove_addend" => {
-                ctx.address().do_send(woab::Remove);
+                self.widgets
+                    .row_addend
+                    .parent()
+                    .unwrap()
+                    .downcast::<gtk4::ListBox>()
+                    .unwrap()
+                    .remove(&self.widgets.row_addend);
+                ctx.stop();
+                self.window.do_send(CheckForRemovedAddends);
                 None
             }
             _ => msg.cant_handle()?,
@@ -149,26 +162,23 @@ impl actix::Handler<GetNumber> for AddendActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> woab::Result<()> {
     let factories = std::rc::Rc::new(Factories::read(std::io::BufReader::new(std::fs::File::open(
-        "examples/example.glade",
+        "examples/example.ui",
     )?))?);
 
-    gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-
-    woab::block_on(async {
-        factories.win_app.instantiate().connect_with(|bld| {
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        let factories = factories.clone();
+        WindowActor::create(|ctx| {
+            let bld = factories.win_app.instantiate_route_to(ctx.address());
+            bld.set_application(app);
             WindowActor {
                 widgets: bld.widgets().unwrap(),
                 factories,
                 addends: Vec::new(),
             }
-            .start()
         });
-    });
-
-    gtk::main();
-    woab::close_actix_runtime()??;
-    Ok(())
+        Ok(())
+    })
 }

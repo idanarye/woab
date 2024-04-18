@@ -1,3 +1,5 @@
+pub type Result<T> = core::result::Result<T, Error>;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
@@ -12,15 +14,18 @@ pub enum Error {
     #[error(transparent)]
     GtkBoolError(#[from] glib::BoolError),
 
+    #[error("GTK exited with code {0:?}")]
+    GtkBadExitCode(glib::ExitCode),
+
     /// When extracting widgets using
-    /// [`BuilderConnector::widgets`](crate::BuilderConnector::widgets) and one of the widgets is
+    /// [`BuilderWidgets::widgets`](crate::BuilderWidgets::widgets) and one of the widgets is
     /// missing.
     #[error("Builder is missing widget with ID {0:?}")]
     WidgetMissingInBuilder(String),
 
     /// When extracting widgets using
-    /// [`BuilderConnector::widgets`](crate::BuilderConnector::widgets) and one of the widgets has
-    /// the wrong type.
+    /// [`BuilderWidgets::widgets`](crate::BuilderWidgets::widgets) and one of the widgets has the
+    /// wrong type.
     #[error("Expected widget {widget_id:?} to be {expected_type} - not {actual_type}")]
     IncorrectWidgetTypeInBuilder {
         widget_id: String,
@@ -50,11 +55,11 @@ pub enum Error {
     },
 
     /// When an event signal's parameter is of the the wrong event type.
-    #[error("Expected the event parameter of {signal:?} to be {expected_type} - not {actual_type}")]
+    #[error("Expected the event parameter of {signal:?} to be {expected_type} - not {actual_type:?}")]
     IncorrectEventParameter {
         signal: String,
         expected_type: &'static str,
-        actual_type: gdk::EventType,
+        actual_type: gdk4::EventType,
     },
 
     /// When an action signal's parameter is of the the wrong type.
@@ -75,6 +80,12 @@ pub enum Error {
 
     #[error(transparent)]
     WakerPerished(#[from] WakerPerished),
+
+    #[error(transparent)]
+    RuntimeStopError(#[from] crate::RuntimeStopError),
+
+    #[error(transparent)]
+    GenericError(#[from] Box<dyn 'static + Send + Sync + std::error::Error>),
 }
 
 /// When a future cannot be woken.

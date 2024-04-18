@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name example_canvas.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkApplicationWindow" id="win_app">
+    <child>
+      <object class="GtkDrawingArea" id="draw_area">
+        <signal name="resize" handler="resize"/>
+      </object>
+    </child>
+  </object>
+</interface>

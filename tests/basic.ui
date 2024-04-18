@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name basic.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkApplicationWindow" id="win_test">
+    <child>
+      <object class="GtkGrid">
+        <child>
+          <object class="GtkButton" id="btn_copy_right_to_left">
+            <property name="label">Copy &lt;=</property>
+            <signal name="clicked" handler="copy_right_to_left"/>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_copy_left_to_right">
+            <property name="label">Copy =&gt;</property>
+            <signal name="clicked" handler="copy_left_to_right"/>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTextView" id="txt_left">
+            <property name="buffer">
+              <object class="GtkTextBuffer" id="buf_left"/>
+            </property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTextView" id="txt_right">
+            <property name="buffer">
+              <object class="GtkTextBuffer" id="buf_right"/>
+            </property>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">1</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

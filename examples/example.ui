@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.90.1 -->
+<interface>
+  <!-- interface-name example.ui -->
+  <requires lib="gtk" version="4.0"/>
+  <object class="GtkApplicationWindow" id="win_app">
+    <child>
+      <object class="GtkGrid">
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        <property name="vexpand-set">True</property>
+        <child>
+          <object class="GtkButton">
+            <property name="label">Add Addend</property>
+            <property name="valign">start</property>
+            <signal name="clicked" handler="click_button"/>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">2</property>
+              <property name="row">0</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="height-request">200</property>
+            <property name="vexpand">True</property>
+            <property name="width-request">300</property>
+            <child>
+              <object class="GtkViewport">
+                <child>
+                  <object class="GtkListBox" id="lst_addition">
+                    <child>
+                      <object class="GtkListBoxRow" id="row_addend">
+                        <child>
+                          <object class="GtkGrid">
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">+</property>
+                                <layout>
+                                  <property name="column">0</property>
+                                  <property name="column-span">1</property>
+                                  <property name="row">0</property>
+                                  <property name="row-span">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTextView">
+                                <property name="buffer">
+                                  <object class="GtkTextBuffer" id="buf_addend">
+                                    <property name="text">0</property>
+                                    <signal name="changed" handler="addend_changed"/>
+                                  </object>
+                                </property>
+                                <property name="input-purpose">number</property>
+                                <property name="width-request">50</property>
+                                <layout>
+                                  <property name="column">1</property>
+                                  <property name="column-span">1</property>
+                                  <property name="row">0</property>
+                                  <property name="row-span">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="label">X</property>
+                                <signal name="clicked" handler="remove_addend"/>
+                                <layout>
+                                  <property name="column">2</property>
+                                  <property name="column-span">1</property>
+                                  <property name="row">0</property>
+                                  <property name="row-span">1</property>
+                                </layout>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <layout>
+              <property name="column">2</property>
+              <property name="column-span">1</property>
+              <property name="row">0</property>
+              <property name="row-span">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label">Sum:</property>
+            <property name="valign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="column-span">1</property>
+              <property name="row">2</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkTextView">
+            <property name="buffer">
+              <object class="GtkTextBuffer" id="buf_sum">
+                <property name="text">0</property>
+              </object>
+            </property>
+            <property name="editable">False</property>
+            <property name="valign">end</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="column-span">1</property>
+              <property name="row">2</property>
+              <property name="row-span">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

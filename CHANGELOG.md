@@ -5,6 +5,34 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- [**BREAKING**] Upgrade to GTK4
+- Change the syntax of the `PropSync` derive's attribute from
+  ```rust
+  `#[prop_sync("value": Type, ...)]
+  ```
+  to
+  ```rust
+  #[prop_sync("value" as Type, ...)]
+  ```
+- `Removable` derive's attribute now needs to specify, in addition to the field
+  that needs to be removed, the type of the container. The syntax is:
+  ```rust
+  #[removable(self.path.to.widget.field in gtk4::TypeOfContainer)]
+  ```
+- Signal connection is now done at builder instantiation. `BuilderConnector`
+  and `BuilderConnectorWidgetsOnly` are replaced by `BuilderWidgets`.
+
+### Removed
+- `run_dialog`. It is no longer required, since dialogs fully support async now.
+- `event_param`. It seems like `gdk4::Event` is a low-level implementation
+  detail, unlike GTK3's `gdk::Event` which is used as the details parameter of
+  some signals.
+
+### Added
+- `woab::main` as a new entry point for running WoAB applications.
+- `woab::shutdown_when_last_window_is_closed`.
+- `BuilderWidgets::set_application`.
 
 ## 0.8.0 - 2023-08-19
 ### Changed

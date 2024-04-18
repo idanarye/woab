@@ -3,7 +3,7 @@
 /// Refer to [`#[derive(woab::Removable)]`](derive.Removable.html) docs for usage instructions.
 /// ```no_run
 /// #[derive(woab::Removable)]
-/// #[removable(self.widgets.main_window)]
+/// #[removable(self.widgets.row in gtk4::ListBox)]
 /// struct MyActor {
 ///     widgets: MyWidgets,
 /// }
@@ -12,7 +12,7 @@
 ///
 /// #[derive(woab::WidgetsFromBuilder)]
 /// struct MyWidgets {
-///     main_window: gtk::ApplicationWindow,
+///     row: gtk4::ListBoxRow,
 /// }
 ///
 /// let my_actor: actix::Addr<MyActor>;

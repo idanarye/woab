@@ -15,10 +15,10 @@ use crate::WakerPerished;
 /// signal it is better to use [`woab::wake_from_signal`](wake_from_signal).
 ///
 /// ```no_run
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// # async fn asyncfunc() {
-/// let button1: gtk::Button;
-/// let button2: gtk::Button;
+/// let button1: gtk4::Button;
+/// let button2: gtk4::Button;
 /// # button1 = panic!();
 /// # button2 = panic!();
 /// let button_clicked = woab::wake_from(|tx| {
@@ -62,9 +62,9 @@ pub async fn wake_from<T>(setup_dlg: impl FnOnce(mpsc::Sender<T>)) -> Result<T, 
 /// return the value passed to the sender.
 ///
 /// ```no_run
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// # async fn asyncfunc() {
-/// let button: gtk::Button;
+/// let button: gtk4::Button;
 /// # button = panic!();
 /// let button_clicked = woab::wake_from_signal(&button, |tx| {
 ///     button.connect_clicked(move |_| {
@@ -103,15 +103,15 @@ pub async fn wake_from_signal<T>(
 /// Similar to [`outside`], but returns immediately without waiting for the future to finish.
 ///
 /// ```no_run
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// #
 /// # struct WindowActor {
 /// #     widgets: WindowWidgets,
 /// # }
 /// #
 /// # struct WindowWidgets {
-/// #     some_container: gtk::ListBox,
-/// #     some_widget: gtk::ListBoxRow,
+/// #     some_container: gtk4::ListBox,
+/// #     some_widget: gtk4::ListBoxRow,
 /// # }
 /// #
 /// # impl actix::Actor for WindowActor {
@@ -163,15 +163,15 @@ pub fn spawn_outside(fut: impl Future<Output = ()> + 'static) {
 ///
 /// ```no_run
 /// # use actix::prelude::*;
-/// # use gtk::prelude::*;
+/// # use gtk4::prelude::*;
 /// #
 /// # struct WindowActor {
 /// #     widgets: WindowWidgets,
 /// # }
 /// #
 /// # struct WindowWidgets {
-/// #     some_container: gtk::ListBox,
-/// #     some_widget: gtk::ListBoxRow,
+/// #     some_container: gtk4::ListBox,
+/// #     some_widget: gtk4::ListBoxRow,
 /// # }
 /// #
 /// # impl actix::Actor for WindowActor {
@@ -210,52 +210,4 @@ pub async fn outside<T: 'static>(fut: impl Future<Output = T> + 'static) -> Resu
         tx.send(result).map_err(|_| "Unable to send future result").unwrap();
     });
     rx.await.map_err(|_| WakerPerished)
-}
-
-/// Run a GTK dialog and get its response.
-///
-/// Use this instead of gtk-rs' `dialog.run()`, because `dialog.run()` runs a nested GTK loop which
-/// does not play nice with WoAB and because `run_dialog` is `async` and can let Actix continue
-/// running in the background.
-///
-/// GTK does not automatically close dialogs when the user responds to them, but `run_dialog` can
-/// do it if `true` is passed as the second argument.
-///
-/// ```no_run
-/// # async fn asyncfunc() {
-/// let dialog_response = woab::run_dialog(
-///     &gtk::MessageDialog::new::<gtk::ApplicationWindow>(
-///         None,
-///         gtk::DialogFlags::all(),
-///         gtk::MessageType::Question,
-///         gtk::ButtonsType::YesNo,
-///         "What would it be?",
-///     ),
-///     true,
-/// )
-/// .await;
-/// println!("User says {}", dialog_response);
-/// # }
-/// ```
-pub async fn run_dialog(
-    dialog: &(impl Clone + gtk::prelude::DialogExt + gtk::prelude::GtkWindowExt + gtk::prelude::WidgetExt + 'static),
-    close_after: bool,
-) -> gtk::ResponseType {
-    dialog.set_modal(true);
-    spawn_outside({
-        let dialog = dialog.clone();
-        async move {
-            dialog.show();
-        }
-    });
-    wake_from(|tx| {
-        dialog.connect_response(move |dialog, response| {
-            let _ = tx.try_send(response);
-            if close_after {
-                dialog.close();
-            }
-        });
-    })
-    .await
-    .unwrap()
 }

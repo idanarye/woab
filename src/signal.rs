@@ -5,7 +5,8 @@ use send_wrapper::SendWrapper;
 /// The generic signal WoAB uses.
 ///
 /// The signal contains a name, list of parameters, and an optional tag. Route the signals from GTK
-/// to Actix actors using [`BuilderConnector`](crate::BuilderConnector),
+/// to Actix actors using
+/// [`BuilderFactory::instantiate_route_to`](crate::BuilderFactory::instantiate_route_to),
 /// [`woab::route_signal`](crate::route_signal) or [`woab::route_action`](crate::route_action) and
 /// handle them as actix messages, matching on their [`name`](Signal::name) and using
 /// [`woab::params!`](crate::params!) to get their parameters.
@@ -76,9 +77,9 @@ impl<T> Signal<T> {
     /// The name of the signal.
     ///
     /// * If the signal comes from a GTK builder, it is what's written in the "Handler" field of
-    ///   the relevant signal in the "Signals" tabs of [the Glade
-    ///   editor](https://glade.gnome.org/), or the `handler` attribute of the `<signal>` element
-    ///   in the XML.
+    ///   the relevant signal in the "Signals" tabs of [the Cambalache
+    ///   editor](https://gitlab.gnome.org/jpu/cambalache), or the `handler` attribute of the
+    ///   `<signal>` element in the XML.
     /// * If the signal comes from [`woab::route_signal`](crate::route_signal), it is the third
     ///   argument (`actix_signal`) passed to that function.
     /// * If the signal comes from [`woab::route_action`](crate::route_action), it is the name of
@@ -96,6 +97,10 @@ impl<T> Signal<T> {
         &self.0.tag
     }
 
+    pub fn raw_param(&self, index: usize) -> Result<&glib::Value, crate::Error> {
+        self.0.raw_param(index)
+    }
+
     /// A parameter of the signal, converted to the appropriate type.
     pub fn param<'a, P>(&'a self, index: usize) -> Result<P, crate::Error>
     where
@@ -103,20 +108,6 @@ impl<T> Signal<T> {
         P: glib::types::StaticType,
     {
         self.0.param(index)
-    }
-
-    /// The event parameter for event signals.
-    ///
-    /// Convenience method - the parameter in event signals needs to be converted to
-    /// `gdk::Event` first before it can be converted to its concrete type. This method runs
-    /// both steps.
-    pub fn event_param<P: gdk::FromEvent + 'static>(&self) -> Result<P, crate::Error> {
-        let event: gdk::Event = self.param(1)?;
-        event.downcast().map_err(|event| crate::Error::IncorrectEventParameter {
-            signal: self.name().to_owned(),
-            expected_type: core::any::type_name::<P>(),
-            actual_type: event.event_type(),
-        })
     }
 
     /// The action parameter for stateless action signals, or the action state for stateful action signals.

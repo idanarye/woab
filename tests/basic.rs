@@ -1,14 +1,8 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 #[macro_use]
 mod util;
-
-#[derive(woab::Factories)]
-struct Factories {
-    #[factory(extra(buf_left, buf_right))]
-    win_test: woab::BuilderFactory,
-}
 
 struct TestActor {
     widgets: TestWidgets,
@@ -21,19 +15,15 @@ impl actix::Actor for TestActor {
 #[derive(Clone, woab::WidgetsFromBuilder)]
 pub struct TestWidgets {
     #[allow(unused)]
-    win_test: gtk::ApplicationWindow,
-    btn_copy_right_to_left: gtk::Button,
-    btn_copy_left_to_right: gtk::Button,
-    buf_left: gtk::TextBuffer,
-    buf_right: gtk::TextBuffer,
+    win_test: gtk4::ApplicationWindow,
+    btn_copy_right_to_left: gtk4::Button,
+    btn_copy_left_to_right: gtk4::Button,
+    buf_left: gtk4::TextBuffer,
+    buf_right: gtk4::TextBuffer,
 }
 
-fn get_text(buffer: &gtk::TextBuffer) -> String {
-    if let Some(text) = buffer.text(&buffer.start_iter(), &buffer.end_iter(), true) {
-        text.into()
-    } else {
-        "".to_owned()
-    }
+fn get_text(buffer: &gtk4::TextBuffer) -> String {
+    buffer.text(&buffer.start_iter(), &buffer.end_iter(), true).into()
 }
 
 impl actix::Handler<woab::Signal> for TestActor {
@@ -56,27 +46,22 @@ impl actix::Handler<woab::Signal> for TestActor {
 
 #[test]
 fn test_basic() -> anyhow::Result<()> {
-    let factories = Factories::read(include_bytes!("basic.glade") as &[u8])?;
-    gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let mut put_widgets_in = None;
-    woab::block_on(async {
-        factories.win_test.instantiate().connect_with(|bld| {
-            let widgets = bld.widgets::<TestWidgets>().unwrap();
-            put_widgets_in = Some(widgets.clone());
-            TestActor { widgets }.start()
+    util::test_main(async {
+        let factory = woab::BuilderFactory::from(std::fs::read_to_string("tests/basic.ui")?);
+        let ctx = Context::<TestActor>::new();
+        let bld = factory.instantiate_route_to(ctx.address());
+        let widgets: TestWidgets = bld.widgets()?;
+        ctx.run(TestActor {
+            widgets: widgets.clone(),
         });
-    });
-    let widgets = put_widgets_in.unwrap();
-    widgets.buf_left.set_text("test left");
-    wait_for!(get_text(&widgets.buf_right).is_empty())?;
-    widgets.btn_copy_left_to_right.emit_clicked();
-    wait_for!(get_text(&widgets.buf_right) == "test left")?;
-    widgets.buf_left.set_text("");
-    widgets.buf_right.set_text("test right");
-    widgets.btn_copy_right_to_left.emit_clicked();
-    wait_for!(get_text(&widgets.buf_left) == "test right")?;
-
-    woab::close_actix_runtime()??;
-    Ok(())
+        widgets.buf_left.set_text("test left");
+        wait_for!(get_text(&widgets.buf_right).is_empty())?;
+        widgets.btn_copy_left_to_right.emit_clicked();
+        wait_for!(get_text(&widgets.buf_right) == "test left")?;
+        widgets.buf_left.set_text("");
+        widgets.buf_right.set_text("test right");
+        widgets.btn_copy_right_to_left.emit_clicked();
+        wait_for!(get_text(&widgets.buf_left) == "test right")?;
+        Ok(())
+    })
 }

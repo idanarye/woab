@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use gio::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 struct WindowActor {
     widgets: WindowWidgets,
@@ -10,9 +10,10 @@ struct WindowActor {
 
 #[derive(woab::WidgetsFromBuilder)]
 struct WindowWidgets {
-    simple: gtk::Entry,
-    parameter: gtk::Entry,
-    alignment: gtk::Label,
+    win_app: gtk4::ApplicationWindow,
+    simple: gtk4::Entry,
+    parameter: gtk4::Entry,
+    alignment: gtk4::Label,
 }
 
 impl actix::Actor for WindowActor {
@@ -25,7 +26,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                let woab::params!(win_app: gtk::ApplicationWindow) = msg.params()?;
+                let woab::params!(win_app: gtk4::ApplicationWindow) = msg.params()?;
                 win_app.application().unwrap().quit();
                 None
             }
@@ -48,9 +49,9 @@ impl actix::Handler<woab::Signal> for WindowActor {
             "alignment" => {
                 let param: String = msg.action_param()?;
                 self.widgets.alignment.set_halign(match param.as_str() {
-                    "left" => gtk::Align::Start,
-                    "center" => gtk::Align::Center,
-                    "right" => gtk::Align::End,
+                    "left" => gtk4::Align::Start,
+                    "center" => gtk4::Align::Center,
+                    "right" => gtk4::Align::End,
                     _ => panic!("Invalid alignment {:?}", param),
                 });
                 None
@@ -60,43 +61,33 @@ impl actix::Handler<woab::Signal> for WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_actions.glade")?);
+fn main() -> woab::Result<()> {
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_actions.ui")?);
 
-    gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop();
-    let app = gtk::Application::new(None, Default::default());
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factory.instantiate_route_to(ctx.address());
+            bld.set_application(app);
 
-    app.connect_activate(move |app| {
-        woab::block_on(async {
-            factory.instantiate().connect_with(|bld| {
-                let win_app: gtk::ApplicationWindow = bld.get_object("win_app").unwrap();
-                app.add_window(&win_app);
+            for action in &[
+                gio::SimpleAction::new("increment", None),
+                gio::SimpleAction::new("decrement", None),
+                gio::SimpleAction::new("parameter", Some(&String::static_variant_type())),
+                gio::SimpleAction::new_stateful("alignment", Some(&String::static_variant_type()), &"".to_variant()),
+            ] {
+                app.add_action(action);
+                woab::route_action(action, ctx.address()).unwrap();
+            }
 
-                win_app.show();
-                let addr = WindowActor {
-                    widgets: bld.widgets().unwrap(),
-                    simple_data: 0,
-                    parameter_data: Vec::new(),
-                }
-                .start();
-
-                for action in &[
-                    gio::SimpleAction::new("increment", None),
-                    gio::SimpleAction::new("decrement", None),
-                    gio::SimpleAction::new("parameter", Some(&String::static_variant_type())),
-                    gio::SimpleAction::new_stateful("alignment", Some(&String::static_variant_type()), &"".to_variant()),
-                ] {
-                    app.add_action(action);
-                    woab::route_action(action, addr.clone()).unwrap();
-                }
-
-                addr
-            });
+            let widgets: WindowWidgets = bld.widgets().unwrap();
+            widgets.win_app.show();
+            WindowActor {
+                widgets,
+                simple_data: 0,
+                parameter_data: Vec::new(),
+            }
         });
-    });
-
-    app.run();
-    woab::close_actix_runtime()??;
-    Ok(())
+        Ok(())
+    })
 }

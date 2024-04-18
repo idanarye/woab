@@ -22,7 +22,7 @@ enum SingleParam {
 
 impl syn::parse::Parse for SingleParam {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let pat: syn::Pat = input.parse()?;
+        let pat = syn::Pat::parse_single(input)?;
         let lookahead = input.lookahead1();
         Ok(if lookahead.peek(syn::token::Colon) {
             let _: syn::token::Colon = input.parse()?;

@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use gtk::prelude::*;
+use gtk4::prelude::*;
 
 struct WindowActor {
     widgets: WindowWidgets,
@@ -7,10 +7,10 @@ struct WindowActor {
 
 #[derive(woab::WidgetsFromBuilder, woab::PropSync)]
 struct WindowWidgets {
-    #[prop_sync("value": f64, get, set)]
-    adj_timer: gtk::Adjustment,
+    #[prop_sync("value" as f64, get, set)]
+    adj_timer: gtk4::Adjustment,
     #[prop_sync(get, set)]
-    txt_shortening: gtk::Entry,
+    txt_shortening: gtk4::Entry,
 }
 
 impl actix::Actor for WindowActor {
@@ -23,7 +23,7 @@ impl actix::Handler<woab::Signal> for WindowActor {
     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
         Ok(match msg.name() {
             "close" => {
-                gtk::main_quit();
+                // gtk4::main_quit();
                 None
             }
             _ => msg.cant_handle()?,
@@ -55,41 +55,30 @@ impl actix::Handler<Step> for WindowActor {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_prop_sync.glade")?);
+fn main() -> woab::Result<()> {
+    let factory = woab::BuilderFactory::from(std::fs::read_to_string("examples/example_prop_sync.ui")?);
 
-    gtk::init()?;
-    woab::run_actix_inside_gtk_event_loop();
+    woab::main(Default::default(), move |app| {
+        woab::shutdown_when_last_window_is_closed(app);
+        WindowActor::create(|ctx| {
+            let bld = factory.instantiate_route_to(ctx.address());
+            bld.set_application(app);
+            bld.get_object::<gtk4::ApplicationWindow>("win_app").unwrap().show();
 
-    woab::block_on(async {
-        factory.instantiate().connect_with(|bld| {
-            let win_app: gtk::ApplicationWindow = bld.get_object("win_app").unwrap();
-
-            win_app.show();
-            let addr = WindowActor {
-                widgets: bld.widgets().unwrap(),
-            }
-            .start();
-
-            actix::spawn({
-                use actix::clock::Instant;
-                let addr = addr.clone();
-                let mut next_step = Instant::now();
-                let step_duration = std::time::Duration::from_secs(1);
-                async move {
-                    loop {
-                        next_step += step_duration;
-                        actix::clock::sleep_until(next_step).await;
-                        addr.send(Step).await.unwrap();
-                    }
+            let addr = ctx.address();
+            let mut next_step = actix::clock::Instant::now();
+            let step_duration = std::time::Duration::from_secs(1);
+            actix::spawn(async move {
+                loop {
+                    next_step += step_duration;
+                    actix::clock::sleep_until(next_step).await;
+                    addr.send(Step).await.unwrap();
                 }
             });
-
-            addr
+            WindowActor {
+                widgets: bld.widgets().unwrap(),
+            }
         });
-    });
-
-    gtk::main();
-    woab::close_actix_runtime()??;
-    Ok(())
+        Ok(())
+    })
 }
