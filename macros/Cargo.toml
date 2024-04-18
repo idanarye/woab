@@ -4,7 +4,7 @@ version = "0.7.0"
 description = "Procedural macros for the WoAB crate"
 authors = ["IdanArye <idanarye@gmail.com>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 [lib]
 proc-macro = true

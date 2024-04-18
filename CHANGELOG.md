@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Changed
 - [**BREAKING**] Upgrade to GTK4
+- Upgrade the Rust edition to 2021.
 - Change the syntax of the `PropSync` derive's attribute from
   ```rust
   `#[prop_sync("value": Type, ...)]
