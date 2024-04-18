@@ -41,7 +41,10 @@ jobs:
           path: ~/.cargo
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Test WoAB
-        run: xvfb-run cargo test --verbose -- --nocapture --test-threads 1
+        env:
+          RUST_TEST_NOCAPTURE: 1
+          RUST_TEST_THREADS: 1
+        run: xvfb-run cargo test --verbose
   fmt:
    name: Rustfmt
    runs-on: ubuntu-latest
