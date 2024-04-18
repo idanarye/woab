@@ -5,11 +5,13 @@
 //!   widgets directly.
 //! * Routing GTK signals through the asynchronous runtime, so that the code handling them can
 //!   proceed naturally to interact with the actors.
-//! * Mapping widgets and signals from [Glade](https://glade.gnome.org/) XML files to user types.
+//! * Mapping widgets and signals from [Cambalache](https://gitlab.gnome.org/jpu/cambalache)
+//!   emitted XML files to user types.
 //!
 //! To use WoAB one would typically create a factories struct using
-//! [`woab::Factories`](derive.Factories.html) and use it dissect the Glade XML file(s). Each field
-//! of the factories struct will be a [`woab::BuilderFactory`](BuilderFactory) that can:
+//! [`woab::Factories`](derive.Factories.html) and use it dissect the Cambalache emitted XML
+//! file(s). Each field of the factories struct will be a [`woab::BuilderFactory`](BuilderFactory)
+//! that can:
 //!
 //! * Create a widgets struct using [`woab::WidgetsFromBuilder`](derive.WidgetsFromBuilder.html).
 //! * Route the signals defined in the builder to Actix handlers using [`woab::Signal`](Signal)
@@ -18,11 +20,11 @@
 //!   [`woab::params!`](crate::params!) to extract the signal parameters.
 //!
 //! The factories can then be used to generate the GTK widgets and either connect them to a new
-//! actor which will receive the signals defined in the Glade GTK or connect them to an existing
-//! actor and tag the signals (so that multiple instances can be added - e.g. with `GtkListBox` -
-//! and the signal handler can know from which one the event came). The actors receive the signals
-//! as Actix messages, and the `Handler` returns the propagation decision (if the signal requires
-//! it)
+//! actor which will receive the signals defined in the Cambalache emitted XML file or connect them
+//! to an existing actor and tag the signals (so that multiple instances can be added - e.g. with
+//! `GtkListBox` - and the signal handler can know from which one the event came). The actors
+//! receive the signals as Actix messages, and the `Handler` returns the propagation decision (if
+//! the signal requires it)
 //!
 //! To remove widget-bound actors at runtime, see [`woab::Remove`](Remove).
 //!
@@ -34,15 +36,15 @@
 //! ```no_run
 //! use actix::prelude::*;
 //! use gtk4::prelude::*;
-//! 
+//!
 //! struct MyActor {
 //!     widgets: MyWidgets,
 //! }
-//! 
+//!
 //! impl Actor for MyActor {
 //!     type Context = Context<Self>;
 //! }
-//! 
+//!
 //! // Use this derive to automatically populate a struct with GTK objects from a builder using their
 //! // object IDs.
 //! #[derive(woab::WidgetsFromBuilder)]
@@ -50,11 +52,11 @@
 //!     window: gtk4::ApplicationWindow,
 //!     button: gtk4::Button,
 //! }
-//! 
+//!
 //! // WoAB converts GTK signals (defined) to Actix messages, which the user defined actors need handle.
 //! impl Handler<woab::Signal> for MyActor {
 //!     type Result = woab::SignalResult;
-//! 
+//!
 //!     fn handle(&mut self, msg: woab::Signal, _ctx: &mut Self::Context) -> Self::Result {
 //!         // All the signals get the same message type (`woab::Signal`), and need to be matched by
 //!         // the handler name.
@@ -72,7 +74,7 @@
 //!         })
 //!     }
 //! }
-//! 
+//!
 //! fn main() -> woab::Result<()> {
 //!     // Factories can be used to create the GUI and connect the signals.
 //!     let factory = woab::BuilderFactory::from(
@@ -92,37 +94,37 @@
 //!         "#
 //!         .to_owned(),
 //!     );
-//! 
+//!
 //!     // Setup the application inside `woab::main`. This handles starting/stopping GTK and Actix, and
 //!     // making them work together. The actual closure is run inside the application's `startup`
 //!     // signal.
 //!     woab::main(gtk4::Application::default(), move |app| {
 //!         // A useful helper so that when the last window is closed, the application will exit.
 //!         woab::shutdown_when_last_window_is_closed(app);
-//! 
+//!
 //!         // We need the actor's address when instantiating the builder (because we need to connect
 //!         // the signals) and we need the builder result when we create the actor (because we want to
 //!         // provide it with the widgets). Thus, we usually want to use Actix's two-steps actor
 //!         // initialization.
 //!         let ctx = Context::new();
-//! 
+//!
 //!         // This will create the UI widgets from the XML and route the signals to the actor.
 //!         let bld = factory.instantiate_route_to(ctx.address());
-//! 
+//!
 //!         // Automatically assign all the windows inside the builder to the application. Without
 //!         // this, `woab::shutdown_when_last_window_is_closed` will be meaningless.
 //!         bld.set_application(app);
-//! 
+//!
 //!         // Extract the newly created widgets from the builder.
 //!         let widgets: MyWidgets = bld.widgets()?;
-//! 
+//!
 //!         // When the builder loads the window, it starts as hidden. We can use the extracted widgets
 //!         // to show it.
 //!         widgets.window.show();
-//! 
+//!
 //!         // This is where the actor is actually launched.
 //!         ctx.run(MyActor { widgets });
-//! 
+//!
 //!         Ok(())
 //!     })
 //! }
@@ -153,7 +155,8 @@ mod waking_helpers;
 /// Represent a set of GTK widgets created by a GTK builder.
 ///
 /// This needs to be a struct, where each field is a GTK type and its name must match the ID of the
-/// widgets in the Glade XML file. This derive implements a `From<&gtk4::Builder>` for the struct.
+/// widgets in the Cambalache emitted XML file. This derive implements a `From<&gtk4::Builder>` for
+/// the struct.
 ///
 /// ```no_run
 /// #[derive(woab::WidgetsFromBuilder)]
@@ -175,11 +178,11 @@ mod waking_helpers;
 ///   the nested type already names all the widgets it needs.
 pub use woab_macros::WidgetsFromBuilder;
 
-/// Dissect a single Glade XML file to multiple builder factories.
+/// Dissect a single Cambalache emitted XML file to multiple builder factories.
 ///
 /// The motivation is to design nested repeated hierarchies (like `GtkListBoxRow`s inside
-/// `GtkListBox`) and see how they look together inside Glade, and then split the XML to multiple
-/// factories that create them separately during runtime.
+/// `GtkListBox`) and see how they look together inside Cambalache, and then split the XML to
+/// multiple factories that create them separately during runtime.
 ///
 /// Typically the fields of the struct will be of type [`woab::BuilderFactory`](BuilderFactory),
 /// but anything `From<String>` is allowed so [`woab::BuilderFactory`](BuilderFactory) or even just

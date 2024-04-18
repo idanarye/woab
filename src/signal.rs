@@ -77,9 +77,9 @@ impl<T> Signal<T> {
     /// The name of the signal.
     ///
     /// * If the signal comes from a GTK builder, it is what's written in the "Handler" field of
-    ///   the relevant signal in the "Signals" tabs of [the Glade
-    ///   editor](https://glade.gnome.org/), or the `handler` attribute of the `<signal>` element
-    ///   in the XML.
+    ///   the relevant signal in the "Signals" tabs of [the Cambalache
+    ///   editor](https://gitlab.gnome.org/jpu/cambalache), or the `handler` attribute of the
+    ///   `<signal>` element in the XML.
     /// * If the signal comes from [`woab::route_signal`](crate::route_signal), it is the third
     ///   argument (`actix_signal`) passed to that function.
     /// * If the signal comes from [`woab::route_action`](crate::route_action), it is the name of
